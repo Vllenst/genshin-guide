@@ -1,6 +1,7 @@
 /* ============================================================
  * 图标加载器 · 全站共享
- * 路径规则：icons/{type}/{star}star/{文件名}
+ * 路径规则：icons/{type}/{文件名}
+ * 星级由映射表决定，仅影响背景色
  * ============================================================ */
 (function () {
   "use strict";
@@ -147,10 +148,9 @@
   var cache = {};
   function ck(type, key) { return type + "::" + key; }
 
+  /* 路径：icons/{type}/{key} （不再有星级子文件夹） */
   function getPath(type, key) {
-    var map = window.ICON_MAP && window.ICON_MAP[type];
-    var star = (map && map[key] && map[key].star) ? map[key].star : 5;
-    return ICON_BASE + type + "/" + star + "star/" + key;
+    return ICON_BASE + type + "/" + key;
   }
 
   /* ============ 加载并合成 ============ */
