@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F2EFEA">
+<title>图标映射表编辑器</title>
+<link rel="stylesheet" href="shared-theme.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  font-family: var(--std-font);
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-size: 13px;
+  letter-spacing: -0.2px;
+}
+body {
+  padding: 0 0 80px;
+  transition: background-color .25s ease, color .25s ease;
+  min-height: 100vh;
+}
+
+/* ============ 顶部栏 ============ */
+.editor-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 52px;
+  padding: 0 12px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color .25s ease, border-color .25s ease;
+}
+.editor-title {
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-btn {
+  width: 34px;
+  height: 34px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, transform .12s;
+  padding: 0;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+.theme-btn:active { transform: scale(.94); }
+.theme-btn:hover { background: var(--bg-hover); }
+
+/* ============ Tab ============ */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 12px 8px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.tab {
+  flex: 1;
+  height: 36px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.tab.active {
+  background: var(--bg-surface);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* ============ 工具栏 ============ */
+.toolbar {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 12px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.btn {
+  height: 34px;
+  padding: 0 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg-hover); }
+.btn:active { transform: scale(.97); }
+.btn.primary {
+  background: var(--text-primary);
+  color: var(--bg-base);
+  border-color: var(--text-primary);
+}
+.btn.primary:hover { background: var(--accent); border-color: var(--accent); }
+.btn.danger {
+  color: var(--danger);
+  border-color: var(--danger-border, rgba(220,76,62,.3));
+  background: var(--danger-bg);
+}
+.btn input[type="file"] { display: none; }
+
+/* ============ 表格 ============ */
+.table-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  min-width: 620px;
+}
+thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+tbody tr {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+tbody td {
+  padding: 8px;
+  vertical-align: middle;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+tbody td:first-child {
+  border-left: 1px solid var(--border-subtle);
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+tbody td:last-child {
+  border-right: 1px solid var(--border-subtle);
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+.num-input {
+  width: 44px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  text-align: center;
+  outline: none;
+}
+.num-input:focus { border-color: var(--accent); background: var(--bg-surface); }
+.text-input {
+  width: 100%;
+  min-width: 80px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.text-input:focus { border-color: var(--accent); background: var(--bg-surface); }
+select.star-select {
+  width: 56px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+.thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-sunken);
+  object-fit: cover;
+  display: block;
+}
+.del-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--danger-border, rgba(220,76,62,.3));
+  background: var(--danger-bg);
+  color: var(--danger);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  padding: 0;
+}
+.del-btn:active { transform: scale(.92); }
+
+.empty-tip {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 12px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+/* ============ 底部状态栏 ============ */
+.status-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  background: var(--bg-base);
+  border-top: 1px solid var(--border-subtle);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  transition: background-color .25s ease;
+}
+.status-bar.ok { color: var(--accent); }
+.status-bar.err { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<header class="editor-header">
+  <div class="editor-title">图标映射表编辑器</div>
+  <button type="button" class="theme-btn" id="btnTheme">🌙</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="characters">角色</button>
+  <button class="tab" data-tab="artifacts">圣遗物</button>
+  <button class="tab" data-tab="weapons">武器</button>
+</nav>
+
+<div class="toolbar">
+  <button type="button" class="btn" id="btnLoad">从仓库载入</button>
+  <button type="button" class="btn primary" id="btnExport">导出 icon-map.js</button>
+  <label class="btn">
+    + 导入图片
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </label>
+  <button type="button" class="btn" id="btnAdd">+ 添加一行</button>
+  <button type="button" class="btn" id="btnSort">按序号排序</button>
+  <button type="button" class="btn danger" id="btnClear">清空当前</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>序</th>
+        <th>图</th>
+        <th>文件名</th>
+        <th>中文名</th>
+        <th>英文名</th>
+        <th>星级</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-tip" id="emptyTip" style="display:none;">当前分类还没有条目，点上方「+ 导入图片」或「+ 添加一行」开始。</div>
+</div>
+
+<div class="status-bar" id="status">就绪</div>
+
+<script src="icons/icon-loader.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "icon_map_editor_data_v1";
+  var THEME_KEY = "gtt_theme";
+
+  /* ============ 数据模型 ============ */
+  var data = {
+    characters: [],
+    artifacts: [],
+    weapons: []
+  };
+  var currentTab = "characters";
+  var tempThumbs = {}; // key -> dataURL（本地导入的临时缩略图，不持久化）
+
+  /* ============ DOM ============ */
+  var tbody = document.getElementById("tbody");
+  var emptyTip = document.getElementById("emptyTip");
+  var statusBar = document.getElementById("status");
+  var fileInput = document.getElementById("fileInput");
+  var btnTheme = document.getElementById("btnTheme");
+
+  /* ============ 状态提示 ============ */
+  function setStatus(msg, type) {
+    statusBar.textContent = msg;
+    statusBar.className = "status-bar" + (type ? " " + type : "");
+  }
+
+  /* ============ 本地存储 ============ */
+  function saveLocal() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed.characters && parsed.artifacts && parsed.weapons) {
+          data = parsed;
+        }
+      }
+    } catch (e) {}
+  }
+
+  /* ============ 星级 ============ */
+  function starColor(star) {
+    return (ICON_LIB && ICON_LIB.starColors && ICON_LIB.starColors[star]) || "#939393";
+  }
+
+  /* ============ 生成缩略图（异步，带背景） ============ */
+  function makeThumbFor(row, cb) {
+    var key = row.key;
+    var star = row.star || 5;
+
+    // 优先用本地临时图
+    if (tempThumbs[key]) {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var url = ICON_LIB.applyBackground(img, star, { size: 80 });
+          cb(url);
+        } catch (e) { cb(""); }
+      };
+      img.onerror = function () { cb(""); };
+      img.src = tempThumbs[key];
+      return;
+    }
+
+    // 从仓库加载
+    if (!key) { cb(""); return; }
+    var path = "./icons/" + currentTab + "/" + star + "star/" + key;
+    var img2 = new Image();
+    img2.crossOrigin = "anonymous";
+    img2.onload = function () {
+      try {
+        var url = ICON_LIB.applyBackground(img2, star, { size: 80 });
+        cb(url);
+      } catch (e) { cb(""); }
+    };
+    img2.onerror = function () { cb(""); };
+    img2.src = path;
+  }
+
+  /* ============ 渲染表格 ============ */
+  function render() {
+    var list = data[currentTab] || [];
+    // 按 order 排序显示（但不改数据本身）
+    var sorted = list.slice().sort(function (a, b) {
+      return (a.order || 0) - (b.order || 0);
+    });
+
+    tbody.innerHTML = "";
+    if (!sorted.length) {
+      emptyTip.style.display = "block";
+      return;
+    }
+    emptyTip.style.display = "none";
+
+    sorted.forEach(function (row) {
+      var tr = document.createElement("tr");
+
+      // 序号
+      var tdOrder = document.createElement("td");
+      var inpOrder = document.createElement("input");
+      inpOrder.type = "number";
+      inpOrder.className = "num-input";
+      inpOrder.value = row.order || 1;
+      inpOrder.min = 1;
+      inpOrder.addEventListener("change", function () {
+        row.order = parseInt(inpOrder.value, 10) || 1;
+        saveLocal();
+      });
+      tdOrder.appendChild(inpOrder);
+      tr.appendChild(tdOrder);
+
+      // 缩略图
+      var tdThumb = document.createElement("td");
+      var img = document.createElement("img");
+      img.className = "thumb";
+      img.alt = "";
+      tdThumb.appendChild(img);
+      makeThumbFor(row, function (url) {
+        if (url) img.src = url;
+        else {
+          img.style.background = starColor(row.star || 5);
+          img.removeAttribute("src");
+        }
+      });
+      tr.appendChild(tdThumb);
+
+      // 文件名
+      var tdKey = document.createElement("td");
+      var inpKey = document.createElement("input");
+      inpKey.type = "text";
+      inpKey.className = "text-input";
+      inpKey.value = row.key || "";
+      inpKey.style.minWidth = "140px";
+      inpKey.addEventListener("input", function () {
+        // 更新 key 时，把 tempThumbs 的键也迁移过去
+        var oldKey = row.key;
+        row.key = inpKey.value;
+        if (oldKey !== row.key && tempThumbs[oldKey]) {
+          tempThumbs[row.key] = tempThumbs[oldKey];
+          delete tempThumbs[oldKey];
+        }
+        saveLocal();
+      });
+      inpKey.addEventListener("blur", render);
+      tdKey.appendChild(inpKey);
+      tr.appendChild(tdKey);
+
+      // 中文名
+      var tdName = document.createElement("td");
+      var inpName = document.createElement("input");
+      inpName.type = "text";
+      inpName.className = "text-input";
+      inpName.value = row.name || "";
+      inpName.placeholder = "中文名";
+      inpName.style.minWidth = "80px";
+      inpName.addEventListener("input", function () {
+        row.name = inpName.value;
+        saveLocal();
+      });
+      tdName.appendChild(inpName);
+      tr.appendChild(tdName);
+
+      // 英文名
+      var tdEn = document.createElement("td");
+      var inpEn = document.createElement("input");
+      inpEn.type = "text";
+      inpEn.className = "text-input";
+      inpEn.value = row.en || "";
+      inpEn.placeholder = "可选，多个用逗号";
+      inpEn.style.minWidth = "100px";
+      inpEn.addEventListener("input", function () {
+        row.en = inpEn.value;
+        saveLocal();
+      });
+      tdEn.appendChild(inpEn);
+      tr.appendChild(tdEn);
+
+      // 星级
+      var tdStar = document.createElement("td");
+      var selStar = document.createElement("select");
+      selStar.className = "star-select";
+      [1, 2, 3, 4, 5].forEach(function (s) {
+        var opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s + "★";
+        if (s === (row.star || 5)) opt.selected = true;
+        selStar.appendChild(opt);
+      });
+      selStar.addEventListener("change", function () {
+        row.star = parseInt(selStar.value, 10) || 5;
+        saveLocal();
+        render();
+      });
+      tdStar.appendChild(selStar);
+      tr.appendChild(tdStar);
+
+      // 删除
+      var tdDel = document.createElement("td");
+      var btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "del-btn";
+      btnDel.textContent = "×";
+      btnDel.addEventListener("click", function () {
+        var idx = data[currentTab].indexOf(row);
+        if (idx >= 0) data[currentTab].splice(idx, 1);
+        delete tempThumbs[row.key];
+        saveLocal();
+        render();
+        setStatus("已删除", "ok");
+      });
+      tdDel.appendChild(btnDel);
+      tr.appendChild(tdDel);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* ============ 空行 ============ */
+  function makeEmptyRow() {
+    var list = data[currentTab];
+    var maxOrder = list.reduce(function (m, r) { return Math.max(m, r.order || 0); }, 0);
+    return { order: maxOrder + 1, key: "", name: "", en: "", star: 5 };
+  }
+
+  /* ============ 添加一行 ============ */
+  function addRow() {
+    data[currentTab].push(makeEmptyRow());
+    saveLocal();
+    render();
+    setStatus("已添加一行", "ok");
+  }
+
+  /* ============ 导入图片 ============ */
+  function handleFiles(files) {
+    if (!files || !files.length) return;
+    var list = data[currentTab];
+    var maxOrder = list.reduce(function (m, r) { return Math.max(m, r.order || 0); }, 0);
+
+    var pending = files.length;
+    Array.prototype.forEach.call(files, function (f) {
+      var key = f.name;
+      maxOrder++;
+      var row = {
+        order: maxOrder,
+        key: key,
+        name: "",
+        en: "",
+        star: 5
+      };
+      list.push(row);
+
+      // 读取本地文件生成缩略图
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        tempThumbs[key] = e.target.result;
+        pending--;
+        if (pending <= 0) {
+          saveLocal();
+          render();
+          setStatus("已导入 " + files.length + " 张图", "ok");
+        }
+      };
+      reader.onerror = function () {
+        pending--;
+        if (pending <= 0) { saveLocal(); render(); }
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  /* ============ 排序 ============ */
+  function sortByOrder() {
+    // 直接重写 order 为 1,2,3...（基于当前视觉顺序）
+    var sorted = data[currentTab].slice().sort(function (a, b) {
+      return (a.order || 0) - (b.order || 0);
+    });
+    sorted.forEach(function (r, i) { r.order = i + 1; });
+    data[currentTab] = sorted;
+    saveLocal();
+    render();
+    setStatus("已按序号重排", "ok");
+  }
+
+  /* ============ 清空 ============ */
+  function clearCurrent() {
+    if (!confirm("确定清空「" + tabLabel(currentTab) + "」分类的所有条目吗？")) return;
+    data[currentTab] = [];
+    saveLocal();
+    render();
+    setStatus("已清空", "ok");
+  }
+
+  function tabLabel(t) {
+    return { characters: "角色", artifacts: "圣遗物", weapons: "武器" }[t] || t;
+  }
+
+  /* ============ 从仓库载入 ============ */
+  function loadFromRepo() {
+    setStatus("正在从仓库载入…");
+    var url = "./icons/icon-map.js?t=" + Date.now();
+    fetch(url)
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .then(function (code) {
+        // 用 sandbox 执行，不污染全局
+        var sandbox = { window: {} };
+        new Function("window", code)(sandbox.window);
+        var map = sandbox.window.ICON_MAP || {};
+        ["characters", "artifacts", "weapons"].forEach(function (type) {
+          var obj = map[type] || {};
+          var keys = Object.keys(obj);
+          data[type] = keys.map(function (k, i) {
+            var item = obj[k] || {};
+            var enStr = "";
+            if (Array.isArray(item.en)) enStr = item.en.join(", ");
+            else if (typeof item.en === "string") enStr = item.en;
+            return {
+              order: i + 1,
+              key: k,
+              name: item.name || "",
+              en: enStr,
+              star: item.star || 5
+            };
+          });
+        });
+        saveLocal();
+        render();
+        setStatus("已从仓库载入", "ok");
+      })
+      .catch(function (e) {
+        setStatus("载入失败：" + e.message, "err");
+      });
+  }
+
+  /* ============ 导出 ============ */
+  function esc(str) {
+    return String(str || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+
+  function buildIconMapJS() {
+    var lines = [];
+    lines.push("/* ============================================================");
+    lines.push(" * 图标映射表");
+    lines.push(" * key   = 完整文件名（含扩展名）");
+    lines.push(" * name  = 中文全名");
+    lines.push(" * en    = 英文名（可选，字符串或数组）");
+    lines.push(" * star  = 星级（1~5）");
+    lines.push(" * ============================================================ */");
+    lines.push("window.ICON_MAP = {");
+
+    var types = ["characters", "artifacts", "weapons"];
+    types.forEach(function (type, ti) {
+      lines.push("");
+      lines.push("  /* ============ " + tabLabel(type) + " ============ */");
+      lines.push("  " + type + ": {");
+
+      var list = data[type].slice().sort(function (a, b) {
+        return (a.order || 0) - (b.order || 0);
+      });
+
+      if (!list.length) {
+        lines.push("    // 暂无条目");
+      }
+
+      list.forEach(function (item, i) {
+        if (!item.key) return;
+        var parts = ['name: "' + esc(item.name) + '"'];
+
+        // 英文名
+        if (item.en && item.en.trim()) {
+          var enArr = item.en.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+          if (enArr.length === 1) {
+            parts.push('en: "' + esc(enArr[0]) + '"');
+          } else if (enArr.length > 1) {
+            parts.push("en: [" + enArr.map(function (e) { return '"' + esc(e) + '"'; }).join(", ") + "]");
+          }
+        }
+
+        parts.push("star: " + (item.star || 5));
+
+        var line = '    "' + esc(item.key) + '": { ' + parts.join(", ") + " }";
+        // 判断是否是最后一条有效条目
+        var isLast = true;
+        for (var j = i + 1; j < list.length; j++) {
+          if (list[j].key) { isLast = false; break; }
+        }
+        if (!isLast) line += ",";
+        lines.push(line);
+      });
+
+      lines.push("  }" + (ti < types.length - 1 ? "," : ""));
+    });
+
+    lines.push("};");
+    lines.push("");
+    return lines.join("\n");
+  }
+
+  function exportJS() {
+    var code = buildIconMapJS();
+    var blob = new Blob([code], { type: "text/javascript;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "icon-map.js";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+    setStatus("已导出 icon-map.js，请手动上传到 icons/ 目录", "ok");
+  }
+
+  /* ============ 主题 ============ */
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    btnTheme.textContent = theme === "dark" ? "☀️" : "🌙";
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  }
+  function toggleTheme() {
+    var cur = document.documentElement.getAttribute("data-theme") || "light";
+    applyTheme(cur === "dark" ? "light" : "dark");
+  }
+
+  /* ============ 事件绑定 ============ */
+  document.querySelectorAll(".tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      currentTab = btn.dataset.tab;
+      document.querySelectorAll(".tab").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+      render();
+    });
+  });
+
+  fileInput.addEventListener("change", function (e) {
+    handleFiles(e.target.files);
+    e.target.value = "";
+  });
+
+  document.getElementById("btnAdd").addEventListener("click", addRow);
+  document.getElementById("btnSort").addEventListener("click", sortByOrder);
+  document.getElementById("btnClear").addEventListener("click", clearCurrent);
+  document.getElementById("btnLoad").addEventListener("click", loadFromRepo);
+  document.getElementById("btnExport").addEventListener("click", exportJS);
+  btnTheme.addEventListener("click", toggleTheme);
+
+  /* ============ 初始化 ============ */
+  (function init() {
+    var savedTheme = "light";
+    try { savedTheme = localStorage.getItem(THEME_KEY) || "light"; } catch (e) {}
+    applyTheme(savedTheme);
+
+    loadLocal();
+    render();
+    setStatus("就绪 · 编辑自动保存到本地");
+  })();
+
+})();
+</script>
+</body>
+</html>
