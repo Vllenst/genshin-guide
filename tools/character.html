@@ -17,6 +17,26 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 .icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 .icon-flip-y { display: inline-flex; align-items: center; transform: rotate(180deg); }
 
+/* 按钮内 SVG 统一尺寸 */
+button svg,
+.btn svg,
+.btn-sm svg,
+.btn-xs svg,
+.ios-btn-fill svg,
+.file-btn svg,
+.icon-only svg {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .app-container {
   max-width: 1400px; margin: 0 auto; padding: 12px 14px;
   display: grid; grid-template-columns: 1fr; gap: 14px;
