@@ -256,8 +256,11 @@ body { padding: 0 0 60px; min-height: 100vh; }
   /* ============ 读取角色编号 txt ============ */
   async function loadCharOrderTxt() {
     try {
-      var res = await fetch("../icons/characters.txt?t=" + Date.now());
-      if (!res.ok) return;
+      var res = await fetch("./icons/characters.txt?t=" + Date.now());
+      if (!res.ok) {
+        console.warn("characters.txt HTTP " + res.status);
+        return;
+      }
       var text = await res.text();
       CHAR_ORDER_TO_NAME = {};
       CHAR_NAME_TO_ORDER = {};
@@ -272,6 +275,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
         CHAR_ORDER_TO_NAME[order] = name;
         CHAR_NAME_TO_ORDER[name] = order;
       });
+      console.log("characters.txt 加载成功，共 " + Object.keys(CHAR_NAME_TO_ORDER).length + " 条");
     } catch (e) {
       console.warn("characters.txt 加载失败：", e.message);
     }
@@ -351,7 +355,12 @@ body { padding: 0 0 60px; min-height: 100vh; }
 
   function render() {
     var list = data[currentTab] || [];
-    var sorted = list.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    /* 空序号排最后 */
+    var sorted = list.slice().sort(function (a, b) {
+      var ao = a.order || 99999;
+      var bo = b.order || 99999;
+      return ao - bo;
+    });
 
     entriesEl.innerHTML = "";
     if (!sorted.length) { emptyTip.style.display = "block"; return; }
@@ -367,12 +376,13 @@ body { padding: 0 0 60px; min-height: 100vh; }
 
       var inpOrder = document.createElement("input");
       inpOrder.type = "number"; inpOrder.className = "entry-order";
-      inpOrder.value = row.order || 1;
+      inpOrder.value = row.order || "";
       inpOrder.title = "序号";
       inpOrder.addEventListener("change", function () {
-        row.order = parseInt(inpOrder.value, 10) || 1;
+        var v = (inpOrder.value || "").trim();
+        row.order = v === "" ? 0 : (parseInt(v, 10) || 0);
         /* 角色 Tab：填了序号自动补中文名（前提是中文名为空） */
-        if (currentTab === "characters" && !row.name) {
+        if (currentTab === "characters" && !row.name && row.order > 0) {
           var autoName = CHAR_ORDER_TO_NAME[row.order];
           if (autoName) row.name = autoName;
         }
@@ -417,7 +427,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
       inpName.addEventListener("blur", function () {
         var name = (inpName.value || "").trim();
         row.name = name;
-        /* 角色 Tab：填了中文名自动补序号（前提是序号当前为空或默认） */
+        /* 角色 Tab：填了中文名自动补序号 */
         if (currentTab === "characters" && name) {
           var autoOrder = CHAR_NAME_TO_ORDER[name];
           if (autoOrder) row.order = autoOrder;
