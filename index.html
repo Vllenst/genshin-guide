@@ -328,11 +328,11 @@ body {
  * 工具清单（主工具，硬编码）
  * ============================================================ */
 const TOOLS = [
-  { key: 'character',   label: '角色一图流', src: 'character.html',   icon: 'character',   iconBold: 'characterBold' },
-  { key: 'image-tools', label: '图片处理',   src: 'image-tools.html', icon: 'imageTools',  iconBold: 'imageToolsBold' },
-  { key: 'video-cover', label: '封面制作',   src: 'video-cover.html', icon: 'videoCover',  iconBold: 'videoCoverBold' },
-  { key: 'chart',       label: '图表',       src: 'chart.html',       icon: 'chart',       iconBold: 'chartBold' },
-  { key: 'tier',        label: '角色梯队',   src: 'tier.html',        icon: 'tier',        iconBold: 'tierBold' }
+  { key: 'character',   label: '角色一图流', src: 'tools/character.html',   icon: 'character',   iconBold: 'characterBold' },
+  { key: 'image-tools', label: '图片处理',   src: 'tools/image-tools.html', icon: 'imageTools',  iconBold: 'imageToolsBold' },
+  { key: 'video-cover', label: '封面制作',   src: 'tools/video-cover.html', icon: 'videoCover',  iconBold: 'videoCoverBold' },
+  { key: 'chart',       label: '图表',       src: 'tools/chart.html',       icon: 'chart',       iconBold: 'chartBold' },
+  { key: 'tier',        label: '角色梯队',   src: 'tools/tier.html',        icon: 'tier',        iconBold: 'tierBold' }
 ];
 
 /* 兜底子功能清单（子页面尚未改造完成时使用） */
@@ -358,7 +358,6 @@ const FALLBACK_SUBTOOLS = {
   'tier': []
 };
 
-/* 运行时的子功能清单（子页面可上报覆盖） */
 const SUBTOOLS = JSON.parse(JSON.stringify(FALLBACK_SUBTOOLS));
 
 const DEFAULT_TOOL = 'character';
@@ -382,7 +381,7 @@ const btnTheme       = document.getElementById('btnTheme');
 /* ============================================================
  * iframe 缓存
  * ============================================================ */
-const frameCache = new Map(); // key -> { view, iframe, loaded }
+const frameCache = new Map();
 
 /* ============================================================
  * 主题
@@ -396,12 +395,10 @@ function applyTheme(theme) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', currentTheme === 'dark' ? '#121212' : '#F2EFEA');
 
-  // 顶部按钮图标：浅色显示太阳，深色显示月亮
   btnTheme.innerHTML = currentTheme === 'dark' ? ICONS.app.moonBold : ICONS.app.sunBold;
 
   try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
 
-  // 广播给所有已加载的 iframe
   frameCache.forEach(record => {
     if (record.loaded && record.iframe.contentWindow) {
       try {
@@ -520,7 +517,6 @@ function ensureFrame(tool) {
     if (view.classList.contains('active')) {
       loadingMask.classList.remove('show');
     }
-    // 加载完成后，立即同步当前主题给子页面
     try {
       iframe.contentWindow.postMessage({
         type: 'theme',
@@ -595,7 +591,6 @@ function selectSubtool(toolKey, subKey, opts) {
     loadingMask.classList.remove('show');
   }
 
-  // 通知子页面切换
   if (record.loaded && record.iframe.contentWindow) {
     try {
       record.iframe.contentWindow.postMessage({
