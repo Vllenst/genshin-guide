@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>图表生成器（雷达图 · 柱状图）</title>
+  <!-- 引入外部 ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <!-- 引入 SheetJS 用于解析 Excel (.xlsx/.xls) 文件 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    /* =========================================================================
+     * 1. 样式系统：iOS 视觉变量与标准字体栈
+     * ========================================================================= */
+    :root {
+      --ios-bg: #000000;
+      --ios-card: #1c1c1e;
+      --ios-card-secondary: #242426;
+      --ios-input: #242426;
+      --ios-input-active: #2c2c30;
+      --ios-separator: rgba(255, 255, 255, 0.14);
+      --ios-border-visible: rgba(255, 255, 255, 0.18);
+      --ios-border-strong: rgba(255, 255, 255, 0.28);
+      --ios-label: #ffffff;
+      --ios-secondary-label: #8e8e93;
+      --ios-tertiary-label: #636366;
+      --ios-blue: #0a84ff;
+      --ios-red: #ff453a;
+      --ios-green: #30d158;
+      --gold: #d8c8b0;
+      --accent: #4caf50;
+      --accent-dark: #2e7d32;
+      
+      --std-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --ctl-h: 34px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body, input, button, select, textarea {
+      font-family: var(--std-font) !important;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background: var(--ios-bg);
+      color: var(--ios-label);
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      letter-spacing: -0.2px;
+      padding-top: calc(52px + env(safe-area-inset-top));
+      padding-bottom: calc(96px + env(safe-area-inset-bottom));
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    /* =========================================================================
+     * 2. 加载遮罩与顶部常驻导航栏
+     * ========================================================================= */
+    .boot-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: var(--ios-bg);
+    }
+    .boot-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--ios-border-visible);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: boot-spin 0.9s linear infinite;
+    }
+    @keyframes boot-spin { to { transform: rotate(360deg); } }
+    .boot-text { color: var(--ios-secondary-label); font-size: 13px; }
+
+    .app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: calc(52px + env(safe-area-inset-top));
+      padding-top: env(safe-area-inset-top);
+      background: rgba(22, 22, 24, 0.96);
+      backdrop-filter: blur(25px) saturate(190%);
+      -webkit-backdrop-filter: blur(25px) saturate(190%);
+      border-bottom: 1px solid var(--ios-separator);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+
+    .header-left-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      background: var(--ios-card-secondary);
+      border: 1px solid var(--ios-border-visible);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================================
+     * 3. iOS 侧边抽屉菜单
+     * ========================================================================= */
+    .ios-drawer-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 150;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .ios-drawer-mask.open { opacity: 1; pointer-events: auto; }
+
+    .ios-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      max-width: 80vw;
+      background: rgba(28, 28, 30, 0.98);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-right: 1px solid var(--ios-separator);
+      z-index: 160;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 10px 0 35px rgba(0, 0, 0, 0.6);
+      padding-top: env(safe-area-inset-top);
+    }
+    .ios-drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 16px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--ios-separator);
+    }
+    .drawer-title { font-size: 15px; font-weight: 600; color: #fff; }
+
+    .drawer-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+    .drawer-section-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ios-secondary-label);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 4px 6px;
+    }
+    .drawer-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--ios-card-secondary);
+      border: 1px solid var(--ios-border-visible);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .drawer-menu-item.active {
+      background: rgba(76, 175, 80, 0.16);
+      border-color: var(--accent);
+    }
+    .drawer-item-name { font-size: 14px; font-weight: 600; color: #fff; }
+    .drawer-item-desc { font-size: 11px; color: var(--ios-secondary-label); margin-top: 2px; }
+
+    /* =========================================================================
+     * 4. 响应式主容器
+     * ========================================================================= */
+    .app-container {
+      width: calc(100% - 32px);
+      max-width: 480px;
+      margin: 16px auto 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .app-container {
+        width: calc(100% - 48px);
+        max-width: 720px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .app-container {
+        width: calc(100% - 64px);
+        max-width: 1100px;
+        display: grid;
+        grid-template-columns: minmax(420px, 1.2fr) minmax(380px, 1fr);
+        height: calc(100vh - 78px);
+        margin-top: 8px;
+        gap: 24px;
+        overflow: hidden;
+      }
+    }
+
+    .preview-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    @media (min-width: 1024px) {
+      .preview-pane {
+        height: 100%;
+        overflow-y: auto;
+      }
+    }
+
+    .preview-card {
+      background: var(--ios-card);
+      border: 1px solid var(--ios-border-visible);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2px;
+    }
+    .preview-title { font-size: 13px; font-weight: 500; color: var(--ios-secondary-label); }
+
+    .preview-stage {
+      width: 100%;
+      min-height: 280px;
+      background: #111113;
+      border: 1px solid var(--ios-border-visible);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    @media (min-width: 1024px) {
+      .preview-stage {
+        min-height: 480px;
+        height: 100%;
+        max-height: calc(100vh - 160px);
+      }
+    }
+
+    .chart-box {
+      border-radius: var(--radius-sm);
+      background: transparent;
+      position: relative;
+      margin: auto;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+
+    .chart-square {
+      aspect-ratio: 1 / 1;
+      max-height: 380px;
+      max-width: 380px;
+    }
+    .chart-16x9 {
+      aspect-ratio: 16 / 9;
+      max-height: 340px;
+      max-width: 100%;
+    }
+    .chart-9x16 {
+      aspect-ratio: 9 / 16;
+      max-height: 480px;
+      max-width: 270px;
+    }
+
+    @media (min-width: 1024px) {
+      .chart-square { max-height: calc(100vh - 200px); max-width: calc(100vh - 200px); }
+      .chart-16x9 { max-height: calc((100vh - 200px) * 9 / 16); max-width: 100%; }
+      .chart-9x16 { max-height: calc(100vh - 200px); max-width: calc((100vh - 200px) * 9 / 16); }
+    }
+
+    /* =========================================================================
+     * 5. iOS 属性编辑面板与分段选项卡
+     * ========================================================================= */
+    .inspector-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+      width: 100%;
+    }
+    @media (min-width: 1024px) { .inspector-pane { height: 100%; } }
+
+    .ios-segmented-control {
+      display: flex;
+      background: #1c1c1e;
+      padding: 3px;
+      border-radius: 10px;
+      gap: 2px;
+      border: 1px solid var(--ios-border-visible);
+      flex-shrink: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .ios-segmented-control::-webkit-scrollbar { display: none; }
+
+    .seg-btn {
+      flex: 1;
+      min-width: 76px;
+      height: 30px;
+      background: transparent;
+      border: 0;
+      border-radius: 7px;
+      color: var(--ios-secondary-label);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0 6px;
+    }
+    .seg-btn.active {
+      background: #505054;
+      color: #ffffff;
+      font-weight: 600;
+      border: 0.5px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+
+    .tabs-content {
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 8px;
+    }
+
+    .tab-panel { display: none; flex-direction: column; gap: 12px; }
+    .tab-panel.active { display: flex; }
+
+    .ios-section-header {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ios-secondary-label);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 0 4px 4px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .ios-group {
+      background: var(--ios-card);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--ios-border-visible);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ios-row {
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--ios-separator);
+    }
+    .ios-row:last-child { border-bottom: 0; }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+    }
+    @media (max-width: 640px) { .field-grid { grid-template-columns: 1fr; } }
+
+    label.ios-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--ios-secondary-label);
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      height: var(--ctl-h);
+      background: var(--ios-input);
+      border: 1px solid var(--ios-border-visible);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 13px;
+      padding: 0 10px;
+      outline: none;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    textarea {
+      height: 60px;
+      padding: 6px 10px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      background: var(--ios-input-active);
+      border-color: var(--ios-blue);
+      box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3);
+    }
+
+    .slider-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+    }
+    .slider-box input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .slider-box span { width: 44px; text-align: right; color: var(--ios-secondary-label); font-size: 12px; }
+
+    /* =========================================================================
+     * 6. 电子表格矩阵编辑样式 (Spreadsheet Matrix UI)
+     * ========================================================================= */
+    .spreadsheet-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--ios-border-visible);
+      border-radius: var(--radius-sm);
+      background: var(--ios-card-secondary);
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .matrix-table th, .matrix-table td {
+      border: 1px solid var(--ios-separator);
+      padding: 4px;
+      min-width: 68px;
+    }
+    .matrix-table th {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ios-secondary-label);
+      font-weight: 500;
+      padding: 6px 4px;
+    }
+    .matrix-table input {
+      width: 100%;
+      height: 26px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      text-align: center;
+      font-size: 12px;
+      padding: 0 4px;
+      outline: none;
+    }
+    .matrix-table input:focus {
+      background: var(--ios-input-active);
+      border-radius: 4px;
+    }
+    .matrix-actions-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .format-guide-box {
+      font-size: 11px;
+      color: var(--ios-secondary-label);
+      line-height: 1.5;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--ios-border-visible);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+    }
+    .format-guide-box code {
+      color: var(--gold);
+      background: rgba(255,255,255,0.08);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    /* =========================================================================
+     * 7. 按钮与主题色选择
+     * ========================================================================= */
+    button {
+      border: 1px solid var(--ios-border-visible);
+      border-radius: var(--radius-sm);
+      height: var(--ctl-h);
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      background: var(--ios-card-secondary);
+      color: #fff;
+      user-select: none;
+    }
+    button:active:not(:disabled) { transform: scale(0.96); opacity: 0.75; }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-sm { height: 26px; padding: 0 6px; font-size: 11px; }
+    .btn-icon { width: 28px; height: 28px; padding: 0; font-size: 12px; }
+    .ios-btn-fill { background: #343438; border-color: var(--ios-border-strong); color: #fff; }
+
+    .preset-colors {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 8px;
+    }
+    .swatch-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      background: var(--ios-card-secondary);
+      border-radius: var(--radius-sm);
+      height: var(--ctl-h);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ios-secondary-label);
+      border: 1px solid var(--ios-border-visible);
+      transition: all 0.15s;
+    }
+    .swatch-btn.active {
+      border-color: #ffffff;
+      color: #ffffff;
+      background: #38383d;
+      box-shadow: 0 0 0 1px #ffffff;
+    }
+    .swatch-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* =========================================================================
+     * 8. 底部常驻导出工具栏
+     * ========================================================================= */
+    .bottom-dock {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      background: rgba(22, 22, 24, 0.92);
+      backdrop-filter: blur(25px) saturate(190%);
+      -webkit-backdrop-filter: blur(25px) saturate(190%);
+      border-top: 1px solid var(--ios-separator);
+      padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .export-btn-main {
+      width: 100%;
+      max-width: 440px;
+      height: 44px;
+      font-size: 15px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- 加载状态遮罩 -->
+  <div id="boot-overlay" class="boot-overlay">
+    <div class="boot-spinner"></div>
+    <div class="boot-text" id="bootText">正在载入图表引擎…</div>
+  </div>
+
+  <!-- 左侧抽屉遮罩与侧边栏导航 -->
+  <div class="ios-drawer-mask" id="drawerMask" onclick="toggleDrawer(false)"></div>
+  <aside class="ios-drawer" id="appDrawer">
+    <div class="drawer-header">
+      <div class="drawer-title">图表类型库</div>
+      <button type="button" class="btn-icon btn-sm" onclick="toggleDrawer(false)">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section-title">选择当前编辑图表</div>
+      <div class="drawer-menu-item active" id="drawerItemRadar" onclick="switchTool('radar')">
+        <span style="font-size:20px;">🕸️</span>
+        <div>
+          <div class="drawer-item-name">雷达图</div>
+          <div class="drawer-item-desc">多维度属性能力一览 (1:1 3K高清)</div>
+        </div>
+      </div>
+      <div class="drawer-menu-item" id="drawerItemBar" onclick="switchTool('bar')">
+        <span style="font-size:20px;">📊</span>
+        <div>
+          <div class="drawer-item-name">柱状图</div>
+          <div class="drawer-item-desc">重叠胶囊条 / 经典分组对比 (2K)</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 顶部固定导航栏 -->
+  <header class="app-header">
+    <button type="button" class="header-left-btn" onclick="toggleDrawer(true)" title="展开菜单">☰</button>
+  </header>
+
+  <!-- 主容器 -->
+  <main class="app-container">
+
+    <!-- ==================== A. 雷达图视图 ==================== -->
+    <section class="preview-pane" id="preview-radar">
+      <div class="preview-card">
+        <div class="preview-header">
+          <span class="preview-title">实时渲染视口 (1:1 正方形)</span>
+        </div>
+        <div class="preview-stage">
+          <div id="chart-container" class="chart-box chart-square"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="inspector-pane" id="inspector-radar">
+      <nav class="ios-segmented-control">
+        <button class="seg-btn active" onclick="switchRadarTab('dims')">表格数据</button>
+        <button class="seg-btn" onclick="switchRadarTab('style')">外观颜色</button>
+        <button class="seg-btn" onclick="switchRadarTab('params')">图表参数</button>
+      </nav>
+
+      <div class="tabs-content">
+        <!-- 雷达图 Tab 1: 电子表格数据与文件导入 -->
+        <div class="tab-panel active" id="tab-radar-dims">
+          <div>
+            <div class="ios-section-header">
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;">维度数据表格</span>
+              <div style="display:flex; gap:4px; flex-shrink:0;">
+                <button class="ios-btn-fill btn-sm" onclick="document.getElementById('radarExcelFile').click()" style="padding:0 5px;">📁Excel</button>
+                <button class="ios-btn-fill btn-sm" onclick="document.getElementById('radarTxtFile').click()" style="padding:0 5px;">📄TXT</button>
+                <input type="file" id="radarExcelFile" accept=".xlsx,.xls" style="display:none;" onchange="Radar.importExcel(event)" />
+                <input type="file" id="radarTxtFile" accept=".txt,.csv" style="display:none;" onchange="Radar.importTxt(event)" />
+              </div>
+            </div>
+            
+            <div class="format-guide-box">
+              <strong>TXT/CSV 格式说明：</strong>每行一项，支持英文逗号 <code>,</code>、中文逗号 <code>，</code> 或 <code>\t</code> 分隔。<br>
+              示例：<code>攻击力, 90%</code> 或 <code>攻击力，90%</code>
+            </div>
+
+            <div class="spreadsheet-container">
+              <table class="matrix-table" id="radar-matrix-table">
+                <!-- 动态生成 -->
+              </table>
+            </div>
+
+            <div class="matrix-actions-bar">
+              <button class="ios-btn-fill" style="flex:1;" onclick="Radar.addRow()">+ 增加一行维度</button>
+              <button class="ios-btn-fill" style="flex:1; color:var(--ios-red);" onclick="Radar.clearTable()">清空表格</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 雷达图 Tab 2: 外观与颜色 -->
+        <div class="tab-panel" id="tab-radar-style">
+          <div>
+            <div class="ios-section-header">预设主题色</div>
+            <div class="ios-group">
+              <div class="preset-colors" id="presetColors"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="ios-section-header">自定义主色与透明度</div>
+            <div class="ios-group">
+              <div class="ios-row">
+                <span style="font-size:12px;color:var(--ios-secondary-label);width:70px;">主题色值</span>
+                <input type="text" id="chartColor" value="#4CAF50" maxlength="7" style="flex:1;" />
+                <div id="chartColorPreview" style="width:28px;height:28px;border-radius:6px;background:#4CAF50;border:1px solid var(--ios-border-visible);flex-shrink:0;"></div>
+              </div>
+              <div class="slider-box">
+                <span style="font-size:12px;color:var(--ios-secondary-label);width:70px;text-align:left;">填充透明度</span>
+                <input type="range" id="fillOpacity" min="0" max="100" value="50" />
+                <span id="fillOpacityVal">50%</span>
+              </div>
+              <div class="slider-box">
+                <span style="font-size:12px;color:var(--ios-secondary-label);width:70px;text-align:left;">网格透明度</span>
+                <input type="range" id="gridOpacity" min="0" max="100" value="50" />
+                <span id="gridOpacityVal">50%</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="ios-section-header">自定义嵌入字体 (仅作用于图表)</div>
+            <div class="ios-group">
+              <div class="ios-row">
+                <div style="font-size:18px;width:30px;text-align:center;">🔤</div>
+                <div style="flex:1;font-size:13px;" id="labelRadarFont">默认系统标准字体</div>
+                <button class="ios-btn-fill" onclick="document.getElementById('radarFontFile').click()">载入字体</button>
+                <input type="file" id="radarFontFile" class="font-file-input" accept=".ttf,.woff,.woff2" style="display:none;" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 雷达图 Tab 3: 参数设置 -->
+        <div class="tab-panel" id="tab-radar-params">
+          <div class="ios-section-header">几何与标尺</div>
+          <div class="ios-group">
+            <div class="field-grid">
+              <label class="ios-field">数值上限<input type="text" id="maxValue" value="" placeholder="默认 100 (支持百分比)" /></label>
+              <label class="ios-field">雷达形状
+                <select id="chartShape">
+                  <option value="polygon">多边形</option>
+                  <option value="circle">圆形</option>
+                </select>
+              </label>
+              <label class="ios-field">标签换行字数<input type="number" id="wrapLength" value="4" min="2" max="10" /></label>
+              <label class="ios-field">显示端点数值
+                <div style="display:flex;align-items:center;gap:6px;height:var(--ctl-h);">
+                  <input type="checkbox" id="showLabel" checked style="width:18px;height:18px;accent-color:var(--accent);" />
+                  <span style="font-size:12px;color:var(--ios-secondary-label);">沿端点外侧贴近显示</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== B. 柱状图视图 ==================== -->
+    <section class="preview-pane" id="preview-bar" hidden>
+      <div class="preview-card">
+        <div class="preview-header">
+          <span class="preview-title">实时渲染视口 (2K 比例自适应)</span>
+        </div>
+        <div class="preview-stage">
+          <div id="bar-chart" class="chart-box chart-16x9"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="inspector-pane" id="inspector-bar" hidden>
+      <nav class="ios-segmented-control">
+        <button class="seg-btn active" onclick="switchBarTab('content')">标题与矩阵表</button>
+        <button class="seg-btn" onclick="switchBarTab('series')">系列颜色</button>
+        <button class="seg-btn" onclick="switchBarTab('params')">图表参数</button>
+      </nav>
+
+      <div class="tabs-content">
+        <!-- 柱状图 Tab 1: 标题与矩阵电子表格 -->
+        <div class="tab-panel active" id="tab-bar-content">
+          <div>
+            <div class="ios-section-header">文本标头</div>
+            <div class="ios-group">
+              <div style="padding:10px; display:flex; flex-direction:column; gap:8px;">
+                <label class="ios-field">主标题 (13px 标准粗细)
+                  <input type="text" id="barTitle" value="" placeholder="输入图表主标题（可留空）" />
+                </label>
+                <label class="ios-field">副标题 (10px 支持手动换行，触及图例时智能避让)
+                  <textarea id="barSubtitle" rows="2" placeholder="输入副标题，可直接按回车换行"></textarea>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="ios-section-header">
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;">矩阵表格数据</span>
+              <div style="display:flex; gap:4px; flex-shrink:0;">
+                <button class="ios-btn-fill btn-sm" onclick="document.getElementById('barExcelFile').click()" style="padding:0 5px;">📁Excel</button>
+                <button class="ios-btn-fill btn-sm" onclick="document.getElementById('barTxtFile').click()" style="padding:0 5px;">📄TXT</button>
+                <input type="file" id="barExcelFile" accept=".xlsx,.xls" style="display:none;" onchange="Bar.importExcel(event)" />
+                <input type="file" id="barTxtFile" accept=".txt,.csv" style="display:none;" onchange="Bar.importTxt(event)" />
+              </div>
+            </div>
+
+            <div class="format-guide-box">
+              <strong>TXT/CSV 格式说明：</strong>支持英文逗号 <code>,</code>、中文逗号 <code>，</code> 或 <code>\t</code> 分隔。<br>
+              第1行（系列）：<code>系列1, 系列2, ...</code> 或 <code>系列1，系列2，...</code><br>
+              后续行（数据）：<code>类别1, 数值1, 数值2, ...</code> 或 <code>类别1，数值1，数值2，...</code>
+            </div>
+
+            <div class="spreadsheet-container">
+              <table class="matrix-table" id="bar-matrix-table">
+                <!-- 动态生成 -->
+              </table>
+            </div>
+
+            <div class="matrix-actions-bar">
+              <button class="ios-btn-fill" style="flex:1;" onclick="Bar.addRow()">+ 增加一行类别</button>
+              <button class="ios-btn-fill" style="flex:1;" onclick="Bar.addCol()">+ 增加一列系列</button>
+              <button class="ios-btn-fill" style="color:var(--ios-red);" onclick="Bar.clearTable()">清空</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 柱状图 Tab 2: 系列颜色 -->
+        <div class="tab-panel" id="tab-bar-series">
+          <div>
+            <div class="ios-section-header">基准色调</div>
+            <div class="ios-group">
+              <div class="ios-row">
+                <span style="font-size:12px;color:var(--ios-secondary-label);width:70px;">基准颜色</span>
+                <input type="text" id="barBaseColor" value="#4CAF50" maxlength="7" style="flex:1;" />
+                <div id="barBaseColorPreview" style="width:28px;height:28px;border-radius:50%;background:#4CAF50;border:1px solid var(--ios-border-visible);flex-shrink:0;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="ios-section-header">
+              <span>当前数据系列列表 (同色号由浅至深自动递进)</span>
+            </div>
+            <div id="bar-series-list-preview" style="display:flex; flex-direction:column; gap:6px; padding:2px;"></div>
+          </div>
+        </div>
+
+        <!-- 柱状图 Tab 3: 参数与样式 -->
+        <div class="tab-panel" id="tab-bar-params">
+          <div>
+            <div class="ios-section-header">排版与背景</div>
+            <div class="ios-group">
+              <div class="field-grid">
+                <label class="ios-field">展现样式
+                  <select id="barStyleMode">
+                    <option value="capsule" selected>重叠胶囊条 (推荐)</option>
+                    <option value="classic">经典分组柱</option>
+                  </select>
+                </label>
+                <label class="ios-field">画板背景
+                  <select id="barBgMode">
+                    <option value="transparent">完全透明背景</option>
+                    <option value="white50">白色 50% 半透明</option>
+                    <option value="black50">黑色 50% 半透明</option>
+                  </select>
+                </label>
+                <label class="ios-field" id="rowBarOrientation" hidden>柱体方向
+                  <select id="barOrientation">
+                    <option value="horizontal">横向柱</option>
+                    <option value="vertical">纵向柱</option>
+                  </select>
+                </label>
+                <label class="ios-field">图片比例
+                  <select id="barAspect">
+                    <option value="landscape">横版 16:9 (2560×1440)</option>
+                    <option value="portrait">竖版 9:16 (1440×2560)</option>
+                  </select>
+                </label>
+                <label class="ios-field">数值上限<input type="text" id="barMaxValue" placeholder="留空自动对齐实际最大值" /></label>
+                <label class="ios-field">显示数值标注
+                  <div style="display:flex;align-items:center;gap:6px;height:var(--ctl-h);">
+                    <input type="checkbox" id="barShowValue" checked style="width:18px;height:18px;accent-color:var(--accent);" />
+                    <span style="font-size:12px;color:var(--ios-secondary-label);">随柱条端点对齐 (9px)</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="ios-section-header">自定义嵌入字体 (仅作用于图表)</div>
+            <div class="ios-group">
+              <div class="ios-row">
+                <div style="font-size:18px;width:30px;text-align:center;">🔤</div>
+                <div style="flex:1;font-size:13px;" id="labelBarFont">默认系统标准字体</div>
+                <button class="ios-btn-fill" onclick="document.getElementById('barFontFile').click()">载入字体</button>
+                <input type="file" id="barFontFile" class="font-file-input" accept=".ttf,.woff,.woff2" style="display:none;" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 底部常驻导出工具栏 -->
+  <div class="bottom-dock">
+    <button class="export-btn-main" onclick="handleMobileExport()">✨ 生成并导出高清 PNG</button>
+  </div>
+
+<script>
+  /* =========================================================================
+   * JS 模块 1: 通用工具与色彩引擎
+   * ========================================================================= */
+  function escapeHTML(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function parsePercentageVal(val) {
+    if (val === '' || val === null || val === undefined) return null;
+    const str = String(val).trim();
+    const cleanStr = str.endsWith('%') ? str.slice(0, -1).trim() : str;
+    const num = parseFloat(cleanStr);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  function normalizeHex(value) {
+    const raw = String(value || '').trim().replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(raw)) return null;
+    const full = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw;
+    return '#' + full.toUpperCase();
+  }
+
+  function hexToHsl(hex) {
+    const m = normalizeHex(hex) || '#4CAF50';
+    let r = parseInt(m.slice(1, 3), 16) / 255;
+    let g = parseInt(m.slice(3, 5), 16) / 255;
+    let b = parseInt(m.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        default: h = (r - g) / d + 4;
+      }
+      h /= 6;
+    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
+  }
+
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    const to = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return '#' + to(f(0)).toUpperCase() + to(f(8)).toUpperCase() + to(f(4)).toUpperCase();
+  }
+
+  function darkenHex(hex, step) {
+    const { h, s, l } = hexToHsl(hex);
+    return hslToHex(h, s, Math.max(8, l - step * 12));
+  }
+
+  let customFontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+  function onFontFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      const fontName = `CustomChartFont_${Date.now()}`;
+      const fontFace = new FontFace(fontName, event.target.result);
+      fontFace.load().then(loadedFace => {
+        document.fonts.add(loadedFace);
+        customFontFamily = fontName;
+        document.getElementById('labelRadarFont').textContent = '已载入自定义字体';
+        document.getElementById('labelBarFont').textContent = '已载入自定义字体';
+        Radar.update();
+        Bar.update();
+      }).catch(() => alert('字体文件格式解析失败'));
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  document.querySelectorAll('.font-file-input').forEach(el => el.addEventListener('change', onFontFileChange));
+
+  /* =========================================================================
+   * JS 模块 2: 导航与视图切换
+   * ========================================================================= */
+  let activeTool = 'radar';
+
+  function toggleDrawer(open) {
+    const mask = document.getElementById('drawerMask');
+    const drawer = document.getElementById('appDrawer');
+    if (open) {
+      mask.classList.add('open');
+      drawer.classList.add('open');
+    } else {
+      mask.classList.remove('open');
+      drawer.classList.remove('open');
+    }
+  }
+
+  function switchTool(name) {
+    activeTool = name;
+    toggleDrawer(false);
+
+    document.getElementById('drawerItemRadar').classList.toggle('active', name === 'radar');
+    document.getElementById('drawerItemBar').classList.toggle('active', name === 'bar');
+
+    document.getElementById('preview-radar').hidden = (name !== 'radar');
+    document.getElementById('inspector-radar').hidden = (name !== 'radar');
+    document.getElementById('preview-bar').hidden = (name !== 'bar');
+    document.getElementById('inspector-bar').hidden = (name !== 'bar');
+
+    if (name === 'radar') {
+      Radar.ensureInit();
+      Radar.resize();
+    } else {
+      Bar.ensureInit();
+      Bar.resize();
+    }
+
+    try { localStorage.setItem('chartToolSelect_v16', name); } catch (e) {}
+  }
+
+  function switchRadarTab(tabKey) {
+    const root = document.getElementById('inspector-radar');
+    root.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+    root.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    
+    const targetBtn = Array.from(root.querySelectorAll('.seg-btn')).find(b => b.getAttribute('onclick')?.includes(tabKey));
+    if (targetBtn) targetBtn.classList.add('active');
+    const targetPanel = document.getElementById(`tab-radar-${tabKey}`);
+    if (targetPanel) targetPanel.classList.add('active');
+  }
+
+  function switchBarTab(tabKey) {
+    const root = document.getElementById('inspector-bar');
+    root.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+    root.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    
+    const targetBtn = Array.from(root.querySelectorAll('.seg-btn')).find(b => b.getAttribute('onclick')?.includes(tabKey));
+    if (targetBtn) targetBtn.classList.add('active');
+    const targetPanel = document.getElementById(`tab-bar-${tabKey}`);
+    if (targetPanel) targetPanel.classList.add('active');
+  }
+
+  function handleMobileExport() {
+    if (activeTool === 'radar') Radar.download();
+    else Bar.download();
+  }
+
+  /* =========================================================================
+   * JS 模块 3: 雷达图引擎（矩阵电子表格形态）
+   * ========================================================================= */
+  const Radar = (function () {
+    let dimList = [
+      { name: '', val: '' },
+      { name: '', val: '' },
+      { name: '', val: '' }
+    ];
+
+    const PRESET_COLORS = [
+      { name: '火', hex: '#EC4923' },
+      { name: '水', hex: '#498FCC' },
+      { name: '风', hex: '#359697' },
+      { name: '雷', hex: '#6957C2' },
+      { name: '草', hex: '#66AD16' },
+      { name: '冰', hex: '#35AACC' },
+      { name: '岩', hex: '#CC9046' },
+      { name: '无', hex: '#939393' }
+    ];
+
+    const chartDom = document.getElementById('chart-container');
+    const tableEl = document.getElementById('radar-matrix-table');
+    const colorInput = document.getElementById('chartColor');
+    const colorPreview = document.getElementById('chartColorPreview');
+    const presetColors = document.getElementById('presetColors');
+    let chart = null;
+
+    function renderTable() {
+      let html = `<thead><tr><th>#</th><th>维度名称</th><th>数值</th><th>操作</th></tr></thead><tbody>`;
+      dimList.forEach((dim, idx) => {
+        html += `<tr>
+          <td>${idx + 1}</td>
+          <td><input type="text" class="r-name" data-idx="${idx}" value="${escapeHTML(dim.name)}" placeholder="输入维度名" /></td>
+          <td><input type="text" class="r-val" data-idx="${idx}" value="${escapeHTML(dim.val)}" placeholder="如 100%" /></td>
+          <td><button type="button" class="btn-sm" onclick="Radar.delRow(${idx})" title="删除">❌</button></td>
+        </tr>`;
+      });
+      html += `</tbody>`;
+      tableEl.innerHTML = html;
+
+      tableEl.querySelectorAll('.r-name').forEach(input => {
+        input.addEventListener('input', e => {
+          const i = parseInt(e.target.dataset.idx, 10);
+          dimList[i].name = e.target.value;
+          update();
+        });
+      });
+      tableEl.querySelectorAll('.r-val').forEach(input => {
+        input.addEventListener('input', e => {
+          const i = parseInt(e.target.dataset.idx, 10);
+          dimList[i].val = e.target.value;
+          update();
+        });
+      });
+    }
+
+    function renderPresetColors() {
+      presetColors.innerHTML = PRESET_COLORS.map(item => `
+        <div class="swatch-btn" data-hex="${item.hex}">
+          <span class="swatch-dot" style="background:${item.hex}"></span>
+          <span>${item.name}</span>
+        </div>
+      `).join('');
+
+      presetColors.addEventListener('click', e => {
+        const btn = e.target.closest('.swatch-btn');
+        if (!btn) return;
+        applyPresetColor(btn.dataset.hex);
+      });
+      updatePresetColorActive();
+    }
+
+    function updatePresetColorActive() {
+      const current = normalizeHex(colorInput.value) || '#4CAF50';
+      presetColors.querySelectorAll('.swatch-btn').forEach(btn => {
+        btn.classList.toggle('active', normalizeHex(btn.dataset.hex) === current);
+      });
+    }
+
+    function applyPresetColor(hex) {
+      colorInput.value = hex;
+      colorPreview.style.background = hex;
+      updatePresetColorActive();
+      update();
+    }
+
+    function getParams() {
+      const maxRaw = document.getElementById('maxValue').value.trim();
+      const shape = document.getElementById('chartShape').value;
+      const showLabel = document.getElementById('showLabel').checked;
+      const wrapLen = parseInt(document.getElementById('wrapLength').value, 10) || 4;
+      const chartColor = normalizeHex(colorInput.value) || '#4CAF50';
+      const fillOpacity = parseFloat(document.getElementById('fillOpacity').value) / 100;
+      const gridOpacity = parseFloat(document.getElementById('gridOpacity').value) / 100;
+      const parsedMax = parsePercentageVal(maxRaw);
+      return { max: parsedMax === null ? 100 : parsedMax, shape, showLabel, wrapLen, chartColor, fillOpacity, gridOpacity };
+    }
+
+    function wrapLabel(text, len) {
+      const source = String(text || '');
+      if (!source.trim()) return ' ';
+      if (source.length <= len) return source;
+      return source.match(new RegExp(`.{1,${len}}`, 'g')).join('\n');
+    }
+
+    function buildOption() {
+      const dims = [], vals = [];
+      dimList.forEach(item => {
+        dims.push(item.name.trim() || ' ');
+        const num = parsePercentageVal(item.val);
+        vals.push(num !== null ? num : 0);
+      });
+
+      const { max, shape, showLabel, wrapLen, chartColor, fillOpacity, gridOpacity } = getParams();
+      const dimCount = Math.max(3, dims.length);
+      const radiusPercent = dimCount >= 7 ? 48 : dimCount >= 6 ? 50 : 54;
+      const axisColor = 'rgba(255, 255, 255, 0.22)';
+      const areaColor = `rgba(255, 255, 255, ${gridOpacity * 0.4})`;
+      const textColor = '#e1e7ec';
+
+      const richAxis = {};
+      dims.forEach((_, idx) => {
+        richAxis[`name${idx}`] = {
+          align: 'center',
+          verticalAlign: 'middle',
+          lineHeight: 14,
+          fontSize: 11,
+          fontFamily: customFontFamily,
+        };
+      });
+
+      return {
+        animation: false,
+        backgroundColor: 'transparent',
+        radar: {
+          indicator: dims.map((name, index) => ({
+            name: `{name${index}|${wrapLabel(name, wrapLen)}}`,
+            max,
+          })),
+          center: ['50%', '50%'],
+          shape,
+          radius: `${radiusPercent}%`,
+          splitNumber: 4,
+          axisName: { color: textColor, margin: 12, rich: richAxis },
+          splitArea: { areaStyle: { color: [areaColor] } },
+          axisLine: { lineStyle: { color: axisColor } },
+          splitLine: { lineStyle: { color: axisColor } },
+        },
+        series: [{
+          type: 'radar',
+          data: [{ value: vals }],
+          label: {
+            show: showLabel,
+            formatter: params => {
+              const raw = dimList[params.dataIndex]?.val;
+              if (raw === '' || raw === null || raw === undefined) return '';
+              const str = String(raw).trim();
+              const num = parsePercentageVal(str);
+              if (num === 0 && str !== '0' && str !== '0%') return '';
+              return str.endsWith('%') ? `${num}%` : params.value;
+            },
+            position: 'top',
+            distance: 4,
+            color: textColor,
+            fontSize: 9,
+            fontFamily: customFontFamily,
+          },
+          symbol: 'circle',
+          symbolSize: 6,
+          itemStyle: { color: chartColor },
+          lineStyle: { color: chartColor, width: 2 },
+          areaStyle: { color: chartColor, opacity: fillOpacity },
+        }],
+      };
+    }
+
+    function update() {
+      if (!chart) return;
+      chart.setOption(buildOption(), true);
+      chart.resize();
+    }
+
+    function ensureInit() {
+      if (chart) return;
+      if (typeof echarts === 'undefined') return;
+      if (chartDom.clientWidth === 0 || chartDom.clientHeight === 0) {
+        requestAnimationFrame(ensureInit);
+        return;
+      }
+      chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+      update();
+    }
+
+    colorInput.addEventListener('input', () => {
+      const hex = normalizeHex(colorInput.value);
+      colorPreview.style.background = hex || '#4CAF50';
+      updatePresetColorActive();
+      update();
+    });
+
+    ['fillOpacity', 'gridOpacity'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', function () {
+        document.getElementById(id === 'fillOpacity' ? 'fillOpacityVal' : 'gridOpacityVal').textContent = `${this.value}%`;
+        update();
+      });
+    });
+
+    ['maxValue', 'wrapLength'].forEach(id => document.getElementById(id)?.addEventListener('input', update));
+    ['chartShape', 'showLabel'].forEach(id => document.getElementById(id)?.addEventListener('change', update));
+
+    function download() {
+      if (!chart) return alert('图表未就绪');
+      const link = document.createElement('a');
+      link.href = chart.getDataURL({ type: 'png', pixelRatio: 3, backgroundColor: 'rgba(0,0,0,0)' });
+      link.download = '雷达图_3K正方形.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    renderTable();
+    renderPresetColors();
+
+    return {
+      ensureInit,
+      update,
+      resize() { if (chart) chart.resize(); },
+      download,
+      addRow() {
+        dimList.push({ name: '', val: '' });
+        renderTable();
+        update();
+      },
+      delRow(idx) {
+        if (dimList.length <= 3) return alert('雷达图至少保留 3 个维度');
+        dimList.splice(idx, 1);
+        renderTable();
+        update();
+      },
+      clearTable() {
+        dimList = [{ name: '', val: '' }, { name: '', val: '' }, { name: '', val: '' }];
+        renderTable();
+        update();
+      },
+      importTxt(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const lines = ev.target.result.split(/\r?\n/);
+          const newDimList = [];
+          lines.forEach(line => {
+            if (!line.trim()) return;
+            const parts = line.split(/[\t,，]+/);
+            if (parts.length >= 2) {
+              newDimList.push({ name: parts[0].trim(), val: parts[1].trim() });
+            }
+          });
+          if (newDimList.length > 0) {
+            dimList = newDimList;
+            renderTable();
+            update();
+          } else {
+            alert('TXT 解析失败，请检查格式是否为 “名称, 数值”');
+          }
+          e.target.value = '';
+        };
+        reader.readAsText(file);
+      },
+      importExcel(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = new Uint8Array(ev.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            const newDimList = [];
+            rows.forEach(r => {
+              if (r && r.length >= 2 && String(r[0]).trim() !== '') {
+                newDimList.push({ name: String(r[0]).trim(), val: String(r[1] !== undefined ? r[1] : '').trim() });
+              }
+            });
+            if (newDimList.length > 0) {
+              dimList = newDimList;
+              renderTable();
+              update();
+            } else {
+              alert('Excel 内容为空或格式不匹配');
+            }
+          } catch (err) {
+            alert('Excel 解析出错');
+          }
+          e.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    };
+  })();
+
+  /* =========================================================================
+   * JS 模块 4: 柱状图引擎（矩阵表格形态，支持中英文逗号与制表符分隔）
+   * ========================================================================= */
+  const Bar = (function () {
+    let seriesNames = ['系列1', '系列2'];
+    let itemsData = [
+      { name: '类别1', values: ['', ''] },
+      { name: '类别2', values: ['', ''] }
+    ];
+
+    const chartDom = document.getElementById('bar-chart');
+    const tableEl = document.getElementById('bar-matrix-table');
+    const seriesListPreviewEl = document.getElementById('bar-series-list-preview');
+    const baseColorEl = document.getElementById('barBaseColor');
+    const baseColorPreviewEl = document.getElementById('barBaseColorPreview');
+    let chart = null;
+
+    function renderTable() {
+      let html = `<thead><tr><th>类别 \\ 系列</th>`;
+      seriesNames.forEach((sName, sIdx) => {
+        html += `<th>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+            <input type="text" class="b-sname" data-sidx="${sIdx}" value="${escapeHTML(sName)}" style="font-weight:600;" />
+            <button type="button" class="btn-icon btn-sm" onclick="Bar.delCol(${sIdx})" title="删除列">❌</button>
+          </div>
+        </th>`;
+      });
+      html += `<th>操作</th></tr></thead><tbody>`;
+
+      itemsData.forEach((item, cIdx) => {
+        html += `<tr>
+          <td><input type="text" class="b-cname" data-cidx="${cIdx}" value="${escapeHTML(item.name)}" placeholder="类别名" style="font-weight:600;" /></td>`;
+        seriesNames.forEach((_, sIdx) => {
+          const val = item.values[sIdx] !== undefined ? item.values[sIdx] : '';
+          html += `<td><input type="text" class="b-val" data-cidx="${cIdx}" data-sidx="${sIdx}" value="${escapeHTML(val)}" placeholder="数值" /></td>`;
+        });
+        html += `<td><button type="button" class="btn-sm" onclick="Bar.delRow(${cIdx})" title="删除">❌</button></td></tr>`;
+      });
+      html += `</tbody>`;
+      tableEl.innerHTML = html;
+
+      tableEl.querySelectorAll('.b-sname').forEach(input => {
+        input.addEventListener('input', e => {
+          const s = parseInt(e.target.dataset.sidx, 10);
+          seriesNames[s] = e.target.value;
+          renderSeriesPreview();
+          update();
+        });
+      });
+      tableEl.querySelectorAll('.b-cname').forEach(input => {
+        input.addEventListener('input', e => {
+          const c = parseInt(e.target.dataset.cidx, 10);
+          itemsData[c].name = e.target.value;
+          update();
+        });
+      });
+      tableEl.querySelectorAll('.b-val').forEach(input => {
+        input.addEventListener('input', e => {
+          const c = parseInt(e.target.dataset.cidx, 10);
+          const s = parseInt(e.target.dataset.sidx, 10);
+          itemsData[c].values[s] = e.target.value;
+          update();
+        });
+      });
+
+      renderSeriesPreview();
+    }
+
+    function renderSeriesPreview() {
+      const baseColor = normalizeHex(baseColorEl.value) || '#4CAF50';
+      seriesListPreviewEl.innerHTML = '';
+      seriesNames.forEach((sName, idx) => {
+        const color = darkenHex(baseColor, idx);
+        const row = document.createElement('div');
+        row.className = 'item-card';
+        row.style.padding = '6px 8px';
+        row.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block;"></span>
+              <span style="font-size:12px;color:#fff;font-weight:600;">${escapeHTML(sName || `系列 #${idx + 1}`)}</span>
+            </div>
+            <span style="font-size:11px;color:var(--ios-secondary-label);">系列层次 #${idx + 1}</span>
+          </div>
+        `;
+        seriesListPreviewEl.appendChild(row);
+      });
+      baseColorPreviewEl.style.background = baseColor;
+    }
+
+    function getParams() {
+      const styleMode = document.getElementById('barStyleMode').value;
+      const orientation = document.getElementById('barOrientation').value;
+      const maxRaw = document.getElementById('barMaxValue').value.trim();
+      const showValue = document.getElementById('barShowValue').checked;
+      const portrait = document.getElementById('barAspect').value === 'portrait';
+      const bgMode = document.getElementById('barBgMode').value;
+      return {
+        styleMode,
+        vertical: styleMode === 'classic' && orientation === 'vertical',
+        max: parsePercentageVal(maxRaw),
+        showValue,
+        portrait,
+        bgMode,
+      };
+    }
+
+    function formatSmartSubtitle(rawText, chartWidth, legendRealWidth, legendHeight, fontSize, titleBottomY) {
+      if (!rawText) return '';
+      const lines = rawText.split('\n');
+      const resultLines = [];
+      const lineHeight = Math.round(fontSize * 1.35);
+      let currentY = titleBottomY;
+
+      lines.forEach(userLine => {
+        let currentLineChars = '';
+        let currentLineWidth = 0;
+
+        for (let i = 0; i < userLine.length; i++) {
+          const char = userLine[i];
+          const code = char.charCodeAt(0);
+          const isFullWidth = (code > 255 || (code >= 0xff01 && code <= 0xff60) || (code >= 0xffe0 && code <= 0xffe6));
+          const charWidth = isFullWidth ? fontSize : (fontSize * 0.55);
+
+          const inLegendZone = currentY < (10 + legendHeight + 4);
+          const maxAllowedWidth = inLegendZone
+            ? Math.max(30, chartWidth - 12 - legendRealWidth - 8)
+            : Math.max(30, chartWidth - 12 - 14);
+
+          if (currentLineWidth + charWidth > maxAllowedWidth && currentLineChars.length > 0) {
+            resultLines.push(currentLineChars);
+            currentLineChars = char;
+            currentLineWidth = charWidth;
+            currentY += lineHeight;
+          } else {
+            currentLineChars += char;
+            currentLineWidth += charWidth;
+          }
+        }
+
+        if (currentLineChars.length > 0) {
+          resultLines.push(currentLineChars);
+          currentY += lineHeight;
+        }
+      });
+
+      return resultLines.join('\n');
+    }
+
+    function buildOption() {
+      const { styleMode, vertical, max, showValue, portrait, bgMode } = getParams();
+      const isCapsule = styleMode === 'capsule';
+      const maxSeries = seriesNames.length;
+      const names = itemsData.map((it, i) => it.name.trim() || `类别${i + 1}`);
+      const baseColor = normalizeHex(baseColorEl.value) || '#4CAF50';
+
+      const isLightBg = (bgMode === 'white50');
+      let backgroundColor = 'transparent';
+      if (bgMode === 'white50') backgroundColor = 'rgba(255, 255, 255, 0.5)';
+      else if (bgMode === 'black50') backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      chartDom.style.backgroundColor = backgroundColor;
+
+      const mainTextColor = isLightBg ? '#1c1c1e' : '#FFFFFF';
+      const subTextColor = isLightBg ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)';
+      const axisTextColor = isLightBg ? '#2c2c2e' : '#E0E0E0';
+      const splitLineColor = isLightBg ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.09)';
+
+      const chartWidth = Math.max(100, chartDom.clientWidth || 360);
+      const chartHeight = Math.max(100, chartDom.clientHeight || (portrait ? 420 : 240));
+
+      const titleFontSize = 13;
+      const subtitleFontSize = 10;
+      const legendFontSize = 10;
+      const axisLabelFontSize = 9;
+      const valueLabelFontSize = 9;
+
+      const titleText = document.getElementById('barTitle').value.trim();
+      const rawSubtitleText = document.getElementById('barSubtitle').value;
+      const effectiveSeriesNames = seriesNames.map((s, idx) => s.trim() || `系列${idx + 1}`);
+
+      const maxSeriesCharCount = Math.max(...effectiveSeriesNames.map(s => (s || '').length), 2);
+      const legendRealWidth = 8 + 6 + (maxSeriesCharCount * legendFontSize) + 12;
+      const legendRowHeight = Math.round(legendFontSize * 1.3);
+      const legendTotalHeight = maxSeries * legendRowHeight + Math.max(0, maxSeries - 1) * 4;
+
+      const titleTop = 10;
+      const titleOnlyHeight = titleText ? titleFontSize * 1.3 : 0;
+      const titleBottomY = titleTop + titleOnlyHeight + (titleText && rawSubtitleText.trim() ? 4 : 0);
+
+      const smartSubtitle = formatSmartSubtitle(rawSubtitleText, chartWidth, legendRealWidth, legendTotalHeight, subtitleFontSize, titleBottomY);
+      const subLines = smartSubtitle ? smartSubtitle.split('\n') : [];
+      const totalTitleBlockHeight = titleOnlyHeight + (titleText && rawSubtitleText.trim() ? 4 : 0) + (rawSubtitleText.trim() ? subLines.length * (subtitleFontSize * 1.35) : 0);
+
+      const calculatedTop = Math.max(40, Math.round(Math.max(titleTop + totalTitleBlockHeight, titleTop + legendTotalHeight) + 12));
+
+      let datasetMaxVal = 0;
+      itemsData.forEach(it => {
+        (it.values || []).forEach(v => {
+          const num = parsePercentageVal(v);
+          if (num !== null && num > datasetMaxVal) datasetMaxVal = num;
+        });
+      });
+      if (datasetMaxVal <= 0) datasetMaxVal = 100;
+
+      const finalAxisMax = (max !== null && max > 0) ? max : datasetMaxVal;
+
+      const catCount = Math.max(1, names.length);
+      const availableDrawDim = vertical ? (chartWidth - 60) : (chartHeight - calculatedTop - 24);
+      const bandSize = availableDrawDim / catCount;
+      
+      let finalBarWidth;
+      if (isCapsule) {
+        finalBarWidth = Math.min(10, Math.max(2, Math.round(bandSize * 0.22)));
+      } else {
+        finalBarWidth = Math.min(10, Math.max(2, Math.round((bandSize * 0.42) / maxSeries)));
+      }
+
+      const series = [];
+      if (isCapsule) {
+        for (let i = 0; i < maxSeries; i++) {
+          const seriesColor = darkenHex(baseColor, i);
+          series.push({
+            name: effectiveSeriesNames[i],
+            type: 'bar',
+            barWidth: finalBarWidth,
+            barMaxWidth: 10,
+            barGap: '-100%',
+            z: 10 + (maxSeries - i),
+            itemStyle: {
+              color: seriesColor,
+              borderRadius: [0, Math.round(finalBarWidth / 2), Math.round(finalBarWidth / 2), 0],
+            },
+            data: itemsData.map(it => ({ value: parsePercentageVal(it.values[i]) })),
+          });
+        }
+
+        if (showValue) {
+          series.push({
+            name: '__capsule_anchor__',
+            type: 'bar',
+            barWidth: finalBarWidth,
+            barMaxWidth: 10,
+            barGap: '-100%',
+            z: 1,
+            silent: true,
+            itemStyle: { color: 'transparent' },
+            tooltip: { show: false },
+            label: {
+              show: true,
+              position: ['100%', -2],
+              align: 'right',
+              verticalAlign: 'bottom',
+              color: mainTextColor,
+              fontSize: valueLabelFontSize,
+              fontFamily: customFontFamily,
+              formatter: function (params) {
+                const it = itemsData[params.dataIndex];
+                const rawVals = (it.values || []).map(v => (v !== '' && v !== null && v !== undefined) ? String(v).trim() : '').filter(v => v !== '');
+                return rawVals.join(' / ');
+              },
+            },
+            data: itemsData.map(it => {
+              const nums = (it.values || []).map(v => parsePercentageVal(v)).filter(v => v !== null);
+              return nums.length ? Math.max(...nums) : 0;
+            }),
+          });
+        }
+      } else {
+        for (let i = 0; i < maxSeries; i++) {
+          const seriesColor = darkenHex(baseColor, i);
+          series.push({
+            name: effectiveSeriesNames[i],
+            type: 'bar',
+            barWidth: finalBarWidth,
+            barMaxWidth: 10,
+            itemStyle: {
+              color: seriesColor,
+              borderRadius: vertical ? [Math.min(3, finalBarWidth), Math.min(3, finalBarWidth), 0, 0] : [0, Math.min(3, finalBarWidth), Math.min(3, finalBarWidth), 0],
+            },
+            label: showValue ? {
+              show: true,
+              position: vertical ? 'top' : 'right',
+              distance: 4,
+              color: mainTextColor,
+              fontSize: valueLabelFontSize,
+              fontFamily: customFontFamily,
+              formatter: function (params) {
+                const raw = itemsData[params.dataIndex]?.values[i];
+                return (raw !== '' && raw !== null && raw !== undefined) ? String(raw).trim() : '';
+              }
+            } : { show: false },
+            data: itemsData.map(it => ({ value: parsePercentageVal(it.values[i]) })),
+          });
+        }
+      }
+
+      const valueAxis = {
+        type: 'value',
+        max: finalAxisMax,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { show: false },
+        splitLine: { 
+          show: true,
+          lineStyle: { color: splitLineColor, type: 'dashed' } 
+        },
+      };
+
+      const categoryAxis = {
+        type: 'category',
+        data: names,
+        inverse: isCapsule ? true : !vertical,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          color: axisTextColor,
+          fontSize: axisLabelFontSize,
+          fontFamily: customFontFamily,
+          margin: 8,
+        },
+      };
+
+      return {
+        animation: false,
+        backgroundColor: backgroundColor,
+        grid: {
+          left: 12,
+          right: 18,
+          top: calculatedTop,
+          bottom: 12,
+          containLabel: true,
+        },
+        title: {
+          text: titleText,
+          subtext: smartSubtitle,
+          left: 12,
+          top: titleTop,
+          itemGap: 4,
+          textStyle: { 
+            color: mainTextColor, 
+            fontSize: titleFontSize, 
+            fontWeight: 'normal', 
+            fontFamily: customFontFamily,
+          },
+          subtextStyle: {
+            color: subTextColor,
+            fontSize: subtitleFontSize,
+            fontFamily: customFontFamily,
+            lineHeight: Math.round(subtitleFontSize * 1.35),
+          },
+        },
+        legend: {
+          show: true,
+          type: 'scroll',
+          icon: 'circle',
+          right: 12,
+          top: titleTop,
+          orient: 'vertical',
+          data: effectiveSeriesNames,
+          textStyle: { color: mainTextColor, fontSize: legendFontSize, fontFamily: customFontFamily },
+          itemWidth: 8,
+          itemHeight: 8,
+          itemGap: 4,
+        },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: '#1c1c1e',
+          borderColor: '#343a44',
+          textStyle: { color: '#ffffff', fontSize: 12 },
+          formatter: function (params) {
+            if (!params || !params.length) return '';
+            const dataIndex = params[0].dataIndex;
+            const it = itemsData[dataIndex];
+            let html = `<div style="font-weight:600;margin-bottom:4px;">${escapeHTML(it.name || params[0].name)}</div>`;
+            params.forEach(p => {
+              if (p.seriesName === '__capsule_anchor__') return;
+              const rawVal = it.values[p.seriesIndex];
+              if (rawVal !== '' && rawVal !== null && rawVal !== undefined) {
+                html += `<div style="display:flex;justify-content:space-between;gap:12px;margin:2px 0;">
+                  <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>${escapeHTML(p.seriesName)}</span>
+                  <span style="font-weight:600;">${escapeHTML(rawVal)}</span>
+                </div>`;
+              }
+            });
+            return html;
+          }
+        },
+        xAxis: (isCapsule || !vertical) ? valueAxis : categoryAxis,
+        yAxis: (isCapsule || !vertical) ? categoryAxis : valueAxis,
+        series,
+      };
+    }
+
+    function update() {
+      if (!chart) return;
+      const styleMode = document.getElementById('barStyleMode').value;
+      document.getElementById('rowBarOrientation').hidden = (styleMode === 'capsule');
+      chart.setOption(buildOption(), true);
+      chart.resize();
+    }
+
+    function ensureInit() {
+      if (chart) return;
+      if (typeof echarts === 'undefined') return;
+      if (chartDom.clientWidth === 0 || chartDom.clientHeight === 0) {
+        requestAnimationFrame(ensureInit);
+        return;
+      }
+      chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+      update();
+    }
+
+    ['barTitle', 'barSubtitle', 'barMaxValue'].forEach(id => document.getElementById(id)?.addEventListener('input', update));
+    ['barStyleMode', 'barAspect', 'barOrientation', 'barShowValue', 'barBgMode'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        const portrait = document.getElementById('barAspect').value === 'portrait';
+        chartDom.classList.toggle('chart-16x9', !portrait);
+        chartDom.classList.toggle('chart-9x16', portrait);
+        requestAnimationFrame(() => { chart.resize(); update(); });
+      });
+    });
+
+    baseColorEl.addEventListener('input', () => { renderSeriesPreview(); update(); });
+
+    function download() {
+      if (!chart) return alert('图表未就绪');
+      const portrait = document.getElementById('barAspect').value === 'portrait';
+      const bgMode = document.getElementById('barBgMode').value;
+      const targetW = portrait ? 1440 : 2560;
+      const pixelRatio = targetW / Math.max(1, chart.getWidth());
+
+      let downloadBg = 'rgba(0,0,0,0)';
+      if (bgMode === 'white50') downloadBg = 'rgba(255, 255, 255, 0.5)';
+      else if (bgMode === 'black50') downloadBg = 'rgba(0, 0, 0, 0.5)';
+
+      const link = document.createElement('a');
+      link.href = chart.getDataURL({ type: 'png', pixelRatio, backgroundColor: downloadBg });
+      link.download = portrait ? '柱状图_9x16_2K.png' : '柱状图_16x9_2K.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    renderTable();
+
+    return {
+      ensureInit,
+      update,
+      resize() { if (chart) chart.resize(); },
+      download,
+      addRow() {
+        const defaultVals = Array(seriesNames.length).fill('');
+        itemsData.push({ name: '', values: defaultVals });
+        renderTable();
+        update();
+      },
+      addCol() {
+        seriesNames.push(`系列${seriesNames.length + 1}`);
+        itemsData.forEach(it => it.values.push(''));
+        renderTable();
+        update();
+      },
+      delRow(idx) {
+        if (itemsData.length <= 1) return alert('至少保留 1 个类别');
+        itemsData.splice(idx, 1);
+        renderTable();
+        update();
+      },
+      delCol(sIdx) {
+        if (seriesNames.length <= 1) return alert('至少保留 1 个系列');
+        seriesNames.splice(sIdx, 1);
+        itemsData.forEach(it => it.values.splice(sIdx, 1));
+        renderTable();
+        update();
+      },
+      clearTable() {
+        seriesNames = ['系列1'];
+        itemsData = [{ name: '类别1', values: [''] }];
+        renderTable();
+        update();
+      },
+      importTxt(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const lines = ev.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
+          if (lines.length < 2) return alert('TXT 数据不足（至少需要包含系列表头和1行类别数据）');
+          
+          // 支持英文逗号、中文逗号、制表符分隔
+          const headerParts = lines[0].split(/[\t,，]+/).map(s => s.trim()).filter(s => s !== '');
+          if (headerParts.length === 0) return alert('未检测到有效的系列名称表头');
+          const newSeriesNames = headerParts;
+
+          const newItems = [];
+          for (let i = 1; i < lines.length; i++) {
+            const parts = lines[i].split(/[\t,，]+/).map(s => s.trim());
+            if (parts.length === 0 || !parts[0]) continue;
+            const cName = parts[0]; // 第1列为类别名称
+            const vals = [];
+            for (let j = 0; j < newSeriesNames.length; j++) {
+              const val = parts[j + 1] !== undefined ? parts[j + 1] : '';
+              vals.push(val);
+            }
+            newItems.push({ name: cName, values: vals });
+          }
+
+          if (newItems.length > 0) {
+            seriesNames = newSeriesNames;
+            itemsData = newItems;
+            renderTable();
+            update();
+          } else {
+            alert('TXT 数据解析失败');
+          }
+          e.target.value = '';
+        };
+        reader.readAsText(file);
+      },
+      importExcel(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = new Uint8Array(ev.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            if (rows.length < 2) return alert('Excel 内容不足');
+
+            const headerRow = rows[0].map(s => String(s !== undefined ? s : '').trim()).filter(s => s !== '');
+            if (headerRow.length === 0) return alert('Excel 首行未检测到有效的系列名称');
+            const newSeriesNames = headerRow;
+
+            const newItems = [];
+            for (let i = 1; i < rows.length; i++) {
+              const r = rows[i];
+              if (!r || r.length === 0) continue;
+              const cName = String(r[0] !== undefined ? r[0] : '').trim();
+              if (!cName) continue;
+              const vals = [];
+              for (let j = 0; j < newSeriesNames.length; j++) {
+                const val = r[j + 1];
+                vals.push(val !== undefined && val !== null ? String(val).trim() : '');
+              }
+              newItems.push({ name: cName, values: vals });
+            }
+
+            if (newItems.length > 0) {
+              seriesNames = newSeriesNames;
+              itemsData = newItems;
+              renderTable();
+              update();
+            } else {
+              alert('Excel 有效数据行为空');
+            }
+          } catch (err) {
+            alert('Excel 解析出错');
+          }
+          e.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    };
+  })();
+
+  /* =========================================================================
+   * JS 模块 5: 启动与响应式监听
+   * ========================================================================= */
+  function initApp() {
+    if (typeof echarts === 'undefined') {
+      document.getElementById('bootText').textContent = '图表引擎加载失败，请检查网络连接';
+      return;
+    }
+    document.getElementById('boot-overlay').hidden = true;
+    const saved = (() => {
+      try { return localStorage.getItem('chartToolSelect_v16'); } catch (e) { return null; }
+    })();
+    switchTool(saved === 'bar' ? 'bar' : 'radar');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
+
+  function resizeAll() {
+    Radar.ensureInit();
+    Bar.ensureInit();
+    Radar.resize();
+    Bar.resize();
+  }
+
+  window.addEventListener('resize', resizeAll);
+
+  if (window.ResizeObserver) {
+    const observer = new ResizeObserver(resizeAll);
+    observer.observe(document.getElementById('chart-container'));
+    observer.observe(document.getElementById('bar-chart'));
+  }
+</script>
+</body>
+</html>
