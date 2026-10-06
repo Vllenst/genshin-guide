@@ -1,1 +1,8 @@
-
+{
+  "fonts": [
+    { "name": "优设标题黑", "file": "优设标题黑.ttf" },
+    { "name": "原神补全", "file": "原神补全.ttf" },
+    { "name": "思源黑体 Heavy", "file": "思源黑体Heavy.otf" },
+    { "name": "汉仪文黑 85W", "file": "汉仪文黑 85W.ttf" }
+  ]
+}
