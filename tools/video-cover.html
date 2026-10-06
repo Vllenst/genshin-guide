@@ -1,860 +1,701 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#F2EFEA">
-<title>视频封面制作工具</title>
+<title>封面制作工具</title>
+<link rel="stylesheet" href="../shared-theme.css">
 <style>
-/* =========================================================================
- * 【样式 1】设计令牌（云上舞白 + 灰）
- * ========================================================================= */
-:root {
-  --bg-base:      #F2EFEA;
-  --bg-surface:   #FFFFFF;
-  --bg-surface-2: #FAF8F5;
-  --bg-sunken:    #EBE7E0;
-  --bg-hover:     #F5F2ED;
-  --border-subtle:  #EBE6DF;
-  --border-default: #DDD6CC;
-  --border-strong:  #C6BEB2;
-  --text-primary:   #1F1D1A;
-  --text-secondary: #6B655C;
-  --text-tertiary:  #9C958A;
-  --accent:       #8B7355;
-  --accent-hover: #75604A;
-  --ios-blue:     #0A84FF;
-  --danger:       #DC4C3E;
-  --danger-bg:    #FCEAE8;
-  --danger-hover: #F8DCD8;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --ctl-h: 38px;
-  --shadow-btn: 0 1px 2px rgba(31, 29, 26, 0.04);
-  --shadow-btn-hover: 0 2px 6px rgba(31, 29, 26, 0.08);
-  --shadow-card: 0 1px 2px rgba(31, 29, 26, 0.03);
-  --font: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-/* =========================================================================
- * 【样式 2】基础重置
- * ========================================================================= */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
+html, body, input, button, select, textarea { font-family: var(--std-font); -webkit-font-smoothing: antialiased; }
 body {
-  margin: 0;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font);
-  font-size: 14px;
-  line-height: 1.5;
+  background: var(--bg-base); color: var(--text-primary); font-size: 13px;
   padding-bottom: calc(88px + env(safe-area-inset-bottom));
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+button svg, .btn svg, .btn-sm svg, .btn-xs svg,
+.ios-btn-fill svg, .file-btn svg, .icon-only svg {
+  width: 1em; height: 1em; display: inline-block; vertical-align: middle; flex-shrink: 0;
 }
 
-button, input[type="button"], input[type="submit"] {
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.icon {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-  flex-shrink: 0;
-  display: block;
-}
-.icon-sm { width: 14px; height: 14px; }
-.icon-lg { width: 18px; height: 18px; }
-
-/* =========================================================================
- * 【样式 3】顶部导航栏
- * ========================================================================= */
+/* ========== 顶部栏 ========== */
 .app-header {
   position: sticky; top: 0; z-index: 50;
-  height: 52px; padding: 0 16px;
-  background: rgba(242, 239, 234, 0.88);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  height: 52px; padding: 0 14px;
+  background: var(--bg-base);
   border-bottom: 1px solid var(--border-subtle);
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  display: flex; align-items: center; justify-content: center;
 }
-.header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 0; }
-
-.btn-sidebar-toggle {
-  width: 34px; height: 34px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  cursor: pointer; display: inline-flex;
-  align-items: center; justify-content: center;
-  transition: all 0.18s ease;
-  box-shadow: var(--shadow-btn);
-  padding: 0;
-  flex-shrink: 0;
-  -webkit-appearance: none;
-  appearance: none;
+.seg-control {
+  display: flex; background: var(--bg-sunken); padding: 3px;
+  border-radius: 12px; border: 1px solid var(--border-subtle); gap: 2px;
 }
-.btn-sidebar-toggle:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
-.btn-sidebar-toggle:active { transform: scale(0.94); }
-
-.header-title {
-  font-size: 16px; font-weight: 600; color: var(--text-primary);
-  white-space: nowrap; letter-spacing: -0.3px;
-  overflow: hidden; text-overflow: ellipsis;
+.seg-btn {
+  min-width: 96px; height: 32px;
+  background: transparent; border: 0; border-radius: 9px;
+  color: var(--text-secondary); font-family: inherit;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 10px;
 }
-.header-actions {
-  display: flex; align-items: center; gap: 4px;
-  flex-shrink: 0;
+.seg-btn.active {
+  background: var(--bg-surface); color: var(--text-primary);
+  font-weight: 600; box-shadow: 0 1px 3px rgba(31,29,26,.08);
 }
 
-/* =========================================================================
- * 【样式 4】侧边抽屉
- * ========================================================================= */
-.sidebar-backdrop {
-  position: fixed; inset: 0;
-  background: rgba(31, 29, 26, 0.32);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  z-index: 90; opacity: 0; pointer-events: none;
-  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.sidebar-backdrop.active { opacity: 1; pointer-events: auto; }
-.sidebar-drawer {
-  position: fixed; top: 0; bottom: 0; left: 0;
-  width: 260px; max-width: 80vw;
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border-right: 1px solid var(--border-subtle);
-  z-index: 100; display: flex; flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 12px 0 32px rgba(31, 29, 26, 0.08);
-}
-.sidebar-drawer.open { transform: translateX(0); }
-.sidebar-header {
-  padding: 16px; display: flex; align-items: center;
-  justify-content: space-between; border-bottom: 1px solid var(--border-subtle);
-}
-.sidebar-header h3 { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
-.sidebar-menu {
-  padding: 12px 10px; display: flex; flex-direction: column;
-  gap: 4px; overflow-y: auto; flex: 1;
-}
-.sidebar-item {
-  display: flex; align-items: center; justify-content: flex-start;
-  gap: 12px; padding: 0 14px; height: 44px;
-  border-radius: var(--radius-md);
-  background: transparent; border: 1px solid transparent;
-  color: var(--text-secondary); font-size: 14px; font-weight: 500;
-  cursor: pointer; width: 100%; text-align: left;
-  transition: all 0.15s ease;
-}
-.sidebar-item .item-emoji { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
-.sidebar-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-.sidebar-item.active {
-  background: var(--bg-surface); border-color: var(--border-default);
-  color: var(--text-primary); font-weight: 600;
-  box-shadow: var(--shadow-card);
-}
-
-/* =========================================================================
- * 【样式 5】预览区
- * ========================================================================= */
+/* ========== 预览区 ========== */
 .preview-sticky {
   position: sticky; top: 52px; z-index: 35;
-  background: rgba(242, 239, 234, 0.92);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  padding: 10px 16px; border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  padding: 10px 14px; border-bottom: 1px solid var(--border-subtle);
 }
 .preview-frame {
-  max-width: 900px; margin: 0 auto;
+  max-width: 900px; margin: 0 auto; position: relative;
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md); padding: 6px;
-  display: flex; justify-content: center;
-  box-shadow: 0 4px 16px rgba(31, 29, 26, 0.05);
+  border-radius: 12px; padding: 6px; display: flex; justify-content: center;
+  box-shadow: var(--shadow-card);
 }
 #svgPreviewHost {
   display: block; background: #1c1c22; width: 100%; height: auto;
   aspect-ratio: 16 / 9; border-radius: 6px;
 }
-#svgPreviewHost > svg {
-  width: 100%; height: 100%; display: block;
-}
+#svgPreviewHost > svg { width: 100%; height: 100%; display: block; }
 
-/* =========================================================================
- * 【样式 6】表单布局
- * ========================================================================= */
+.float-toolbar {
+  position: absolute; top: 12px; right: 12px;
+  display: flex; gap: 4px; z-index: 15;
+}
+.float-btn {
+  height: 30px; min-width: 30px; padding: 0 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.9); border: 1px solid var(--border-subtle);
+  color: var(--text-primary); font-family: inherit;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  box-shadow: var(--shadow-btn);
+}
+[data-theme="dark"] .float-btn { background: rgba(30,28,26,0.9); }
+.float-btn:active { transform: scale(.95); }
+.float-btn svg { width: 15px; height: 15px; display: block; }
+.float-btn-danger { color: var(--danger); border-color: var(--danger-border); }
+
+/* ========== 表单布局 ========== */
 .grid {
-  display: flex; flex-direction: column; gap: 16px;
-  padding: 16px; max-width: 900px; margin: 0 auto; width: 100%;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 14px; max-width: 900px; margin: 0 auto; width: 100%;
 }
 .ios-section-header {
   font-size: 12px; font-weight: 600; color: var(--text-tertiary);
   text-transform: uppercase; letter-spacing: 0.5px;
-  padding: 0 4px 8px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 4px 6px; display: flex; align-items: center; justify-content: space-between;
 }
 .ios-group {
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg); padding: 14px;
-  display: flex; flex-direction: column; gap: 12px;
+  border-radius: 12px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
   box-shadow: var(--shadow-card);
 }
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } }
-label {
-  display: flex; flex-direction: column; gap: 6px;
-  font-size: 12px; color: var(--text-secondary); font-weight: 500;
+label.ios-field {
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: 11px; color: var(--text-secondary); font-weight: 500;
 }
-
-/* --- 文件选择字段：标签 + 框（左按钮 + 右文件名） --- */
-.file-field {
-  display: flex; flex-direction: column; gap: 6px;
-}
-.file-field-label {
-  font-size: 12px; color: var(--text-secondary); font-weight: 500;
-}
-
-.file-picker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 10px 0 5px;
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--bg-surface-2);
-  transition: border-color 0.15s, background 0.15s;
-}
-.file-picker:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-hover);
-}
-.file-picker .file-btn {
-  height: 30px;
-  padding: 0 12px;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-.file-picker-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-.file-picker-name.has-file {
-  color: var(--text-primary);
-}
-
-/* =========================================================================
- * 【样式 7】输入控件
- * ========================================================================= */
 input[type="text"], input[type="number"], select, textarea {
   width: 100%; height: var(--ctl-h); padding: 0 12px;
-  border-radius: var(--radius-md); border: 1px solid var(--border-default);
+  border-radius: 8px; border: 1px solid var(--border-default);
   background: var(--bg-sunken); color: var(--text-primary);
-  font-size: 14px; outline: none; font-family: var(--font);
-  transition: background .15s, border-color .15s, box-shadow .15s;
-  -webkit-appearance: none; appearance: none;
+  font-size: 13px; font-family: inherit; outline: none;
 }
 input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
-  background: var(--bg-surface); border-color: var(--ios-blue);
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+  background: var(--bg-surface); border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
-textarea { height: 72px; padding: 10px 12px; resize: vertical; line-height: 1.4; }
+textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; }
 
-.control-item { display: flex; flex-direction: column; gap: 6px; }
-.control-header {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; color: var(--text-secondary); font-weight: 500;
+/* 文件选择器 */
+.file-picker {
+  display: flex; align-items: center; gap: 8px; height: 40px;
+  padding: 0 8px 0 4px; border: 1px dashed var(--border-default);
+  border-radius: 8px; background: var(--bg-surface-2);
 }
-.slider-row { display: flex; align-items: center; gap: 10px; width: 100%; }
-.slider-row input[type="range"] { flex: 1; height: 28px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.file-btn {
+  height: 30px; padding: 0 12px; font-size: 12px;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: 8px; color: var(--text-primary); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+}
+.file-btn input[type="file"] { display: none; }
+.file-picker-name {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: 12px; color: var(--text-tertiary);
+}
 
+/* 滑块 */
+.control-item { display: flex; flex-direction: column; gap: 5px; }
+.control-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
+.slider-row { display: flex; align-items: center; gap: 8px; }
+.slider-row input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
 .num-box {
-  display: inline-flex; align-items: center;
+  display: inline-flex; align-items: center; padding: 0 8px;
+  height: 32px; width: 82px; flex-shrink: 0;
   background: var(--bg-sunken); border: 1px solid var(--border-default);
-  border-radius: var(--radius-md); padding: 0 8px;
-  height: 34px; width: 82px; flex-shrink: 0;
-  transition: border-color 0.15s, background 0.15s;
-}
-.num-box:focus-within {
-  border-color: var(--ios-blue); background: var(--bg-surface);
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+  border-radius: 8px;
 }
 .num-box input[type="number"] {
-  width: 100% !important; height: 100% !important;
-  border: none !important; background: transparent !important;
-  padding: 0 !important; text-align: right; font-size: 13px;
-  color: var(--text-primary); box-shadow: none !important; outline: none !important;
+  width: 100%; height: 100%; border: none; background: transparent;
+  padding: 0; text-align: right; font-size: 12px;
 }
-.num-box .unit-tag { font-size: 11px; color: var(--text-tertiary); margin-left: 3px; flex-shrink: 0; }
+.num-box .unit-tag { font-size: 11px; color: var(--text-tertiary); margin-left: 3px; }
 
-/* =========================================================================
- * 【样式 8】按钮
- * ========================================================================= */
-button, .file-btn {
-  font-family: inherit;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  height: var(--ctl-h);
-  padding: 0 14px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  flex-shrink: 0;
-  background: var(--bg-surface);
-  color: var(--text-primary);
+/* 按钮 */
+.btn {
+  height: var(--ctl-h); padding: 0 14px;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: 8px; color: var(--text-primary);
+  font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   box-shadow: var(--shadow-btn);
-  -webkit-appearance: none;
-  appearance: none;
-  user-select: none;
 }
-button:hover:not(:disabled), .file-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
-button:active:not(:disabled), .file-btn:active { transform: scale(0.97); box-shadow: var(--shadow-btn); }
-button:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.btn-sm { height: 30px; padding: 0 8px; font-size: 12px; }
-.btn-icon { width: 30px; height: 30px; padding: 0; }
-
-.btn-danger { background: var(--danger-bg); color: var(--danger); border-color: rgba(220, 76, 62, 0.2); }
-.btn-danger:hover:not(:disabled) { background: var(--danger-hover); box-shadow: var(--shadow-btn-hover); }
-.ios-btn-fill {
-  background: var(--text-primary); border-color: var(--text-primary); color: #fff;
-  box-shadow: 0 2px 6px rgba(31, 29, 26, 0.15);
+.btn:active { transform: scale(.97); }
+.btn-primary {
+  background: var(--text-primary); color: var(--bg-base); border-color: var(--text-primary);
 }
-.ios-btn-fill:hover { background: var(--accent-hover); box-shadow: 0 3px 10px rgba(31, 29, 26, 0.2); }
-.file-btn input { display: none; }
+.btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+.btn-sm { height: 30px; padding: 0 10px; font-size: 12px; }
+.btn-xs { height: 26px; padding: 0 8px; font-size: 11px; border-radius: 8px; }
+.full-width { width: 100%; }
 
-/* =========================================================================
- * 【样式 9】浮动素材卡片
- * ========================================================================= */
+/* 缩略图 */
+.clickable-thumb {
+  width: 42px; height: 42px; border-radius: 8px;
+  background: var(--bg-sunken); border: 1px solid var(--border-default);
+  object-fit: cover; cursor: pointer; flex-shrink: 0;
+}
+
+/* 浮动素材卡片 */
 .float-item {
   background: var(--bg-surface-2); border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md); padding: 12px;
-  display: flex; flex-direction: column; gap: 10px;
+  border-radius: 10px; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.float-item-head {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 8px;
-}
-.float-item-head > div:first-child {
-  display: flex; align-items: center; gap: 8px; min-width: 0;
-}
-.float-item-head > div:last-child {
-  display: flex; gap: 2px; align-items: center;
-  flex-shrink: 0;
-}
-.float-item-head .btn-icon { width: 28px; height: 28px; }
-.float-item-head .btn-sm { height: 28px; padding: 0 8px; font-size: 11px; }
+.float-item-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.float-thumb { width: 44px; height: 32px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-subtle); }
 
-.float-thumb {
-  width: 44px; height: 32px; object-fit: cover;
-  border-radius: 6px; background: #f0f0f0; border: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-}
-
-/* =========================================================================
- * 【样式 10】底部导出栏
- * ========================================================================= */
+/* 底部工具栏 */
 .bottom-dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-  background: rgba(242, 239, 234, 0.9);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--bg-base);
   border-top: 1px solid var(--border-subtle);
   padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
   display: flex; align-items: center; justify-content: center;
 }
 .export-btn-main {
-  width: 100%; max-width: 480px; height: 48px;
+  width: 100%; max-width: 480px; height: 46px;
   font-size: 15px; font-weight: 600;
-  background: var(--text-primary); color: #fff;
-  border: 1px solid var(--text-primary);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px rgba(31, 29, 26, 0.18);
+  background: var(--text-primary); color: var(--bg-base);
+  border: 1px solid var(--text-primary); border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(31,29,26,.18);
+  cursor: pointer; font-family: inherit;
 }
-.export-btn-main:active:not(:disabled) { background: var(--accent-hover); }
 
-/* =========================================================================
- * 【样式 11】合集封面预览
- * ========================================================================= */
-.collection-preview {
-  width: 100%; aspect-ratio: 16 / 9; background: #1c1c22;
-  border-radius: var(--radius-md); overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
+/* 弹层 */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--mask);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease;
 }
-.collection-preview canvas { display: block; width: 100%; height: 100%; }
+.sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; z-index: 201; background: var(--bg-surface);
+  overflow-y: auto; overscroll-behavior: contain;
+  left: 0; right: 0; bottom: 0;
+  border-radius: 16px 16px 0 0; max-height: 75dvh;
+  padding: 6px 0 calc(10px + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform .32s cubic-bezier(.16,1,.3,1);
+}
+.sheet.show { transform: translateY(0); }
+@media (min-width: 1024px) {
+  .sheet {
+    left: 50%; right: auto; bottom: auto; top: 50%; width: 360px;
+    max-height: 70vh; border-radius: 16px; padding: 8px 0 10px;
+    transform: translate(-50%, -48%) scale(.96); opacity: 0;
+    transition: transform .22s, opacity .22s;
+  }
+  .sheet.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 6px auto 4px; opacity: .55; }
+@media (min-width: 1024px) { .sheet-handle { display: none; } }
+.sheet-header { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .6px; padding: 8px 22px; }
+.sheet-list { display: flex; flex-direction: column; padding: 0 8px; }
+.sheet-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; height: 48px; padding: 0 14px;
+  background: transparent; border: 0; border-radius: 10px;
+  font-family: inherit; font-size: 14px; font-weight: 500;
+  color: var(--text-primary); text-align: left; cursor: pointer;
+}
+.sheet-item:hover { background: var(--bg-hover); }
+.sheet-item.active { color: var(--accent); font-weight: 600; }
+.sheet-item-check { width: 16px; height: 16px; opacity: 0; color: var(--accent); }
+.sheet-item.active .sheet-item-check { opacity: 1; }
+
+.status-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: var(--bg-base); border-top: 1px solid var(--border-subtle);
+  padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
+  font-size: 12px; color: var(--text-secondary); text-align: center;
+}
 </style>
 </head>
 
 <body>
 
-<!-- ===== 顶部导航栏 ===== -->
 <header class="app-header">
-  <div class="header-left">
-    <button type="button" class="btn-sidebar-toggle" onclick="toggleSidebar(true)" title="切换功能" aria-label="打开菜单">
-      <svg class="icon" viewBox="0 0 1242 1024" xmlns="http://www.w3.org/2000/svg"><path d="M1173.937666 966.50009H375.822153a58.181663 58.181663 0 0 1 0-115.678836h798.800003a58.181663 58.181663 0 1 1 0 115.678836zM0.037062 919.954759A101.304542 101.304542 0 1 0 101.341604 821.388178 101.304542 101.304542 0 0 0 0.037062 919.954759z m1173.900604-362.779778H375.822153a58.181663 58.181663 0 0 1 0-115.678835h798.800003a58.181663 58.181663 0 1 1 0 115.678835zM0.037062 510.629651A101.304542 101.304542 0 1 0 101.341604 410.694089 101.304542 101.304542 0 0 0 0.037062 510.629651z m1173.900604-362.779779H375.822153a58.181663 58.181663 0 1 1 0-115.678835h798.800003a58.181663 58.181663 0 1 1 0 115.678835zM0.037062 101.304542A101.304542 101.304542 0 1 0 101.341604 0 101.304542 101.304542 0 0 0 0.037062 101.304542z" fill="currentColor"/></svg>
-    </button>
-    <div class="header-title" id="navTitle">视频封面制作</div>
-  </div>
-  <div class="header-actions" id="videoNavActions">
-    <button type="button" class="btn-sm" onclick="exportArchive()">导出</button>
-    <label class="btn-sm file-btn">导入<input type="file" accept=".json,application/json" onchange="importArchive(this)" /></label>
-    <button type="button" class="btn-sm" onclick="toggleGuides()">参考线</button>
-    <button type="button" class="btn-danger btn-icon" onclick="clearAll()" title="清空全部" aria-label="清空全部">
-      <svg class="icon" viewBox="0 0 1030 1024" xmlns="http://www.w3.org/2000/svg"><path d="M734.576758 366.308943a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-41.626016-41.136299z m-444.663798 0a41.136298 41.136298 0 0 0-41.136298 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.646581-41.136299z m223.311335 0a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.156863-41.136299zM881.492109 943.196557H158.178862V228.698231H881.492109v714.498326zM334.477284 81.293161h360.922046V146.915352H334.477284z m685.604973 77.865136a43.09517 43.09517 0 0 0-31.831659-12.242945h-211.558106V80.803443A80.803443 80.803443 0 0 0 695.889048 0H334.477284a80.803443 80.803443 0 0 0-80.803444 80.803443V146.915352H41.136298a41.136298 41.136298 0 1 0 0 82.272596h36.23912v714.008609a80.803443 80.803443 0 0 0 80.803444 80.803443H881.492109a80.803443 80.803443 0 0 0 80.803443-80.803443V228.698231h23.506457a42.115734 42.115734 0 0 0 42.605452-41.136299 40.156863 40.156863 0 0 0-9.794357-28.893352zM121.939742 1008.329029l-4.897179-4.897178z m10.773792 6.366332l-4.897178-4.897178z" fill="currentColor"/></svg>
-    </button>
-  </div>
-  <div class="header-actions" id="collectionNavActions" style="display:none;">
-    <button type="button" class="btn-danger btn-icon" onclick="clearCollection()" title="清空全部" aria-label="清空全部">
-      <svg class="icon" viewBox="0 0 1030 1024" xmlns="http://www.w3.org/2000/svg"><path d="M734.576758 366.308943a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-41.626016-41.136299z m-444.663798 0a41.136298 41.136298 0 0 0-41.136298 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.646581-41.136299z m223.311335 0a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.156863-41.136299zM881.492109 943.196557H158.178862V228.698231H881.492109v714.498326zM334.477284 81.293161h360.922046V146.915352H334.477284z m685.604973 77.865136a43.09517 43.09517 0 0 0-31.831659-12.242945h-211.558106V80.803443A80.803443 80.803443 0 0 0 695.889048 0H334.477284a80.803443 80.803443 0 0 0-80.803444 80.803443V146.915352H41.136298a41.136298 41.136298 0 1 0 0 82.272596h36.23912v714.008609a80.803443 80.803443 0 0 0 80.803444 80.803443H881.492109a80.803443 80.803443 0 0 0 80.803443-80.803443V228.698231h23.506457a42.115734 42.115734 0 0 0 42.605452-41.136299 40.156863 40.156863 0 0 0-9.794357-28.893352z" fill="currentColor"/></svg>
-    </button>
+  <div class="seg-control" id="coverTypeSeg">
+    <button type="button" class="seg-btn active" data-type="video">视频封面</button>
+    <button type="button" class="seg-btn" data-type="collection">合集封面</button>
   </div>
 </header>
 
-<!-- ===== 侧边抽屉 ===== -->
-<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
-<aside class="sidebar-drawer" id="sidebarDrawer">
-  <div class="sidebar-header">
-    <h3>功能导航</h3>
-    <button class="btn-icon btn-danger" onclick="toggleSidebar(false)" aria-label="关闭">
-      <svg class="icon icon-sm" viewBox="0 0 1030 1024" xmlns="http://www.w3.org/2000/svg"><path d="M734.576758 366.308943a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-41.626016-41.136299z m-444.663798 0a41.136298 41.136298 0 0 0-41.136298 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.646581-41.136299z m223.311335 0a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.156863-41.136299zM881.492109 943.196557H158.178862V228.698231H881.492109v714.498326zM334.477284 81.293161h360.922046V146.915352H334.477284z m685.604973 77.865136a43.09517 43.09517 0 0 0-31.831659-12.242945h-211.558106V80.803443A80.803443 80.803443 0 0 0 695.889048 0H334.477284a80.803443 80.803443 0 0 0-80.803444 80.803443V146.915352H41.136298a41.136298 41.136298 0 1 0 0 82.272596h36.23912v714.008609a80.803443 80.803443 0 0 0 80.803444 80.803443H881.492109a80.803443 80.803443 0 0 0 80.803443-80.803443V228.698231h23.506457a42.115734 42.115734 0 0 0 42.605452-41.136299 40.156863 40.156863 0 0 0-9.794357-28.893352z" fill="currentColor"/></svg>
-    </button>
-  </div>
-  <nav class="sidebar-menu">
-    <button class="sidebar-item active" id="menuVideoBtn" onclick="switchMode('video')">
-      <span class="item-emoji">🎬</span><span>视频封面制作</span>
-    </button>
-    <button class="sidebar-item" id="menuCollectionBtn" onclick="switchMode('collection')">
-      <span class="item-emoji">📚</span><span>合集封面制作</span>
-    </button>
-  </nav>
-</aside>
-
-<!-- ===== 模式 1：视频封面 ===== -->
+<!-- ==================== 视频封面模式 ==================== -->
 <div id="videoMode">
   <div class="preview-sticky">
     <div class="preview-frame">
       <div id="svgPreviewHost"></div>
+      <div class="float-toolbar">
+        <button type="button" class="float-btn" id="btnGuides" title="参考线">参考线</button>
+        <button type="button" class="float-btn" id="btnExportVideo" title="导出配置">导出</button>
+        <label class="float-btn" title="导入配置" style="cursor:pointer;">
+          导入
+          <input type="file" id="importVideoInput" accept=".json" style="display:none">
+        </label>
+        <button type="button" class="float-btn float-btn-danger" id="btnClearVideo" title="清空">清空</button>
+      </div>
     </div>
   </div>
 
   <main class="grid">
-    <div>
-      <div class="ios-section-header">字体与 Logo</div>
+    <!-- 字体 -->
+    <section>
+      <div class="ios-section-header">字体（仅作用于导出图片）</div>
       <div class="ios-group">
-        <div class="row2">
-          <div class="file-field">
-            <div class="file-field-label">上传统一字体</div>
-            <div class="file-picker">
-              <label class="file-btn">上传文件<input type="file" accept=".ttf,.otf,.woff,.woff2" onchange="uploadFont(this)" /></label>
-              <span class="file-picker-name">未选择文件</span>
-            </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="labelVideoFont">默认系统字体</div>
+          <button type="button" class="btn btn-sm" onclick="App.openFontPicker('video')">选择字体</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 游戏 Logo -->
+    <section>
+      <div class="ios-section-header">游戏 Logo</div>
+      <div class="ios-group">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img id="logoThumb" class="clickable-thumb" alt="">
+          <select id="logoSelect" style="flex:1;"></select>
+        </div>
+        <div class="control-item">
+          <div class="control-header"><span>Logo 尺寸</span></div>
+          <div class="slider-row">
+            <input type="range" id="capLogoSize" min="50" max="400" value="200" oninput="App.syncVal('capLogoSize', this.value)">
+            <div class="num-box"><input type="number" id="capLogoSizeInput" min="50" max="400" value="200" oninput="App.syncVal('capLogoSize', this.value)"><span class="unit-tag">px</span></div>
           </div>
-          <div class="file-field">
-            <div class="file-field-label">游戏 Logo 图标</div>
-            <div class="file-picker">
-              <label class="file-btn">上传文件<input type="file" accept="image/*" onchange="uploadImage(this, v => set('capLogo', v))" /></label>
-              <span class="file-picker-name">未选择文件</span>
-            </div>
+        </div>
+        <div class="control-item">
+          <div class="control-header"><span>Logo 圆角</span></div>
+          <div class="slider-row">
+            <input type="range" id="capLogoRounded" min="0" max="100" value="50" oninput="App.syncVal('capLogoRounded', this.value)">
+            <div class="num-box"><input type="number" id="capLogoRoundedInput" min="0" max="100" value="50" oninput="App.syncVal('capLogoRounded', this.value)"><span class="unit-tag">%</span></div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div>
+    <!-- 画布背景 -->
+    <section>
       <div class="ios-section-header">画布背景</div>
       <div class="ios-group">
-        <div class="file-field">
-          <div class="file-field-label">背景图片</div>
-          <div class="file-picker">
-            <label class="file-btn">上传文件<input type="file" accept="image/*" onchange="uploadImage(this, v => set('bg', v))" /></label>
-            <span class="file-picker-name">未选择文件</span>
-          </div>
+        <div class="file-picker">
+          <label class="file-btn">上传文件<input type="file" id="bgFile" accept="image/*"></label>
+          <span class="file-picker-name" id="bgFileName">未选择文件</span>
         </div>
         <div class="row2">
           <div class="control-item">
             <div class="control-header"><span>背景亮度</span></div>
             <div class="slider-row">
-              <input type="range" id="midBrightness" min="-100" max="100" value="-50" oninput="syncVal('midBrightness', this.value)" />
-              <div class="num-box"><input type="number" id="midBrightnessInput" min="-100" max="100" value="-50" oninput="syncVal('midBrightness', this.value)" /><span class="unit-tag">%</span></div>
+              <input type="range" id="midBrightness" min="-100" max="100" value="-50" oninput="App.syncVal('midBrightness', this.value)">
+              <div class="num-box"><input type="number" id="midBrightnessInput" min="-100" max="100" value="-50" oninput="App.syncVal('midBrightness', this.value)"><span class="unit-tag">%</span></div>
             </div>
           </div>
           <div class="control-item">
             <div class="control-header"><span>背景模糊</span></div>
             <div class="slider-row">
-              <input type="range" id="midBlur" min="0" max="100" value="50" oninput="syncVal('midBlur', this.value)" />
-              <div class="num-box"><input type="number" id="midBlurInput" min="0" max="100" value="50" oninput="syncVal('midBlur', this.value)" /><span class="unit-tag">%</span></div>
+              <input type="range" id="midBlur" min="0" max="100" value="50" oninput="App.syncVal('midBlur', this.value)">
+              <div class="num-box"><input type="number" id="midBlurInput" min="0" max="100" value="50" oninput="App.syncVal('midBlur', this.value)"><span class="unit-tag">%</span></div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div>
+    <!-- 攻略模式 -->
+    <section>
+      <div class="ios-section-header">攻略模式</div>
+      <div class="ios-group">
+        <div class="seg-control" id="guideTypeSeg" style="width:100%;">
+          <button type="button" class="seg-btn active" data-type="boss" style="flex:1;">BOSS攻略</button>
+          <button type="button" class="seg-btn" data-type="character" style="flex:1;">角色攻略</button>
+          <button type="button" class="seg-btn" data-type="custom" style="flex:1;">自定义</button>
+        </div>
+
+        <!-- BOSS 模式面板 -->
+        <div id="bossPanel">
+          <label class="ios-field">BOSS 名称
+            <input type="text" id="bossNameInput" placeholder="如：游雪的护刃" oninput="App.onBossNameInput(this.value)" onblur="App.matchBossName(this.value)">
+          </label>
+          <div style="font-size:11px; color:var(--text-tertiary); line-height:1.5;">在 data/monsters.txt 中查找对应图标</div>
+        </div>
+
+        <!-- 角色模式面板 -->
+        <div id="characterPanel" style="display:none;">
+          <label class="ios-field">角色名称
+            <input type="text" id="characterNameInput" placeholder="如：达达利亚" oninput="App.onCharacterNameInput(this.value)" onblur="App.matchCharacterName(this.value)">
+          </label>
+          <div style="font-size:11px; color:var(--text-tertiary); line-height:1.5;">在 data/character-art.txt 查立绘，在 icon-dict.js 查名片图</div>
+          <div class="control-item">
+            <div class="control-header"><span>立绘 X 位置</span></div>
+            <div class="slider-row">
+              <input type="range" id="characterX" min="0" max="3840" value="2650" oninput="App.syncVal('characterX', this.value)">
+              <div class="num-box"><input type="number" id="characterXInput" min="0" max="3840" value="2650" oninput="App.syncVal('characterX', this.value)"><span class="unit-tag">px</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 自定义面板 -->
+        <div id="customPanel" style="display:none;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <span style="font-size:12px; color:var(--text-secondary);">浮动素材</span>
+            <button type="button" class="btn btn-xs" onclick="App.addFloat()">+ 添加素材</button>
+          </div>
+          <div id="floatList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 胶囊标签 -->
+    <section>
       <div class="ios-section-header">胶囊标签</div>
       <div class="ios-group">
-        <label>标签文字<input id="capTextInput" type="text" placeholder="输入胶囊标签文本" oninput="set('capText', this.value)" /></label>
+        <label class="ios-field">标签文字
+          <input type="text" id="capTextInput" placeholder="如：攻略 / 速刷" oninput="App.set('capText', this.value)">
+        </label>
         <div class="control-item">
           <div class="control-header"><span>文字亮度</span></div>
           <div class="slider-row">
-            <input type="range" id="capTextBrightness" min="0" max="200" value="100" oninput="syncVal('capTextBrightness', this.value)" />
-            <div class="num-box"><input type="number" id="capTextBrightnessInput" min="0" max="200" value="100" oninput="syncVal('capTextBrightness', this.value)" /><span class="unit-tag">%</span></div>
+            <input type="range" id="capTextBrightness" min="0" max="200" value="100" oninput="App.syncVal('capTextBrightness', this.value)">
+            <div class="num-box"><input type="number" id="capTextBrightnessInput" min="0" max="200" value="100" oninput="App.syncVal('capTextBrightness', this.value)"><span class="unit-tag">%</span></div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div>
-      <div class="ios-section-header">主标题内容</div>
+    <!-- 主标题 -->
+    <section>
+      <div class="ios-section-header">主标题</div>
       <div class="ios-group">
-        <label>主标题文字（支持回车两行）<textarea id="mainTextInput" rows="2" placeholder="输入主标题" oninput="set('mainText', this.value)"></textarea></label>
+        <label class="ios-field">
+          <textarea id="mainTextInput" rows="2" placeholder="输入主标题（支持回车两行）" oninput="App.set('mainText', this.value)"></textarea>
+        </label>
       </div>
-    </div>
+    </section>
 
-    <div>
-      <div class="ios-section-header">副标题内容</div>
+    <!-- 副标题 -->
+    <section>
+      <div class="ios-section-header">副标题</div>
       <div class="ios-group">
         <div class="row2">
-          <label>第一行副标题<input id="sub1Input" type="text" placeholder="第一行文字" oninput="set('sub1', this.value)" /></label>
-          <label>第一行字号
-            <select id="sub1Select" onchange="setSubSize(1, this.value)">
+          <label class="ios-field">第一行
+            <input type="text" id="sub1Input" placeholder="第一行文字" oninput="App.set('sub1', this.value)">
+          </label>
+          <label class="ios-field">字号
+            <select id="sub1Select" onchange="App.setSubSize(1, this.value)">
               <option value="200" selected>小字号 (200)</option>
               <option value="250">大字号 (250)</option>
             </select>
           </label>
         </div>
         <div class="row2">
-          <label>第二行副标题<input id="sub2Input" type="text" placeholder="第二行文字" oninput="set('sub2', this.value)" /></label>
-          <label>第二行字号
-            <select id="sub2Select" onchange="setSubSize(2, this.value)">
+          <label class="ios-field">第二行
+            <input type="text" id="sub2Input" placeholder="第二行文字" oninput="App.set('sub2', this.value)">
+          </label>
+          <label class="ios-field">字号
+            <select id="sub2Select" onchange="App.setSubSize(2, this.value)">
               <option value="200">小字号 (200)</option>
               <option value="250" selected>大字号 (250)</option>
             </select>
           </label>
         </div>
       </div>
-    </div>
-
-    <div>
-      <div class="ios-section-header">
-        <span>右侧浮动素材</span>
-        <button class="ios-btn-fill" style="height:28px;font-size:11px;padding:0 10px;" onclick="addFloat()">+ 添加素材</button>
-      </div>
-      <div class="ios-group" id="floatList"></div>
-    </div>
+    </section>
   </main>
 
   <div class="bottom-dock">
-    <button class="export-btn-main" id="pngBtn" onclick="exportPNG()">生成并导出 4K PNG</button>
+    <button class="export-btn-main" onclick="App.exportPNG()">生成并导出 4K PNG</button>
   </div>
 </div>
 
-<!-- ===== 模式 2：合集封面 ===== -->
+<!-- ==================== 合集封面模式 ==================== -->
 <div id="collectionMode" style="display:none;">
   <div class="preview-sticky">
     <div class="preview-frame">
-      <div id="collectionPreview" class="collection-preview"></div>
+      <div id="collectionPreview" style="width:100%; aspect-ratio:16/9; background:#1c1c22; border-radius:6px; overflow:hidden; display:flex; align-items:center; justify-content:center;"></div>
+      <div class="float-toolbar">
+        <button type="button" class="float-btn" id="btnClearCollection" title="清空">清空</button>
+      </div>
     </div>
   </div>
 
   <main class="grid">
-    <div>
-      <div class="ios-section-header">画布与背景</div>
+    <section>
+      <div class="ios-section-header">画布</div>
       <div class="ios-group">
         <div class="row2">
-          <label>输出分辨率
-            <select id="collectionSize" onchange="setCollection('sizePreset', this.value)">
+          <label class="ios-field">输出分辨率
+            <select id="collectionSize" onchange="App.setCollection('sizePreset', this.value)">
               <option value="2k" selected>2560 × 1440（2K 推荐）</option>
               <option value="1920">1920 × 1080</option>
               <option value="1280">1280 × 720</option>
             </select>
           </label>
-          <div class="file-field">
-            <div class="file-field-label">背景图片</div>
+          <div>
+            <div class="ios-field">背景图</div>
             <div class="file-picker">
-              <label class="file-btn">上传文件<input type="file" accept="image/*" onchange="loadCollectionBg(this)" /></label>
-              <span class="file-picker-name">未选择文件</span>
+              <label class="file-btn">上传<input type="file" id="collectionBgFile" accept="image/*"></label>
+              <span class="file-picker-name" id="collectionBgName">未选择文件</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div>
-      <div class="ios-section-header">字体素材</div>
+    <section>
+      <div class="ios-section-header">字体（仅作用于导出图片）</div>
       <div class="ios-group">
-        <div class="file-field">
-          <div class="file-field-label">上传字体文件</div>
-          <div class="file-picker">
-            <label class="file-btn">上传文件<input type="file" accept=".ttf,.otf,.woff,.woff2" onchange="loadCollectionFont(this)" /></label>
-            <span class="file-picker-name">未选择文件</span>
-          </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="labelCollectionFont">默认系统字体</div>
+          <button type="button" class="btn btn-sm" onclick="App.openFontPicker('collection')">选择字体</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div>
-      <div class="ios-section-header">封面文字内容</div>
+    <section>
+      <div class="ios-section-header">文字内容</div>
       <div class="ios-group">
-        <label>主标题文字<textarea rows="2" placeholder="输入合集主标题" oninput="setCollection('title', this.value)"></textarea></label>
-        <label>副标题文字<textarea rows="2" placeholder="输入合集副标题" oninput="setCollection('subtitle', this.value)"></textarea></label>
+        <label class="ios-field">主标题
+          <textarea rows="2" id="collectionTitle" placeholder="输入合集主标题" oninput="App.setCollection('title', this.value)"></textarea>
+        </label>
+        <label class="ios-field">副标题
+          <textarea rows="2" id="collectionSubtitle" placeholder="输入合集副标题" oninput="App.setCollection('subtitle', this.value)"></textarea>
+        </label>
       </div>
-    </div>
+    </section>
   </main>
 
   <div class="bottom-dock">
-    <button class="export-btn-main" onclick="exportCollection()">导出合集封面 PNG</button>
+    <button class="export-btn-main" onclick="App.exportCollection()">导出合集封面 PNG</button>
   </div>
 </div>
 
+<!-- 字体弹层 -->
+<div class="sheet-backdrop" id="fontSheetBackdrop" onclick="App.closeFontPicker()"></div>
+<div class="sheet" id="fontSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">选择字体</div>
+  <div class="sheet-list" id="fontSheetList"></div>
+</div>
+
+<script src="../icons.js"></script>
+<script src="../icons/icon-loader.js"></script>
+<script src="../icons/icon-dict.js"></script>
 <script>
+'use strict';
+
 /* =========================================================================
- * 【模块 1】全局常量与工具函数
+ * 常量
  * ========================================================================= */
 const SVG_W = 3840;
 const SVG_H = 2160;
 const BLUR_MAX_PX = 100;
 
-const ICON_UP = `<svg class="icon icon-sm" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M512 318.72a35.84 35.84 0 0 0-26.453333 11.52L264.533333 565.76a35.84 35.84 0 1 0 52.48 49.066667L512 407.466667l194.56 207.36a35.84 35.84 0 0 0 52.48-49.066667L537.6 330.24a35.84 35.84 0 0 0-25.6-11.52zM512 0a512 512 0 1 0 512 512A512 512 0 0 0 512 0z m0 72.106667a439.466667 439.466667 0 0 1 170.666667 844.373333A439.466667 439.466667 0 0 1 200.533333 200.533333a438.613333 438.613333 0 0 1 311.04-128z" fill="currentColor"/></svg>`;
-const ICON_DOWN = `<svg class="icon icon-sm" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M512 712.106667a35.84 35.84 0 0 1-26.453333-11.52L264.533333 465.066667a35.84 35.84 0 1 1 52.48-49.066667L512 623.786667l194.56-207.36a35.84 35.84 0 1 1 52.48 49.066666l-221.44 235.52a35.84 35.84 0 0 1-25.6 11.093334zM512 0a512 512 0 1 0 512 512A512 512 0 0 0 512 0z m0 72.106667a439.466667 439.466667 0 0 1 170.666667 844.373333A439.466667 439.466667 0 0 1 200.533333 200.533333a438.613333 438.613333 0 0 1 311.04-128z" fill="currentColor"/></svg>`;
-const ICON_TRASH = `<svg class="icon icon-sm" viewBox="0 0 1030 1024" xmlns="http://www.w3.org/2000/svg"><path d="M734.576758 366.308943a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-41.626016-41.136299z m-444.663798 0a41.136298 41.136298 0 0 0-41.136298 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.646581-41.136299z m223.311335 0a41.136298 41.136298 0 0 0-41.136299 41.136299v382.959349a41.136298 41.136298 0 1 0 82.762315 0V407.445242a41.136298 41.136298 0 0 0-40.156863-41.136299zM881.492109 943.196557H158.178862V228.698231H881.492109v714.498326zM334.477284 81.293161h360.922046V146.915352H334.477284z m685.604973 77.865136a43.09517 43.09517 0 0 0-31.831659-12.242945h-211.558106V80.803443A80.803443 80.803443 0 0 0 695.889048 0H334.477284a80.803443 80.803443 0 0 0-80.803444 80.803443V146.915352H41.136298a41.136298 41.136298 0 1 0 0 82.272596h36.23912v714.008609a80.803443 80.803443 0 0 0 80.803444 80.803443H881.492109a80.803443 80.803443 0 0 0 80.803443-80.803443V228.698231h23.506457a42.115734 42.115734 0 0 0 42.605452-41.136299 40.156863 40.156863 0 0 0-9.794357-28.893352z" fill="currentColor"/></svg>`;
+const BOSS_BASE_URL = '../assets/video-cover/boss-base.png';
+const LOGO_BASE_URL = '../assets/video-cover/';
+const DEFAULT_LOGO_FILE = 'gi-logo.png';
 
-const esc = s => String(s == null ? '' : s)
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-const num = v => (v === '' || v == null || isNaN(Number(v))) ? 0 : Number(v);
-
-function getFormattedDateStr() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}${m}${d}`;
-}
-
-function updateFileNameDisplay(input) {
-  const picker = input.closest('.file-picker');
-  if (!picker) return;
-  const nameEl = picker.querySelector('.file-picker-name');
-  if (!nameEl) return;
-  const file = input.files && input.files[0];
-  if (file) {
-    nameEl.textContent = file.name;
-    nameEl.classList.add('has-file');
-  } else {
-    nameEl.textContent = '未选择文件';
-    nameEl.classList.remove('has-file');
-  }
-}
+const DEFAULT_MAIN_TEXTS = {
+  boss: '世界Boss\n&地方传奇',
+  character: '角色培养\n攻略图鉴',
+  custom: ''
+};
 
 /* =========================================================================
- * 【模块 2】视频封面 · 全局状态
+ * 状态
  * ========================================================================= */
 const state = {
-  show43: true,
+  showGuides: true,
   safeBoundX: 480,
   bg: '',
   midBrightness: -50,
   midBlur: 50,
-  capX: 550, capY: 150, capH: 250, capLogoSize: 200, capLogoRounded: 50,
-  capFontSize: 180, capText: '', capTextBrightness: 100, capLogo: '',
+  capX: 550, capY: 150, capH: 250,
+  capLogoSize: 200, capLogoRounded: 50,
+  capFontSize: 180, capText: '', capTextBrightness: 100,
+  capLogo: '',
   capEdgeInset: 2 / 3, capLogoGap: 40,
   mainX: 550, mainY: 760, mainSize: 340, mainLineGap: 350,
   mainText: '', mainColor: '#ffffff',
   subX: 550, subY: 1500, sub1Size: 200, sub2Size: 250,
   sub1: '', sub2: '', subColor: '#ffffff', subLineGap: 250,
   sigX: 550, sigY: 1980, sigSize: 100, sigStarBoost: 15, sigColor: '#ffffff',
-  floatImg: [],
-  fontData: '',
-  fontName: ''
+  fontData: '', fontName: '', fontFileName: '',
+  // 攻略模式
+  guideType: 'boss',
+  bossNameInput: '',
+  bossAvatar: null,   // { url, w, h }
+  characterNameInput: '',
+  characterArt: null, // { url, w, h }
+  characterX: 2650,
+  floatImg: []        // 自定义模式用
+};
+
+const collectionState = {
+  sizePreset: '2k',
+  W: 2560, H: 1440,
+  bg: '', bgLoadedImg: null,
+  fontData: '', fontName: '', fontFileName: '',
+  title: '', subtitle: ''
 };
 
 /* =========================================================================
- * 【模块 3】持久化：IndexedDB + LocalStorage
+ * 匹配数据（txt 和 icon-dict）
  * ========================================================================= */
-const CACHE_KEY = 'video-cover-tool-cache-v3';
-const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
-const ASSET_DB = 'video-cover-tool-assets-v3';
-const ASSET_STORE = 'assets';
-let restoringCache = true;
-let assetDB = null;
+let MONSTERS_DICT = {};   // 中文名 -> 短 ID
+let CHARACTER_ART_DICT = {}; // 角色名 -> 完整 URL
+let CHAR_SHORTID = {};    // 角色名 -> 短 ID（从 icon-dict.js 反查）
+let LOGO_LIST = [];       // [{ name, file }]
 
-function openAssetDB() {
-  return new Promise((resolve, reject) => {
-    if (!('indexedDB' in window)) return reject(new Error('不支持 IndexedDB'));
-    const req = indexedDB.open(ASSET_DB, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(ASSET_STORE)) db.createObjectStore(ASSET_STORE);
-    };
-    req.onsuccess = () => { assetDB = req.result; resolve(req.result); };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function saveAsset(key, value) {
-  if (!assetDB || value == null) return;
-  return new Promise((resolve, reject) => {
-    const tx = assetDB.transaction(ASSET_STORE, 'readwrite');
-    tx.objectStore(ASSET_STORE).put(value, key);
-    tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function loadAsset(key) {
-  if (!assetDB) return '';
-  return new Promise((resolve, reject) => {
-    const tx = assetDB.transaction(ASSET_STORE, 'readonly');
-    const req = tx.objectStore(ASSET_STORE).get(key);
-    req.onsuccess = () => resolve(req.result || '');
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function saveStateCache() {
-  if (restoringCache) return;
+async function loadDataFiles() {
+  // monsters.txt
   try {
-    const { bg, capLogo, fontData, floatImg, ...plain } = state;
-    const cache = {
-      version: 1,
-      savedAt: Date.now(),
-      state: { ...plain, floatImg: (floatImg || []).map(({ url, ...meta }) => meta) }
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch (err) {}
-}
-
-async function persistAllAssets() {
-  if (restoringCache || !assetDB) return;
-  try {
-    await saveAsset('bg', state.bg || '');
-    await saveAsset('capLogo', state.capLogo || '');
-    await saveAsset('fontData', state.fontData || '');
-    const currentIds = new Set((state.floatImg || []).map(o => String(o.id)));
-    for (const o of state.floatImg || []) {
-      if (o.url) await saveAsset(`float:${o.id}`, o.url);
+    const res = await fetch('../data/monsters.txt?t=' + Date.now());
+    if (res.ok) {
+      const txt = await res.text();
+      txt.split(/\r?\n/).forEach(line => {
+        line = line.trim();
+        if (!line || line.startsWith('#')) return;
+        const parts = line.split(/\s+/);
+        if (parts.length >= 2) {
+          MONSTERS_DICT[parts[0]] = parts[1];
+        }
+      });
     }
-    const tx = assetDB.transaction(ASSET_STORE, 'readonly');
-    const keys = await new Promise((resolve, reject) => {
-      const req = tx.objectStore(ASSET_STORE).getAllKeys();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
-    for (const key of keys) {
-      if (String(key).startsWith('float:') && !currentIds.has(String(key).slice(6))) {
-        await new Promise(resolve => {
-          const delTx = assetDB.transaction(ASSET_STORE, 'readwrite');
-          delTx.objectStore(ASSET_STORE).delete(key);
-          delTx.oncomplete = resolve;
-        });
+  } catch (e) { console.warn('monsters.txt 加载失败', e); }
+
+  // character-art.txt
+  try {
+    const res = await fetch('../data/character-art.txt?t=' + Date.now());
+    if (res.ok) {
+      const txt = await res.text();
+      txt.split(/\r?\n/).forEach(line => {
+        line = line.trim();
+        if (!line || line.startsWith('#')) return;
+        const idx = line.indexOf(' ');
+        if (idx > 0) {
+          const name = line.slice(0, idx).trim();
+          const url = line.slice(idx + 1).trim();
+          if (name && url) CHARACTER_ART_DICT[name] = url;
+        }
+      });
+    }
+  } catch (e) { console.warn('character-art.txt 加载失败', e); }
+
+  // icon-dict.js 里的角色短 ID
+  const dict = window.ICON_DICT && window.ICON_DICT.characters;
+  if (dict) {
+    for (const key in dict) {
+      const item = dict[key];
+      if (item && item.name) {
+        let shortId = key;
+        if (item.local) {
+          shortId = key.replace(/^UI_AvatarIcon_/i, '').replace(/\.[^.]+$/, '');
+        }
+        CHAR_SHORTID[item.name] = shortId;
       }
     }
-  } catch (err) {}
-}
-
-/* 持久化：本地缓存与 IDB 都 debounce，避免拖动滑块时反复同步写盘 */
-let persistCacheTimer = null;
-let persistAssetTimer = null;
-function persist() {
-  if (persistCacheTimer) clearTimeout(persistCacheTimer);
-  persistCacheTimer = setTimeout(() => {
-    persistCacheTimer = null;
-    saveStateCache();
-  }, 200);
-  if (persistAssetTimer) clearTimeout(persistAssetTimer);
-  persistAssetTimer = setTimeout(() => {
-    persistAssetTimer = null;
-    persistAllAssets();
-  }, 800);
-}
-
-function syncUIFromState() {
-  const setVal = (id, value) => {
-    const el = document.getElementById(id);
-    if (el != null && value != null) el.value = value;
-  };
-  setVal('capTextInput', state.capText);
-  setVal('capTextBrightnessInput', state.capTextBrightness ?? 100);
-  setVal('capTextBrightness', state.capTextBrightness ?? 100);
-  setVal('mainTextInput', state.mainText);
-  setVal('sub1Input', state.sub1);
-  setVal('sub2Input', state.sub2);
-  setVal('midBrightnessInput', state.midBrightness);
-  setVal('midBrightness', state.midBrightness);
-  setVal('midBlurInput', state.midBlur);
-  setVal('midBlur', state.midBlur);
-  const s1 = document.getElementById('sub1Select');
-  const s2 = document.getElementById('sub2Select');
-  if (s1) s1.value = String(state.sub1Size);
-  if (s2) s2.value = String(state.sub2Size);
-}
-
-async function restoreCache() {
-  let cache = null;
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.savedAt && Date.now() - parsed.savedAt <= CACHE_TTL && parsed.state) {
-        cache = parsed;
-      } else {
-        localStorage.removeItem(CACHE_KEY);
-      }
-    }
-  } catch (err) {}
-
-  try { await openAssetDB(); } catch (err) {}
-
-  if (cache) {
-    Object.assign(state, cache.state);
-    state.midBlur = Math.min(100, Math.max(0, Number(state.midBlur) || 0));
-    state.midBrightness = Math.min(100, Math.max(-100, Number(state.midBrightness) || 0));
-
-    state.floatImg = Array.isArray(cache.state.floatImg) ? cache.state.floatImg : [];
-    try {
-      state.bg = await loadAsset('bg');
-      state.capLogo = await loadAsset('capLogo');
-      state.fontData = await loadAsset('fontData');
-      const restoredFloats = [];
-      for (const meta of state.floatImg) {
-        const url = await loadAsset(`float:${meta.id}`);
-        if (url) restoredFloats.push({ ...meta, url });
-      }
-      state.floatImg = restoredFloats;
-      floatSeq = state.floatImg.reduce((m, o) => Math.max(m, Number(o.id) || 0), 0);
-      if (state.fontData && window.FontFace) {
-        try {
-          const ff = new FontFace(state.fontName || 'CoverCustomFont', `url(${state.fontData})`);
-          const loaded = await ff.load();
-          document.fonts.add(loaded);
-          state.fontName = state.fontName || 'CoverCustomFont';
-        } catch (err) {}
-      }
-    } catch (err) {}
-    syncUIFromState();
   }
-  restoringCache = false;
-  render();
+
+  // data/logos.txt（可选）
+  try {
+    const res = await fetch('../data/logos.txt?t=' + Date.now());
+    if (res.ok) {
+      const txt = await res.text();
+      txt.split(/\r?\n/).forEach(line => {
+        line = line.trim();
+        if (!line || line.startsWith('#')) return;
+        const parts = line.split(/\s+/);
+        if (parts.length >= 2) {
+          LOGO_LIST.push({ name: parts[0], file: parts[1] });
+        }
+      });
+    }
+  } catch (e) {}
+  if (!LOGO_LIST.length) {
+    LOGO_LIST.push({ name: '原神', file: DEFAULT_LOGO_FILE });
+  }
 }
 
 /* =========================================================================
- * 【模块 4】SVG 生成
+ * 工具函数
+ * ========================================================================= */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function num(v) { return (v === '' || v == null || isNaN(Number(v))) ? 0 : Number(v); }
+function getFormattedDateStr() {
+  const now = new Date();
+  return `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+}
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function showToast(msg, type) {
+  // 简化版提示：用 status bar 或 alert
+  console.log('[' + (type || 'info') + '] ' + msg);
+  const bar = document.getElementById('hiddenStatus') || document.createElement('div');
+  // 用简单的 alert 兜底
+  if (type === 'error') alert(msg);
+}
+
+/* =========================================================================
+ * SVG 生成
  * ========================================================================= */
 const measureCtx = document.createElement('canvas').getContext('2d');
 function getFontFamily() {
@@ -864,12 +705,10 @@ function measureTextWidth(text, size, font) {
   measureCtx.font = `${size}px ${font || getFontFamily()}`;
   return measureCtx.measureText(String(text)).width;
 }
-
 function capsulePath(x, y, w, h) {
   const r = h / 2;
   return `M ${x + r} ${y} H ${x + w - r} A ${r} ${r} 0 0 1 ${x + w} ${y + r} A ${r} ${r} 0 0 1 ${x + w - r} ${y + h} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
 }
-
 function getCapsuleGeometry() {
   const s = state;
   const R = s.capH / 2;
@@ -888,17 +727,16 @@ function getCapsuleGeometry() {
     capPath: capsulePath(s.capX, s.capY, capW, s.capH)
   };
 }
-
 function getFloatGeom(o) {
   const imgH = SVG_H * o.scale;
   const imgW = imgH * (o.w / Math.max(1, o.h));
   return { x: o.x - imgW / 2, y: (SVG_H - imgH) / 2, imgW, imgH };
 }
 
-function buildSVG(showGuides = state.show43) {
+function buildSVG(showGuides) {
   const s = state;
   const font = getFontFamily();
-  const fontFace = s.fontData ? `@font-face{font-family:'${s.fontName}';src:url("${s.fontData}");font-style:normal;font-weight:normal;font-display:block}` : '';
+  const fontFace = s.fontData ? `@font-face{font-family:'${s.fontName}';src:url("${s.fontData}");font-display:block}` : '';
 
   const cap = getCapsuleGeometry();
   const logoX = cap.logoX, logoY = cap.logoY;
@@ -917,10 +755,12 @@ function buildSVG(showGuides = state.show43) {
   const sigStarCX = s.sigX + wL + gapW + wS / 2;
   const sigBaseline = s.sigY;
 
-  const lowerFloats = s.floatImg.filter(o => o.underMiddle);
-  const upperFloats = s.floatImg.filter(o => !o.underMiddle);
+  // 收集浮动素材
+  const allFloats = collectFloats();
+  const lowerFloats = allFloats.filter(o => o.underMiddle);
+  const upperFloats = allFloats.filter(o => !o.underMiddle);
 
-  const floatClipDefs = s.floatImg.map(o => {
+  const floatClipDefs = allFloats.map(o => {
     const { x, y, imgW, imgH } = getFloatGeom(o);
     const r = Math.min(100, Math.max(0, Number(o.rounded) || 0));
     const radius = Math.min(imgW, imgH) / 2 * (r / 100);
@@ -934,12 +774,12 @@ function buildSVG(showGuides = state.show43) {
     }).join('');
   }
 
+  // 参考线
   const cropW = SVG_H * 4 / 3;
-  const guideContent = (
+  const guideContent = s.showGuides ? (
     [s.safeBoundX, s.safeBoundX + cropW / 2, s.safeBoundX + cropW * 3 / 4, s.safeBoundX + cropW]
-      .map(x => `<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" stroke="#ff3b6b" stroke-width="3" stroke-dasharray="24 14" opacity="1" vector-effect="non-scaling-stroke"/>`).join('') +
-    `<line x1="${SVG_W * 3 / 4}" y1="0" x2="${SVG_W * 3 / 4}" y2="${SVG_H}" stroke="#35d6ff" stroke-width="3" stroke-dasharray="24 14" opacity="1" vector-effect="non-scaling-stroke"/>`
-  );
+      .map(x => `<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" stroke="#888888" stroke-width="2" stroke-dasharray="12 12" opacity="0.5" vector-effect="non-scaling-stroke"/>`).join('')
+  ) : '';
 
   const adaptLayer = (s.bg && s.capText) ? `
     <g filter="url(#capTextBrightnessFilter)" mask="url(#capTextMask)">
@@ -1021,33 +861,62 @@ ${adaptLayer}
   <text x="${s.sigX + wL + gapW + wS + gapW}" y="${sigBaseline}" font-size="${s.sigSize}" fill="${s.sigColor}">${esc(sigRight)}</text>
 </g>
 
-<g id="guideLayer" pointer-events="none" style="${showGuides ? '' : 'display:none'}">${guideContent}</g>
+<g id="guideLayer" pointer-events="none">${guideContent}</g>
 </svg>`;
 }
 
-/* =========================================================================
- * 【模块 4.5】预览挂载与字段增量更新
- * ========================================================================= */
-let previewSvgEl = null;
-const previewIndex = new Map();
-
-function mountPreview() {
-  const host = document.getElementById('svgPreviewHost');
-  if (!host) return;
-  host.innerHTML = buildSVG();
-  previewSvgEl = host.querySelector('svg');
-  previewIndex.clear();
-  if (previewSvgEl) {
-    previewSvgEl.querySelectorAll('[data-field]').forEach(el => {
-      const f = el.dataset.field;
-      if (!previewIndex.has(f)) previewIndex.set(f, []);
-      previewIndex.get(f).push(el);
+function collectFloats() {
+  if (state.guideType === 'boss') {
+    const arr = [];
+    // 底图（固定参数）
+    arr.push({
+      id: 'boss-base',
+      url: BOSS_BASE_URL,
+      w: 1000, h: 1000,   // 占位，加载后更新
+      x: 2650,
+      scale: 0.7,
+      rounded: 0,
+      underMiddle: true
     });
+    // 头像
+    if (state.bossAvatar && state.bossAvatar.url) {
+      arr.push({
+        id: 'boss-avatar',
+        url: state.bossAvatar.url,
+        w: state.bossAvatar.w,
+        h: state.bossAvatar.h,
+        x: 2650,
+        scale: 0.5,
+        rounded: 100,
+        underMiddle: true
+      });
+    }
+    return arr;
   }
+  if (state.guideType === 'character') {
+    if (state.characterArt && state.characterArt.url) {
+      return [{
+        id: 'character-art',
+        url: state.characterArt.url,
+        w: state.characterArt.w,
+        h: state.characterArt.h,
+        x: state.characterX,
+        scale: 1,
+        rounded: 0,
+        underMiddle: false
+      }];
+    }
+    return [];
+  }
+  // custom
+  return state.floatImg;
 }
 
-/* —— rAF 合并：同一帧内多次事件只应用一次 —— */
-const rafJobs = new Map();
+/* =========================================================================
+ * 预览挂载
+ * ========================================================================= */
+let previewSvgEl = null;
+let rafJobs = new Map();
 let rafScheduled = false;
 function scheduleRaf(key, job) {
   rafJobs.set(key, job);
@@ -1061,545 +930,519 @@ function scheduleRaf(key, job) {
   });
 }
 
-/* —— 滤镜增量 —— */
-function updateMidBrightness() {
-  if (!previewSvgEl) return false;
-  const fe = previewSvgEl.querySelector('#midBrightnessFe');
-  if (!fe) return false;
-  const slope = String(1 + state.midBrightness / 100);
-  fe.querySelectorAll('feFuncR, feFuncG, feFuncB').forEach(f => f.setAttribute('slope', slope));
-  return true;
-}
-
-function updateMidBlur() {
-  if (!previewSvgEl) return false;
-  const filter = previewSvgEl.querySelector('#midFilter');
-  if (!filter) return false;
-  const blurPx = (Math.min(100, Math.max(0, Number(state.midBlur) || 0)) / 100) * BLUR_MAX_PX;
-  const midPad = Math.max(1, blurPx * 3);
-  filter.setAttribute('x', String(-midPad));
-  filter.setAttribute('y', String(-midPad));
-  filter.setAttribute('width', String(SVG_W + midPad * 2));
-  filter.setAttribute('height', String(SVG_H + midPad * 2));
-  const fe = filter.querySelector('#midBlurFe');
-  if (fe) fe.setAttribute('stdDeviation', String(blurPx));
-  const img = previewSvgEl.querySelector('#midBlurImage');
-  if (img) {
-    img.setAttribute('x', String(-midPad));
-    img.setAttribute('y', String(-midPad));
-    img.setAttribute('width', String(SVG_W + midPad * 2));
-    img.setAttribute('height', String(SVG_H + midPad * 2));
-  }
-  return true;
-}
-
-function updateCapTextBrightness() {
-  if (!previewSvgEl) return false;
-  const fe = previewSvgEl.querySelector('#capTextBrightnessFe');
-  if (!fe) return false;
-  const slope = String(Math.max(0, state.capTextBrightness) / 100);
-  fe.querySelectorAll('feFuncR, feFuncG, feFuncB').forEach(f => f.setAttribute('slope', slope));
-  return true;
-}
-
-/* —— capText：胶囊宽度变化 → 更新 path / 两个 text 位置与内容 —— */
-function updateCapText() {
-  if (!previewSvgEl) return false;
-  // mask 存在性变化 → 需要重建
-  const hasMask = !!(state.bg && state.capText);
-  const preHasMask = !!previewSvgEl.querySelector('#capTextMask');
-  if (hasMask !== preHasMask) return false;
-
-  const cap = getCapsuleGeometry();
-  const path = previewSvgEl.querySelector('#capCapsulePath');
-  if (!path) return false;
-  path.setAttribute('d', cap.capPath);
-
-  const textEls = previewIndex.get('capText') || [];
-  textEls.forEach(el => {
-    el.setAttribute('x', String(cap.textRightX));
-    el.setAttribute('y', String(cap.textBaseline));
-    el.textContent = state.capText || '';
-  });
-  return true;
-}
-
-/* —— 主标题增量 —— */
-function updateMainTextField() {
-  const lines = String(state.mainText || '').split('\n').filter((l, i) => l.trim() !== '' || i === 0).slice(0, 2);
-  const has0 = previewIndex.has('mainText.0');
-  const has1 = previewIndex.has('mainText.1');
-  const need0 = lines.length >= 1;
-  const need1 = lines.length >= 2;
-  if (has0 !== need0 || has1 !== need1) return false;
-  for (let i = 0; i < lines.length; i++) {
-    const els = previewIndex.get(`mainText.${i}`);
-    if (!els) return false;
-    els.forEach(el => { el.textContent = lines[i]; });
-  }
-  return true;
-}
-
-/* —— 副标题增量 —— */
-function updateSubTextField() {
-  const has1 = !!state.sub1;
-  const has2 = !!state.sub2;
-  const preHas1 = previewIndex.has('sub1');
-  const preHas2 = previewIndex.has('sub2');
-  if (preHas1 !== has1 || preHas2 !== has2) return false;
-  if (has1) previewIndex.get('sub1').forEach(el => { el.textContent = state.sub1; });
-  if (has2) previewIndex.get('sub2').forEach(el => { el.textContent = state.sub2; });
-  return true;
-}
-
-/* —— 浮动素材增量 —— */
-function updateFloatImage(id) {
-  if (!previewSvgEl) return false;
-  const o = state.floatImg.find(x => x.id === id);
-  if (!o) return false;
-  const imgEl = previewSvgEl.querySelector(`image[data-float-id="${id}"]`);
-  if (!imgEl) return false;
-  const { x, y, imgW, imgH } = getFloatGeom(o);
-  imgEl.setAttribute('x', String(x));
-  imgEl.setAttribute('y', String(y));
-  imgEl.setAttribute('width', String(imgW));
-  imgEl.setAttribute('height', String(imgH));
-  const clipRect = previewSvgEl.querySelector(`#fclip-${id} rect`);
-  if (clipRect) {
-    const r = Math.min(100, Math.max(0, Number(o.rounded) || 0));
-    const radius = Math.min(imgW, imgH) / 2 * (r / 100);
-    clipRect.setAttribute('x', String(x));
-    clipRect.setAttribute('y', String(y));
-    clipRect.setAttribute('width', String(imgW));
-    clipRect.setAttribute('height', String(imgH));
-    clipRect.setAttribute('rx', String(radius));
-    clipRect.setAttribute('ry', String(radius));
-  }
-  return true;
+function mountPreview() {
+  const host = document.getElementById('svgPreviewHost');
+  if (!host) return;
+  host.innerHTML = buildSVG(state.showGuides);
+  previewSvgEl = host.querySelector('svg');
 }
 
 /* =========================================================================
- * 【模块 4.6】字段分派
+ * 应用接口
  * ========================================================================= */
-function set(key, value) {
-  if (state[key] === value) return;
-  state[key] = value;
-
-  if (key === 'mainText') {
-    scheduleRaf('field.mainText', () => {
-      if (!updateMainTextField()) mountPreview();
-    });
-  } else if (key === 'sub1' || key === 'sub2') {
-    scheduleRaf('field.sub', () => {
-      if (!updateSubTextField()) mountPreview();
-    });
-  } else if (key === 'capText') {
-    scheduleRaf('field.capText', () => {
-      if (!updateCapText()) mountPreview();
-    });
-  } else {
-    mountPreview();
-  }
-  persist();
-}
-
-function syncVal(key, val) {
-  if (val === '' || isNaN(val)) return;
-  const n = Number(val);
-  state[key] = n;
-  const slider = document.getElementById(key);
-  const input = document.getElementById(key + 'Input');
-  if (document.activeElement !== slider && slider) slider.value = n;
-  if (document.activeElement !== input && input) input.value = n;
-
-  scheduleRaf(`slider.${key}`, () => {
-    let ok = false;
-    if (key === 'midBrightness') ok = updateMidBrightness();
-    else if (key === 'midBlur') ok = updateMidBlur();
-    else if (key === 'capTextBrightness') ok = updateCapTextBrightness();
-    if (!ok) mountPreview();
-  });
-  persist();
-}
-
-function setSubSize(line, value) {
-  state[line === 1 ? 'sub1Size' : 'sub2Size'] = Number(value);
-  mountPreview();
-  persist();
-}
-
-function toggleGuides() {
-  state.show43 = !state.show43;
-  const guide = previewSvgEl && previewSvgEl.querySelector('#guideLayer');
-  if (guide) {
-    guide.style.display = state.show43 ? '' : 'none';
-  } else {
-    mountPreview();
-  }
-  persist();
-}
-
-function setFloat(id, key, value) {
-  const o = state.floatImg.find(x => x.id === id);
-  if (!o) return;
-  o[key] = value;
-  if (key === 'x') {
-    const range = document.getElementById(`float-x-range-${id}`);
-    const number = document.getElementById(`float-x-number-${id}`);
-    if (range && document.activeElement !== range) range.value = String(value);
-    if (number && document.activeElement !== number) number.value = String(Math.round(value));
-  } else if (key === 'scale') {
-    const percent = Math.round(value * 100);
-    const range = document.getElementById(`float-scale-${id}`);
-    const number = document.getElementById(`float-scale-number-${id}`);
-    if (range && document.activeElement !== range) range.value = String(percent);
-    if (number && document.activeElement !== number) number.value = String(percent);
-  } else if (key === 'rounded') {
-    const range = document.getElementById(`float-rounded-${id}`);
-    const number = document.getElementById(`float-rounded-number-${id}`);
-    if (range && document.activeElement !== range) range.value = String(Math.round(value));
-    if (number && document.activeElement !== number) number.value = String(Math.round(value));
-  }
-
-  if (key === 'x' || key === 'scale' || key === 'rounded') {
-    scheduleRaf(`float.${id}`, () => {
-      if (!updateFloatImage(id)) mountPreview();
-    });
-  } else {
-    // underMiddle 影响图层顺序 → 全量重建
-    mountPreview();
-  }
-  persist();
-}
-
-/* =========================================================================
- * 【模块 4.7】其他视频封面交互
- * ========================================================================= */
-function clearAll() {
-  if (!confirm('确定清空视频封面所有配置与图片素材吗？')) return;
-  state.bg = '';
-  state.capLogo = '';
-  state.fontData = '';
-  state.fontName = '';
-  state.capText = '';
-  state.mainText = '';
-  state.sub1 = '';
-  state.sub2 = '';
-  state.capTextBrightness = 100;
-  state.midBrightness = -50;
-  state.midBlur = 50;
-  state.floatImg = [];
-  document.querySelectorAll('#videoMode input[type="file"]').forEach(el => {
-    el.value = '';
-    updateFileNameDisplay(el);
-  });
-  document.querySelectorAll('#videoMode input[type="text"], #videoMode textarea').forEach(el => { el.value = ''; });
-  syncUIFromState();
-  render();
-  saveStateCache();
-  persistAllAssets();
-}
-
-function uploadImage(input, setter) {
-  if (!input.files || !input.files[0]) return;
-  updateFileNameDisplay(input);
-  const reader = new FileReader();
-  reader.onload = e => { setter(e.target.result); mountPreview(); persist(); };
-  reader.readAsDataURL(input.files[0]);
-}
-
-async function uploadFont(input) {
-  if (!input.files || !input.files[0]) return;
-  updateFileNameDisplay(input);
-  const reader = new FileReader();
-  reader.onload = async e => {
-    const data = e.target.result;
-    state.fontData = data;
-    state.fontName = 'CoverCustomFont';
-    if (window.FontFace) {
-      try {
-        const ff = new FontFace(state.fontName, `url(${data})`);
-        const loaded = await ff.load();
-        document.fonts.add(loaded);
-      } catch (err) {}
-    }
+const App = {
+  // === 通用 ===
+  set(key, value) {
+    if (state[key] === value) return;
+    state[key] = value;
     mountPreview();
     persist();
-  };
-  reader.readAsDataURL(input.files[0]);
-}
+  },
+  syncVal(key, val) {
+    if (val === '' || isNaN(val)) return;
+    state[key] = Number(val);
+    const slider = document.getElementById(key);
+    const input = document.getElementById(key + 'Input');
+    if (document.activeElement !== slider && slider) slider.value = val;
+    if (document.activeElement !== input && input) input.value = val;
+    mountPreview();
+    persist();
+  },
+  setSubSize(line, value) {
+    state[line === 1 ? 'sub1Size' : 'sub2Size'] = Number(value);
+    mountPreview();
+    persist();
+  },
 
-let floatSeq = 0;
+  // === 攻略模式 ===
+  setGuideType(type) {
+    const oldType = state.guideType;
+    const oldDefault = DEFAULT_MAIN_TEXTS[oldType] || '';
+    if (!state.mainText || state.mainText === oldDefault) {
+      state.mainText = DEFAULT_MAIN_TEXTS[type] || '';
+      const mainInput = document.getElementById('mainTextInput');
+      if (mainInput) mainInput.value = state.mainText;
+    }
+    state.guideType = type;
 
-function replaceFloatImage(id, input) {
-  const file = input && input.files && input.files[0];
-  if (!file) return;
-  const o = state.floatImg.find(x => x.id === id);
-  if (!o) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      o.url = e.target.result;
-      o.w = img.naturalWidth || img.width;
-      o.h = img.naturalHeight || img.height;
-      mountPreview(); persist(); input.value = '';
+    document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.type === type);
+    });
+    document.getElementById('bossPanel').style.display = type === 'boss' ? 'block' : 'none';
+    document.getElementById('characterPanel').style.display = type === 'character' ? 'block' : 'none';
+    document.getElementById('customPanel').style.display = type === 'custom' ? 'block' : 'none';
+
+    mountPreview();
+    persist();
+  },
+
+  onBossNameInput(val) { state.bossNameInput = val; },
+  async matchBossName(name) {
+    name = (name || '').trim();
+    if (!name) { state.bossAvatar = null; mountPreview(); return; }
+    const shortId = MONSTERS_DICT[name];
+    if (!shortId) {
+      alert('在 data/monsters.txt 中未找到「' + name + '」');
+      state.bossAvatar = null;
+      mountPreview();
+      return;
+    }
+    const url = 'https://api.lunaris.moe/data/assets/monstericon/UI_MonsterIcon_' + shortId + '.png';
+    try {
+      const img = await loadImage(url);
+      state.bossAvatar = { url, w: img.width, h: img.height };
+      mountPreview();
+      persist();
+    } catch (e) {
+      alert('图标加载失败：' + url);
+    }
+  },
+
+  onCharacterNameInput(val) { state.characterNameInput = val; },
+  async matchCharacterName(name) {
+    name = (name || '').trim();
+    if (!name) {
+      state.characterArt = null;
+      mountPreview();
+      return;
+    }
+    const artUrl = CHARACTER_ART_DICT[name];
+    const shortId = CHAR_SHORTID[name];
+
+    if (!artUrl) {
+      alert('在 data/character-art.txt 中未找到「' + name + '」的立绘');
+      state.characterArt = null;
+      mountPreview();
+      return;
+    }
+
+    try {
+      const img = await loadImage(artUrl);
+      state.characterArt = { url: artUrl, w: img.width, h: img.height };
+    } catch (e) {
+      alert('立绘加载失败：' + artUrl);
+      state.characterArt = null;
+    }
+
+    // 名片图作为背景
+    if (shortId) {
+      const namecardUrl = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_' + shortId + '_P.png';
+      try {
+        await loadImage(namecardUrl);
+        state.bg = namecardUrl;
+        const bgNameEl = document.getElementById('bgFileName');
+        if (bgNameEl) bgNameEl.textContent = '已自动加载名片图';
+      } catch (e) {}
+    }
+
+    mountPreview();
+    persist();
+  },
+
+  // === 浮动素材（自定义模式）===
+  addFloat() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = () => {
+      const f = input.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          state.floatImg.push({
+            id: 'f_' + Date.now(),
+            url: reader.result,
+            w: img.width, h: img.height,
+            x: SVG_W * 0.75, scale: 1, rounded: 0, underMiddle: false
+          });
+          renderFloatList();
+          mountPreview();
+          persist();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(f);
     };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function addFloat() {
-  const input = document.createElement('input');
-  input.type = 'file'; input.accept = 'image/*';
-  input.onchange = () => {
-    const f = input.files && input.files[0];
-    if (!f) return;
+    input.click();
+  },
+  setFloat(id, key, value) {
+    const o = state.floatImg.find(x => x.id === id);
+    if (!o) return;
+    o[key] = value;
+    mountPreview();
+    persist();
+  },
+  moveFloat(id, dir) {
+    const i = state.floatImg.findIndex(o => o.id === id);
+    if (i < 0) return;
+    const j = i + dir;
+    if (j < 0 || j >= state.floatImg.length) return;
+    [state.floatImg[i], state.floatImg[j]] = [state.floatImg[j], state.floatImg[i]];
+    renderFloatList();
+    mountPreview();
+    persist();
+  },
+  removeFloat(id) {
+    state.floatImg = state.floatImg.filter(o => o.id !== id);
+    renderFloatList();
+    mountPreview();
+    persist();
+  },
+  replaceFloat(id, input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const o = state.floatImg.find(x => x.id === id);
+    if (!o) return;
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        state.floatImg.push({
-          id: ++floatSeq, url: reader.result,
-          w: img.width, h: img.height,
-          x: SVG_W * 0.75, scale: 1, underMiddle: false, rounded: 0
-        });
-        mountPreview(); renderFloatEditor(); persist();
+        o.url = reader.result;
+        o.w = img.width; o.h = img.height;
+        renderFloatList();
+        mountPreview();
+        persist();
       };
       img.src = reader.result;
     };
-    reader.readAsDataURL(f);
-  };
-  input.click();
-}
+    reader.readAsDataURL(file);
+    input.value = '';
+  },
 
-function moveFloat(id, dir) {
-  const i = state.floatImg.findIndex(o => o.id === id);
-  if (i < 0) return;
-  const j = i + dir;
-  if (j < 0 || j >= state.floatImg.length) return;
-  const arr = state.floatImg;
-  [arr[i], arr[j]] = [arr[j], arr[i]];
-  mountPreview(); renderFloatEditor(); persist();
-}
+  // === 参考线 ===
+  toggleGuides() {
+    state.showGuides = !state.showGuides;
+    mountPreview();
+    persist();
+  },
 
-function removeFloat(id) {
-  state.floatImg = state.floatImg.filter(o => o.id !== id);
-  mountPreview(); renderFloatEditor(); persist();
-}
+  // === 字体 ===
+  openFontPicker(target) {
+    App._fontTarget = target;
+    const listEl = document.getElementById('fontSheetList');
+    if (!listEl) return;
+    const curFile = target === 'video' ? state.fontFileName : collectionState.fontFileName;
+    let html = '<button type="button" class="sheet-item ' + (curFile === '' ? 'active' : '') + '" onclick="App.selectFont(-1)"><span>默认系统字体</span><svg class="sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg></button>';
+    FONT_LIST.forEach((f, i) => {
+      const isAct = curFile === f.file;
+      html += '<button type="button" class="sheet-item ' + (isAct ? 'active' : '') + '" onclick="App.selectFont(' + i + ')"><span>' + esc(f.name) + '</span><svg class="sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg></button>';
+    });
+    listEl.innerHTML = html;
+    document.getElementById('fontSheetBackdrop').classList.add('show');
+    document.getElementById('fontSheet').classList.add('show');
+  },
+  closeFontPicker() {
+    document.getElementById('fontSheetBackdrop').classList.remove('show');
+    document.getElementById('fontSheet').classList.remove('show');
+  },
+  async selectFont(index) {
+    App.closeFontPicker();
+    const target = App._fontTarget || 'video';
+    const labelEl = target === 'video' ? document.getElementById('labelVideoFont') : document.getElementById('labelCollectionFont');
+    if (index === -1) {
+      if (target === 'video') {
+        state.fontData = ''; state.fontFileName = ''; state.fontName = '';
+        await installFont('');
+      } else {
+        collectionState.fontData = ''; collectionState.fontFileName = ''; collectionState.fontName = '';
+        await installFont('collection');
+      }
+      if (labelEl) labelEl.textContent = '默认系统字体';
+      if (target === 'video') mountPreview(); else renderCollection();
+      persist();
+      return;
+    }
+    const f = FONT_LIST[index];
+    if (!f) return;
+    if (labelEl) labelEl.textContent = '正在加载…';
+    try {
+      const res = await fetch('../fonts/' + encodeURIComponent(f.file));
+      const buf = await res.arrayBuffer();
+      const blob = new Blob([buf]);
+      const dataURL = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      if (target === 'video') {
+        state.fontData = dataURL; state.fontFileName = f.file; state.fontName = f.name;
+        await installFont('');
+        mountPreview();
+      } else {
+        collectionState.fontData = dataURL; collectionState.fontFileName = f.file; collectionState.fontName = f.name;
+        await installFont('collection');
+        renderCollection();
+      }
+      if (labelEl) labelEl.textContent = '当前：' + f.name;
+      persist();
+    } catch (e) {
+      if (labelEl) labelEl.textContent = '字体加载失败';
+    }
+  },
 
-function renderFloatEditor() {
+  // === 导出/导入/清空 ===
+  exportConfig() {
+    downloadBlob(
+      new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }),
+      '视频封面配置_' + getFormattedDateStr() + '.json'
+    );
+  },
+  importConfig(input) {
+    const f = input.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        Object.assign(state, JSON.parse(e.target.result));
+        // 恢复 UI
+        syncInputsFromState();
+        if (state.fontData) await installFont('');
+        renderFloatList();
+        mountPreview();
+        persist();
+      } catch (err) { alert('导入失败'); }
+    };
+    reader.readAsText(f);
+    input.value = '';
+  },
+  async clearAll() {
+    if (!confirm('确定清空视频封面所有配置吗？')) return;
+    Object.keys(state).forEach(k => {
+      if (k === 'guideType') state[k] = 'boss';
+      else if (k === 'safeBoundX') state[k] = 480;
+      else if (k === 'capH') state[k] = 250;
+      else if (k === 'capX') state[k] = 550;
+      else if (k === 'capY') state[k] = 150;
+      else if (k === 'capFontSize') state[k] = 180;
+      else if (k === 'capLogoSize') state[k] = 200;
+      else if (k === 'capLogoRounded') state[k] = 50;
+      else if (k === 'capEdgeInset') state[k] = 2/3;
+      else if (k === 'capLogoGap') state[k] = 40;
+      else if (k === 'capTextBrightness') state[k] = 100;
+      else if (k === 'mainX') state[k] = 550;
+      else if (k === 'mainY') state[k] = 760;
+      else if (k === 'mainSize') state[k] = 340;
+      else if (k === 'mainLineGap') state[k] = 350;
+      else if (k === 'mainColor') state[k] = '#ffffff';
+      else if (k === 'subX') state[k] = 550;
+      else if (k === 'subY') state[k] = 1500;
+      else if (k === 'sub1Size') state[k] = 200;
+      else if (k === 'sub2Size') state[k] = 250;
+      else if (k === 'subColor') state[k] = '#ffffff';
+      else if (k === 'subLineGap') state[k] = 250;
+      else if (k === 'sigX') state[k] = 550;
+      else if (k === 'sigY') state[k] = 1980;
+      else if (k === 'sigSize') state[k] = 100;
+      else if (k === 'sigStarBoost') state[k] = 15;
+      else if (k === 'sigColor') state[k] = '#ffffff';
+      else if (k === 'midBrightness') state[k] = -50;
+      else if (k === 'midBlur') state[k] = 50;
+      else if (k === 'characterX') state[k] = 2650;
+      else if (k === 'showGuides') state[k] = true;
+      else if (Array.isArray(state[k])) state[k] = [];
+      else if (typeof state[k] === 'string') state[k] = '';
+      else if (typeof state[k] === 'number') state[k] = 0;
+      else state[k] = null;
+    });
+    // 加载 logo
+    state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
+    syncInputsFromState();
+    renderFloatList();
+    mountPreview();
+    persist();
+    location.reload();
+  },
+
+  // === 导出 PNG ===
+  async exportPNG() {
+    try {
+      if (document.fonts) await document.fonts.ready;
+      const svgStr = buildSVG(false);
+      const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      try {
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('SVG 渲染失败'));
+          img.src = url;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = SVG_W; canvas.height = SVG_H;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, SVG_W, SVG_H);
+        const pngBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1));
+        const baseName = getExportBaseName();
+        downloadBlob(pngBlob, baseName + '_' + getFormattedDateStr() + '.png');
+      } finally { URL.revokeObjectURL(url); }
+    } catch (e) {
+      alert('导出失败：' + e.message);
+    }
+  },
+
+  // === 合集封面 ===
+  setCollection(key, value) {
+    collectionState[key] = value;
+    if (key === 'sizePreset') {
+      const [w, h] = collectionSizeValue(value);
+      collectionState.W = w; collectionState.H = h;
+    }
+    renderCollection();
+    persist();
+  },
+  async exportCollection() {
+    const canvas = document.querySelector('#collectionPreview canvas');
+    if (!canvas) return;
+    if (document.fonts) await document.fonts.ready;
+    await drawCollectionCanvas(canvas);
+    canvas.toBlob(blob => {
+      if (!blob) return alert('导出失败');
+      if (blob.size > 5 * 1024 * 1024) { alert('超过 5MB，请换更低分辨率'); return; }
+      const firstLine = (collectionState.title || '').split(/\r?\n/).find(l => l.trim()) || '合集封面';
+      downloadBlob(blob, firstLine.trim() + '_' + getFormattedDateStr() + '.png');
+    }, 'image/png');
+  },
+  clearCollection() {
+    if (!confirm('确定清空合集封面吗？')) return;
+    collectionState.bg = ''; collectionState.bgLoadedImg = null;
+    collectionState.fontData = ''; collectionState.fontName = ''; collectionState.fontFileName = '';
+    collectionState.title = ''; collectionState.subtitle = '';
+    document.getElementById('collectionTitle').value = '';
+    document.getElementById('collectionSubtitle').value = '';
+    document.getElementById('collectionBgName').textContent = '未选择文件';
+    const l = document.getElementById('labelCollectionFont');
+    if (l) l.textContent = '默认系统字体';
+    renderCollection();
+    persist();
+  }
+};
+window.App = App;
+
+/* =========================================================================
+ * 浮动素材列表渲染
+ * ========================================================================= */
+function renderFloatList() {
   const el = document.getElementById('floatList');
   if (!el) return;
   if (!state.floatImg.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);">暂无浮动图片素材，点击右上角「+ 添加素材」。</div>';
+    el.innerHTML = '<div style="font-size:12px; color:var(--text-tertiary); padding:4px 0;">暂无素材</div>';
     return;
   }
   el.innerHTML = state.floatImg.map(o => `
     <div class="float-item">
       <div class="float-item-head">
-        <div>
-          <img class="float-thumb" src="${o.url}" alt="" />
-          <span style="font-size:12px;color:var(--text-secondary);">#${o.id} (${o.w}×${o.h})</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <img class="float-thumb" src="${o.url}" alt="">
+          <span style="font-size:11px; color:var(--text-secondary);">${o.w}×${o.h}</span>
         </div>
-        <div>
-          <button class="btn-icon" onclick="moveFloat(${o.id}, -1)" title="上移" aria-label="上移">${ICON_UP}</button>
-          <button class="btn-icon" onclick="moveFloat(${o.id}, 1)" title="下移" aria-label="下移">${ICON_DOWN}</button>
-          <label class="btn-sm file-btn">换图<input type="file" accept="image/*" onchange="replaceFloatImage(${o.id}, this)" /></label>
-          <button class="btn-icon btn-danger" onclick="removeFloat(${o.id})" title="删除" aria-label="删除">${ICON_TRASH}</button>
-        </div>
-      </div>
-      <div class="control-item">
-        <div class="control-header"><span>水平 X 位置</span></div>
-        <div class="slider-row">
-          <input id="float-x-range-${o.id}" type="range" min="0" max="3840" step="1" value="${o.x}" oninput="setFloat(${o.id}, 'x', Number(this.value))" />
-          <div class="num-box"><input id="float-x-number-${o.id}" type="number" value="${Math.round(o.x)}" oninput="setFloat(${o.id}, 'x', num(this.value))" /><span class="unit-tag">px</span></div>
+        <div style="display:flex; gap:3px;">
+          <button class="btn btn-xs" onclick="App.moveFloat('${o.id}',-1)">↑</button>
+          <button class="btn btn-xs" onclick="App.moveFloat('${o.id}',1)">↓</button>
+          <label class="btn btn-xs" style="cursor:pointer;">换图<input type="file" accept="image/*" style="display:none;" onchange="App.replaceFloat('${o.id}', this)"></label>
+          <button class="btn btn-xs btn-danger" onclick="App.removeFloat('${o.id}')">删</button>
         </div>
       </div>
       <div class="control-item">
-        <div class="control-header"><span>缩放尺寸</span></div>
+        <div class="control-header"><span>X 位置</span></div>
         <div class="slider-row">
-          <input id="float-scale-${o.id}" type="range" min="10" max="200" step="1" value="${Math.round(o.scale * 100)}" oninput="setFloat(${o.id}, 'scale', Number(this.value) / 100)" />
-          <div class="num-box"><input id="float-scale-number-${o.id}" type="number" min="10" max="200" value="${Math.round(o.scale * 100)}" oninput="setFloat(${o.id}, 'scale', num(this.value) / 100)" /><span class="unit-tag">%</span></div>
+          <input type="range" min="0" max="3840" value="${o.x}" oninput="App.setFloat('${o.id}','x',Number(this.value))">
+          <div class="num-box"><input type="number" value="${Math.round(o.x)}" oninput="App.setFloat('${o.id}','x',Number(this.value))"><span class="unit-tag">px</span></div>
         </div>
       </div>
       <div class="control-item">
-        <div class="control-header"><span>裁剪圆角</span></div>
+        <div class="control-header"><span>缩放</span></div>
         <div class="slider-row">
-          <input id="float-rounded-${o.id}" type="range" min="0" max="100" step="1" value="${Math.round(o.rounded || 0)}" oninput="setFloat(${o.id}, 'rounded', Number(this.value))" />
-          <div class="num-box"><input id="float-rounded-number-${o.id}" type="number" min="0" max="100" value="${Math.round(o.rounded || 0)}" oninput="setFloat(${o.id}, 'rounded', num(this.value))" /><span class="unit-tag">%</span></div>
+          <input type="range" min="10" max="200" value="${Math.round(o.scale*100)}" oninput="App.setFloat('${o.id}','scale',Number(this.value)/100)">
+          <div class="num-box"><input type="number" min="10" max="200" value="${Math.round(o.scale*100)}" oninput="App.setFloat('${o.id}','scale',Number(this.value)/100)"><span class="unit-tag">%</span></div>
         </div>
       </div>
-      <label style="flex-direction:row;align-items:center;gap:8px;margin-top:2px;">
-        <input type="checkbox" ${o.underMiddle ? 'checked' : ''} onchange="setFloat(${o.id}, 'underMiddle', this.checked)">
-        <span>置于中层背景下方</span>
+      <div class="control-item">
+        <div class="control-header"><span>圆角</span></div>
+        <div class="slider-row">
+          <input type="range" min="0" max="100" value="${Math.round(o.rounded||0)}" oninput="App.setFloat('${o.id}','rounded',Number(this.value))">
+          <div class="num-box"><input type="number" min="0" max="100" value="${Math.round(o.rounded||0)}" oninput="App.setFloat('${o.id}','rounded',Number(this.value))"><span class="unit-tag">%</span></div>
+        </div>
+      </div>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary);">
+        <input type="checkbox" ${o.underMiddle ? 'checked' : ''} onchange="App.setFloat('${o.id}','underMiddle',this.checked)">
+        置于中层背景下方
       </label>
     </div>
   `).join('');
 }
 
-function render() {
-  mountPreview();
-  renderFloatEditor();
-}
-
 /* =========================================================================
- * 【模块 4.8】导出
+ * 字体加载
  * ========================================================================= */
-function getExportBaseName() {
-  const s2 = (state.sub2 || '').trim();
-  const s1 = (state.sub1 || '').trim();
-  const mt = (state.mainText || '').trim();
-  let name = s2 || s1 || mt;
-  name = name.replace(/[\r\n]+/g, '');
-  name = name.replace(/[\\/:*?"<>|]/g, '_');
-  return name || '视频封面';
+let FONT_LIST = [];
+let loadedFontFace = null;
+let loadedCollectionFontFace = null;
+
+async function loadFontList() {
+  try {
+    const res = await fetch('../fonts/fonts.json?t=' + Date.now());
+    if (res.ok) {
+      const json = await res.json();
+      FONT_LIST = Array.isArray(json.fonts) ? json.fonts : [];
+    }
+  } catch (e) {}
 }
 
-async function exportPNG() {
-  const btn = document.getElementById('pngBtn');
-  btn.disabled = true;
-  btn.textContent = '正在导出...';
-  try {
-    if (document.fonts) await document.fonts.ready;
-    const svgStr = buildSVG(false);
-    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+async function installFont(target) {
+  if (target === 'collection') {
+    if (!collectionState.fontData || !window.FontFace) return;
     try {
-      const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error('SVG 渲染失败'));
-        img.src = url;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = SVG_W; canvas.height = SVG_H;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, 0, 0, SVG_W, SVG_H);
-      const pngBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1));
-      if (!pngBlob) throw new Error('PNG 生成失败');
-      const baseName = getExportBaseName();
-      downloadBlob(pngBlob, `${baseName}_${getFormattedDateStr()}.png`);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  } catch (e) {
-    alert('导出失败：' + (e && e.message ? e.message : e));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '生成并导出 4K PNG';
+      if (loadedCollectionFontFace) { try { document.fonts.delete(loadedCollectionFontFace); } catch (e) {} }
+      const ff = new FontFace(collectionState.fontName, `url("${collectionState.fontData}")`);
+      const loaded = await ff.load();
+      document.fonts.add(loaded);
+      loadedCollectionFontFace = loaded;
+    } catch (e) {}
+    return;
   }
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url; link.download = filename;
-  document.body.appendChild(link); link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function exportArchive() {
+  if (!state.fontData || !window.FontFace) return;
   try {
-    const archive = {
-      app: 'video-cover-tool', version: 1, savedAt: Date.now(),
-      state: JSON.parse(JSON.stringify(state))
-    };
-    const blob = new Blob([JSON.stringify(archive)], { type: 'application/json' });
-    downloadBlob(blob, `封面存档_${getFormattedDateStr()}.json`);
-  } catch (e) { alert('导出存档失败：' + (e && e.message ? e.message : e)); }
-}
-
-async function importArchive(input) {
-  const file = input && input.files && input.files[0];
-  if (!file) return;
-  try {
-    const parsed = JSON.parse(await file.text());
-    if (!parsed || typeof parsed !== 'object' || !parsed.state || typeof parsed.state !== 'object') {
-      alert('存档格式不正确'); return;
-    }
-    Object.keys(parsed.state).forEach(k => { if (k in state) state[k] = parsed.state[k]; });
-    state.midBlur = Math.min(100, Math.max(0, Number(state.midBlur) || 0));
-    state.midBrightness = Math.min(100, Math.max(-100, Number(state.midBrightness) || 0));
-
-    state.floatImg = Array.isArray(state.floatImg) ? state.floatImg.filter(o => o && o.id != null) : [];
-    if (state.fontData && window.FontFace) {
-      try {
-        const ff = new FontFace(state.fontName || 'CoverCustomFont', `url(${state.fontData})`);
-        const loaded = await ff.load();
-        document.fonts.add(loaded);
-        state.fontName = state.fontName || 'CoverCustomFont';
-      } catch (err) {}
-    }
-    floatSeq = state.floatImg.reduce((m, o) => Math.max(m, Number(o.id) || 0), 0);
-    syncUIFromState();
-    render();
-    persist();
-    alert('存档导入成功');
-  } catch (e) {
-    alert('导入存档失败：' + (e && e.message ? e.message : e));
-  } finally {
-    input.value = '';
-  }
+    if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} }
+    const ff = new FontFace(state.fontName, `url("${state.fontData}")`);
+    const loaded = await ff.load();
+    document.fonts.add(loaded);
+    loadedFontFace = loaded;
+  } catch (e) {}
 }
 
 /* =========================================================================
- * 【模块 5】合集封面 · Canvas 绘制
+ * 合集封面 Canvas 绘制
  * ========================================================================= */
-const collectionState = {
-  sizePreset: '2k', W: 2560, H: 1440,
-  bg: '', bgLoadedImg: null,
-  fontData: '', fontName: 'CollectionCustomFont',
-  title: '', subtitle: ''
-};
-
 function collectionSizeValue(preset) {
   if (preset === '1920') return [1920, 1080];
   if (preset === '1280') return [1280, 720];
   return [2560, 1440];
 }
 
-function setCollection(key, value) {
-  collectionState[key] = value;
-  if (key === 'sizePreset') {
-    [collectionState.W, collectionState.H] = collectionSizeValue(value);
+function updateFileNameDisplay(input) {
+  const picker = input.closest('.file-picker');
+  if (!picker) return;
+  const nameEl = picker.querySelector('.file-picker-name');
+  if (!nameEl) return;
+  const file = input.files && input.files[0];
+  if (file) {
+    nameEl.textContent = file.name;
+  } else {
+    nameEl.textContent = '未选择文件';
   }
-  renderCollection();
-}
-
-function loadCollectionBg(input) {
-  const file = input && input.files && input.files[0];
-  if (!file) return;
-  updateFileNameDisplay(input);
-  const reader = new FileReader();
-  reader.onload = e => {
-    collectionState.bg = e.target.result;
-    collectionState.bgLoadedImg = null;
-    renderCollection();
-  };
-  reader.readAsDataURL(file);
-}
-
-function loadCollectionFont(input) {
-  const file = input && input.files && input.files[0];
-  if (!file) return;
-  updateFileNameDisplay(input);
-  const reader = new FileReader();
-  reader.onload = async e => {
-    collectionState.fontData = e.target.result;
-    collectionState.fontName = 'CollectionCustomFont';
-    try {
-      const ff = new FontFace(collectionState.fontName, `url(${collectionState.fontData})`);
-      const loaded = await ff.load();
-      document.fonts.add(loaded);
-    } catch (err) {}
-    renderCollection();
-  };
-  reader.readAsDataURL(file);
 }
 
 async function drawCollectionCanvas(canvas) {
@@ -1613,6 +1456,7 @@ async function drawCollectionCanvas(canvas) {
     if (!img || img.src !== collectionState.bg) {
       img = await new Promise(resolve => {
         const i = new Image();
+        i.crossOrigin = 'anonymous';
         i.onload = () => resolve(i);
         i.onerror = () => resolve(null);
         i.src = collectionState.bg;
@@ -1625,7 +1469,7 @@ async function drawCollectionCanvas(canvas) {
       const off = document.createElement('canvas');
       off.width = W + pad * 2; off.height = H + pad * 2;
       const offCtx = off.getContext('2d');
-      offCtx.fillStyle = '#000000';
+      offCtx.fillStyle = '#000';
       offCtx.fillRect(0, 0, off.width, off.height);
       const scale = Math.max(off.width / img.width, off.height / img.height);
       const iw = img.width * scale, ih = img.height * scale;
@@ -1649,7 +1493,8 @@ function drawCollectionText(ctx) {
   const W = collectionState.W, H = collectionState.H;
   const baseSize = W * 0.10;
   const maxWidth = W * 0.85;
-  const font = `"${collectionState.fontName}", system-ui, sans-serif`;
+  const fontName = collectionState.fontName || 'system-ui';
+  const font = `"${fontName}", system-ui, sans-serif`;
   const titleLines = String(collectionState.title || '').split(/\r?\n/);
   const subtitleLines = String(collectionState.subtitle || '').split(/\r?\n/);
   const title = titleLines.filter(t => t !== '').map(text => ({ text, color: '#ffffff', group: 'title' }));
@@ -1683,7 +1528,7 @@ function drawCollectionText(ctx) {
     const line = measured[i];
     y += line.fs / 2;
     ctx.font = `${line.fs}px ${font}`;
-    ctx.strokeStyle = '#000000'; ctx.lineWidth = 50;
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 50;
     ctx.strokeText(line.text, W / 2, y);
     ctx.fillStyle = line.color; ctx.fillText(line.text, W / 2, y);
     y += line.fs / 2;
@@ -1701,81 +1546,228 @@ async function renderCollection() {
   await drawCollectionCanvas(canvas);
 }
 
-async function exportCollection() {
-  const canvas = document.querySelector('#collectionPreview canvas');
-  if (!canvas) return;
-  if (document.fonts) await document.fonts.ready;
-  await drawCollectionCanvas(canvas);
-  canvas.toBlob(blob => {
-    if (!blob) { alert('导出失败'); return; }
-    if (blob.size > 5 * 1024 * 1024) { alert('当前图片超过 5 MB，请换用更低分辨率的尺寸。'); return; }
-    const firstLine = (collectionState.title || '').split(/\r?\n/).find(l => l.trim() !== '') || '合集封面';
-    const safeTitle = firstLine.trim().replace(/[\\/:*?"<>|]/g, '_');
-    downloadBlob(blob, `${safeTitle}_${getFormattedDateStr()}.png`);
-  }, 'image/png');
-}
+/* =========================================================================
+ * 数据持久化（IndexedDB）
+ * ========================================================================= */
+const IDB_NAME = 'video_cover_db';
+const IDB_STORE = 'state';
 
-function clearCollection() {
-  if (!confirm('确定清空合集封面所有设置吗？')) return;
-  collectionState.bg = '';
-  collectionState.bgLoadedImg = null;
-  collectionState.fontData = '';
-  collectionState.title = '';
-  collectionState.subtitle = '';
-  document.querySelectorAll('#collectionMode input[type="file"]').forEach(el => {
-    el.value = '';
-    updateFileNameDisplay(el);
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
-  document.querySelectorAll('#collectionMode textarea').forEach(el => el.value = '');
-  renderCollection();
+}
+
+let persistTimer = null;
+function persist() {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(async () => {
+    try {
+      const db = await openIDB();
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      const store = tx.objectStore(IDB_STORE);
+      // 序列化：剔除不可序列化的
+      const stateSave = { ...state };
+      const collectionSave = { ...collectionState };
+      delete collectionSave.bgLoadedImg;
+      store.put(stateSave, 'video_state');
+      store.put(collectionSave, 'collection_state');
+    } catch (e) {}
+  }, 500);
+}
+
+async function loadPersist() {
+  try {
+    const db = await openIDB();
+    return new Promise(resolve => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const store = tx.objectStore(IDB_STORE);
+      const r1 = store.get('video_state');
+      const r2 = store.get('collection_state');
+      let done = 0;
+      const check = () => { if (++done >= 2) resolve(); };
+      r1.onsuccess = () => { if (r1.result) Object.assign(state, r1.result); check(); };
+      r2.onsuccess = () => { if (r2.result) Object.assign(collectionState, r2.result); check(); };
+      r1.onerror = r2.onerror = check;
+    });
+  } catch (e) {}
 }
 
 /* =========================================================================
- * 【模块 6】交互控制：侧边栏与模式切换
+ * 导出文件名
  * ========================================================================= */
-const sidebarDrawer = document.getElementById('sidebarDrawer');
-const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-
-function toggleSidebar(open) {
-  sidebarDrawer.classList.toggle('open', open);
-  sidebarBackdrop.classList.toggle('active', open);
+function getExportBaseName() {
+  const s2 = (state.sub2 || '').trim();
+  const s1 = (state.sub1 || '').trim();
+  const mt = (state.mainText || '').trim();
+  let name = s2 || s1 || mt || '视频封面';
+  return name.replace(/[\r\n]+/g, '').replace(/[\\/:*?"<>|]/g, '_');
 }
 
-function switchMode(mode) {
-  const video = document.getElementById('videoMode');
-  const collection = document.getElementById('collectionMode');
-  const vActions = document.getElementById('videoNavActions');
-  const cActions = document.getElementById('collectionNavActions');
-  const navTitle = document.getElementById('navTitle');
-  const btnVideo = document.getElementById('menuVideoBtn');
-  const btnCollection = document.getElementById('menuCollectionBtn');
+/* =========================================================================
+ * UI 同步
+ * ========================================================================= */
+function syncInputsFromState() {
+  const map = {
+    capTextInput: state.capText,
+    capTextBrightness: state.capTextBrightness,
+    capTextBrightnessInput: state.capTextBrightness,
+    mainTextInput: state.mainText,
+    sub1Input: state.sub1,
+    sub2Input: state.sub2,
+    midBrightness: state.midBrightness,
+    midBrightnessInput: state.midBrightness,
+    midBlur: state.midBlur,
+    midBlurInput: state.midBlur,
+    characterX: state.characterX,
+    characterXInput: state.characterX,
+    bossNameInput: state.bossNameInput,
+    characterNameInput: state.characterNameInput
+  };
+  Object.keys(map).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = map[id] ?? '';
+  });
+  const s1 = document.getElementById('sub1Select');
+  const s2 = document.getElementById('sub2Select');
+  if (s1) s1.value = String(state.sub1Size);
+  if (s2) s2.value = String(state.sub2Size);
 
-  if (mode === 'video') {
-    video.style.display = '';
-    collection.style.display = 'none';
-    vActions.style.display = 'flex';
-    cActions.style.display = 'none';
-    navTitle.textContent = '视频封面制作';
-    btnVideo.classList.add('active');
-    btnCollection.classList.remove('active');
-    render();
-  } else {
-    video.style.display = 'none';
-    collection.style.display = '';
-    vActions.style.display = 'none';
-    cActions.style.display = 'flex';
-    navTitle.textContent = '合集封面制作';
-    btnVideo.classList.remove('active');
-    btnCollection.classList.add('active');
-    renderCollection();
+  // 字体标签
+  const lv = document.getElementById('labelVideoFont');
+  if (lv) lv.textContent = state.fontName ? '当前：' + state.fontName : '默认系统字体';
+  const lc = document.getElementById('labelCollectionFont');
+  if (lc) lc.textContent = collectionState.fontName ? '当前：' + collectionState.fontName : '默认系统字体';
+
+  // 攻略模式
+  document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === state.guideType);
+  });
+  document.getElementById('bossPanel').style.display = state.guideType === 'boss' ? 'block' : 'none';
+  document.getElementById('characterPanel').style.display = state.guideType === 'character' ? 'block' : 'none';
+  document.getElementById('customPanel').style.display = state.guideType === 'custom' ? 'block' : 'none';
+}
+
+/* =========================================================================
+ * 事件绑定
+ * ========================================================================= */
+function bindEvents() {
+  // 顶部：视频封面/合集封面切换
+  document.querySelectorAll('#coverTypeSeg .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.type;
+      document.querySelectorAll('#coverTypeSeg .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('videoMode').style.display = type === 'video' ? 'block' : 'none';
+      document.getElementById('collectionMode').style.display = type === 'collection' ? 'block' : 'none';
+      if (type === 'collection') renderCollection();
+    });
+  });
+
+  // 攻略模式切换
+  document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => App.setGuideType(btn.dataset.type));
+  });
+
+  // 背景上传
+  document.getElementById('bgFile').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    updateFileNameDisplay(e.target);
+    const reader = new FileReader();
+    reader.onload = () => {
+      state.bg = reader.result;
+      mountPreview();
+      persist();
+    };
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  });
+
+  // 合集封面背景
+  document.getElementById('collectionBgFile').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    updateFileNameDisplay(e.target);
+    const reader = new FileReader();
+    reader.onload = () => {
+      collectionState.bg = reader.result;
+      collectionState.bgLoadedImg = null;
+      renderCollection();
+      persist();
+    };
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  });
+
+  // 参考线
+  document.getElementById('btnGuides').addEventListener('click', () => App.toggleGuides());
+
+  // 导出/导入/清空
+  document.getElementById('btnExportVideo').addEventListener('click', () => App.exportConfig());
+  document.getElementById('importVideoInput').addEventListener('change', e => App.importConfig(e.target));
+  document.getElementById('btnClearVideo').addEventListener('click', () => App.clearAll());
+  document.getElementById('btnClearCollection').addEventListener('click', () => App.clearCollection());
+}
+
+/* =========================================================================
+ * 主题同步
+ * ========================================================================= */
+window.addEventListener('message', function (e) {
+  if (e.data && e.data.type === 'theme') {
+    const html = document.documentElement;
+    html.classList.add('theme-switching');
+    html.setAttribute('data-theme', e.data.theme);
+    void html.offsetHeight;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        html.classList.remove('theme-switching');
+      });
+    });
   }
-  toggleSidebar(false);
-}
+});
 
 /* =========================================================================
- * 【模块 7】启动
+ * 初始化
  * ========================================================================= */
-restoreCache();
+(async function init() {
+  // 加载数据
+  await loadDataFiles();
+  await loadFontList();
+  await loadPersist();
+
+  // 恢复字体
+  if (state.fontData) await installFont('');
+  if (collectionState.fontData) await installFont('collection');
+
+  // 初始化 Logo 下拉
+  const logoSelect = document.getElementById('logoSelect');
+  if (logoSelect) {
+    logoSelect.innerHTML = LOGO_LIST.map((l, i) =>
+      '<option value="' + esc(l.file) + '">' + esc(l.name) + '</option>'
+    ).join('');
+    // 默认选中第一个
+    if (!state.capLogo) state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
+    logoSelect.value = LOGO_LIST[0].file;
+    logoSelect.addEventListener('change', function () {
+      state.capLogo = LOGO_BASE_URL + this.value;
+      const t = document.getElementById('logoThumb');
+      if (t) t.src = state.capLogo;
+      mountPreview();
+      persist();
+    });
+    const t = document.getElementById('logoThumb');
+    if (t) t.src = state.capLogo;
+  }
+
+  syncInputsFromState();
+  renderFloatList();
+  bindEvents();
+  mountPreview();
+})();
+
 </script>
 </body>
 </html>
