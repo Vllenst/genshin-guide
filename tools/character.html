@@ -1,53 +1,11 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>原神一图流生成器</title>
+<link rel="stylesheet" href="../shared-theme.css">
 <style>
-/* =========================================================================
- * 【样式 1】设计令牌（云上舞白 · 暖调 iOS）
- * ========================================================================= */
-:root {
-  --bg-base: #EDE8E1;
-  --bg-surface: #FFFFFF;
-  --bg-surface-2: #FAF8F5;
-  --bg-sunken: #EBE7E0;
-  --bg-hover: #E8E2D9;
-  --bg-seg-track: #EFEAE3;
-
-  --border-subtle: #E7E1D8;
-  --border-default: #D8D0C5;
-  --border-strong: #BFB5A8;
-
-  --text-primary: #1F1D1A;
-  --text-secondary: #6B655C;
-  --text-tertiary: #8A8279;
-
-  --accent: #8B7355;
-  --accent-dark: #75604A;
-
-  --danger: #CE4A36;
-  --danger-bg: #FBE7E2;
-  --danger-hover: #F7D9D2;
-  --danger-border: rgba(206, 74, 54, 0.22);
-
-  --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-pill: 999px;
-  --ctl-h: 38px;
-
-  --shadow-btn: 0 1px 2px rgba(31, 29, 26, 0.05);
-  --shadow-btn-hover: 0 2px 6px rgba(31, 29, 26, 0.09);
-  --shadow-card: 0 1px 2px rgba(31, 29, 26, 0.04);
-
-  --std-font: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-/* =========================================================================
- * 【样式 2】基础重置
- * ========================================================================= */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body, input, button, select, textarea {
   font-family: var(--std-font); font-synthesis: none;
@@ -57,20 +15,7 @@ html, body, input, button, select, textarea {
 body { background: var(--bg-base); color: var(--text-primary); font-size: 13px; min-height: 100vh; overflow-x: hidden; letter-spacing: -0.2px; }
 button, input[type="button"], input[type="submit"] { -webkit-appearance: none; appearance: none; }
 .icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
-
-/* =========================================================================
- * 【样式 3】顶部导航栏
- * ========================================================================= */
-.app-header {
-  position: sticky; top: 0; z-index: 50; height: 52px; padding: 0 16px;
-  background: rgba(237, 232, 225, 0.88);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex; align-items: center; gap: 8px;
-}
-.brand { font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; letter-spacing: -0.3px; }
-.header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto; }
+.icon-flip-y { display: inline-flex; align-items: center; transform: rotate(180deg); }
 
 .app-container {
   max-width: 1400px; margin: 0 auto; padding: 12px 14px;
@@ -82,7 +27,7 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
   .app-container {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
-    height: calc(100dvh - 52px);
+    height: 100dvh;
     padding: 12px 14px 0;
     padding-bottom: 0;
     gap: 0;
@@ -92,13 +37,11 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 @media (min-width: 1024px) {
   .app-container {
     grid-template-columns: minmax(480px, 1.2fr) minmax(440px, 1fr);
-    height: calc(100vh - 52px); padding: 16px 20px; overflow: hidden;
+    height: 100vh; padding: 16px 20px; overflow: hidden;
   }
 }
 
-/* =========================================================================
- * 【样式 4】预览区
- * ========================================================================= */
+/* 预览区 */
 .preview-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 @media (max-width: 1023px) {
   .preview-pane {
@@ -111,9 +54,10 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
   }
 }
 @media (min-width: 1024px) {
-  .preview-pane { position: sticky; top: 68px; height: 100%; overflow-y: auto; padding-right: 6px; }
+  .preview-pane { position: sticky; top: 16px; height: 100%; overflow-y: auto; padding-right: 6px; }
 }
 .preview-card {
+  position: relative;
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg); padding: 10px;
   display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-card);
@@ -153,99 +97,92 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 #svgPreviewHost { width: 100%; height: 100%; }
 #svgPreviewHost > svg { width: 100%; height: 100%; display: block; }
 
-/* =========================================================================
- * 【样式 5】检查器主面板
- * ========================================================================= */
+/* 浮动工具条 */
+.float-toolbar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 15;
+}
+@media (max-width: 1023px) {
+  .float-toolbar { top: 6px; right: 6px; }
+}
+.float-btn {
+  height: 30px;
+  min-width: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: var(--shadow-btn);
+  transition: all .15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.float-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
+.float-btn:active { transform: scale(.95); }
+.float-btn svg { width: 16px; height: 16px; display: block; }
+.float-btn-danger { color: var(--danger); border-color: var(--danger-border); }
+.float-btn-danger:hover { background: var(--danger-bg); }
+
+/* 检查器面板 */
 .inspector-pane { display: flex; flex-direction: column; gap: 12px; overflow: hidden; min-width: 0; }
 @media (min-width: 1024px) { .inspector-pane { height: 100%; } }
 @media (max-width: 1023px) {
   .inspector-pane { overflow: hidden; padding-top: 5px; gap: 5px; min-height: 0; }
 }
 
-/* =========================================================================
- * 【样式 6】Tab 触发按钮（替代 9-tab 行）
- * ========================================================================= */
+/* Tab 触发按钮 */
 .tab-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 44px;
-  padding: 0 14px 0 16px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  cursor: pointer;
-  box-shadow: var(--shadow-card);
-  flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-  letter-spacing: -0.2px;
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; height: 44px; padding: 0 14px 0 16px;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--text-primary); cursor: pointer; box-shadow: var(--shadow-card); flex-shrink: 0;
+  transition: background .15s, border-color .15s, box-shadow .15s; letter-spacing: -0.2px;
 }
 .tab-trigger:hover { background: var(--bg-hover); }
-.tab-trigger:active { transform: scale(0.99); }
+.tab-trigger:active { transform: scale(.99); }
 .tab-trigger[aria-expanded="true"] {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
-.tab-trigger-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-.tab-trigger-caret {
-  width: 16px;
-  height: 16px;
-  color: var(--text-tertiary);
-  flex-shrink: 0;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s;
-}
+.tab-trigger-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tab-trigger-caret { width: 16px; height: 16px; color: var(--text-tertiary); flex-shrink: 0; transition: transform .25s cubic-bezier(0.16, 1, 0.3, 1), color .15s; }
 .tab-trigger:hover .tab-trigger-caret { color: var(--text-secondary); }
 .tab-trigger[aria-expanded="true"] .tab-trigger-caret { transform: rotate(180deg); color: var(--accent); }
 
-/* =========================================================================
- * 【样式 7】Tab 内容区
- * ========================================================================= */
 .tabs-content { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; min-height: 0; }
 @media (max-width: 1023px) {
-  .tabs-content {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    flex: 1;
-    min-height: 0;
-    padding-bottom: calc(88px + env(safe-area-inset-bottom));
-  }
+  .tabs-content { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
 .tab-panel { display: none; flex-direction: column; gap: 12px; }
 .tab-panel.active { display: flex; }
 
-/* =========================================================================
- * 【样式 8】Bottom Sheet / Popover 弹层
- * ========================================================================= */
+/* Bottom Sheet */
 .tab-sheet-backdrop {
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(31, 29, 26, 0.35);
+  background: var(--mask);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.25s ease;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
 }
 .tab-sheet-backdrop.show { opacity: 1; pointer-events: auto; }
-
 .tab-sheet {
-  position: fixed;
-  z-index: 201;
-  background: var(--bg-surface);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  font-family: inherit;
-  /* 移动端默认：底部滑起 */
+  position: fixed; z-index: 201; background: var(--bg-surface); overflow-y: auto;
+  overscroll-behavior: contain; font-family: inherit;
   left: 0; right: 0; bottom: 0;
-  border-radius: 16px 16px 0 0;
-  max-height: 80dvh;
+  border-radius: 16px 16px 0 0; max-height: 80dvh;
   padding: 6px 0 calc(10px + env(safe-area-inset-bottom));
   transform: translateY(100%);
   transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
@@ -253,91 +190,37 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
   will-change: transform;
 }
 .tab-sheet.show { transform: translateY(0); }
-
-/* 桌面端：居中弹窗 */
 @media (min-width: 1024px) {
   .tab-sheet {
-    left: 50%; right: auto; bottom: auto;
-    top: 50%;
-    width: 340px;
-    max-height: 70vh;
-    border-radius: 16px;
-    padding: 8px 0 10px;
-    transform: translate(-50%, -48%) scale(0.96);
-    opacity: 0;
+    left: 50%; right: auto; bottom: auto; top: 50%; width: 340px; max-height: 70vh;
+    border-radius: 16px; padding: 8px 0 10px;
+    transform: translate(-50%, -48%) scale(0.96); opacity: 0;
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
     box-shadow: 0 24px 60px rgba(31, 29, 26, 0.24);
   }
-  .tab-sheet.show {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
+  .tab-sheet.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
-
-.tab-sheet-handle {
-  width: 36px; height: 4px; border-radius: 2px;
-  background: var(--border-strong);
-  margin: 6px auto 4px;
-  opacity: 0.55;
-}
+.tab-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 6px auto 4px; opacity: 0.55; }
 @media (min-width: 1024px) { .tab-sheet-handle { display: none; } }
-
-.tab-sheet-header {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  padding: 8px 22px 8px;
-}
+.tab-sheet-header { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.6px; padding: 8px 22px 8px; }
 @media (min-width: 1024px) { .tab-sheet-header { padding: 10px 20px 8px; } }
-
-.tab-sheet-list {
-  display: flex;
-  flex-direction: column;
-  padding: 0 8px;
-}
-
+.tab-sheet-list { display: flex; flex-direction: column; padding: 0 8px; }
 .tab-sheet-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  height: 50px;
-  padding: 0 14px;
-  background: transparent;
-  border: 0;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  letter-spacing: -0.2px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; height: 50px; padding: 0 14px;
+  background: transparent; border: 0; border-radius: 10px;
+  font-family: inherit; font-size: 15px; font-weight: 500;
+  color: var(--text-primary); text-align: left; cursor: pointer;
+  transition: background 0.15s, color 0.15s; letter-spacing: -0.2px;
   -webkit-appearance: none; appearance: none;
 }
 .tab-sheet-item:hover { background: var(--bg-hover); }
 .tab-sheet-item:active { background: var(--bg-sunken); }
-.tab-sheet-item.active {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.tab-sheet-item-check {
-  width: 16px; height: 16px;
-  color: var(--accent);
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
+.tab-sheet-item.active { color: var(--accent); font-weight: 600; }
+.tab-sheet-item-check { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
 .tab-sheet-item.active .tab-sheet-item-check { opacity: 1; }
 
-/* =========================================================================
- * 【样式 9】分组 / 表单
- * ========================================================================= */
+/* iOS 分组 */
 .ios-section-header {
   font-size: 12px; font-weight: 600; color: var(--text-tertiary);
   text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px 6px 8px;
@@ -355,100 +238,50 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 @media (max-width: 640px) { .field-grid, .field-grid.three { grid-template-columns: 1fr; } }
 label.ios-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-secondary); font-weight: 500; }
 
-/* =========================================================================
- * 【样式 10】输入框 / 下拉框
- * ========================================================================= */
+/* 输入框 */
 input[type="text"], input[type="number"], select {
-  width: 100%;
-  height: var(--ctl-h);
-  background: var(--bg-sunken);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 13px;
-  padding: 0 12px;
-  outline: none;
+  width: 100%; height: var(--ctl-h);
+  background: var(--bg-sunken); border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  font-size: 13px; padding: 0 12px; outline: none;
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 input[type="text"]:focus, input[type="number"]:focus, select:focus {
-  background: var(--bg-surface);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  background: var(--bg-surface); border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 select {
-  -webkit-appearance: none;
-  appearance: none;
+  -webkit-appearance: none; appearance: none;
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236B655C' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 11px 7px;
-  padding-right: 34px;
+  background-repeat: no-repeat; background-position: right 12px center;
+  background-size: 11px 7px; padding-right: 34px;
 }
 
-/* =========================================================================
- * 【样式 11】滑块（iOS 自定义外观）
- * ========================================================================= */
+/* 滑块 */
 .slider-box { display: flex; align-items: center; gap: 10px; padding: 0 10px 10px 10px; }
 .slider-box > span:first-child { font-size: 11px; color: var(--text-secondary); flex: 1; }
-
 input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  height: 28px;
-  flex: 1;
-  cursor: pointer;
-  margin: 0;
-  outline: none;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; height: 28px; flex: 1; cursor: pointer; margin: 0; outline: none;
 }
-input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--bg-sunken);
-}
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--bg-sunken); }
 input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -8px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: none;
+  -webkit-appearance: none; appearance: none;
+  width: 20px; height: 20px; margin-top: -8px; border-radius: 50%;
+  background: #ffffff; border: none;
   box-shadow: 0 1px 3px rgba(31, 29, 26, 0.2), 0 0 0 0.5px rgba(31, 29, 26, 0.08);
-  transition: transform 0.12s ease;
-  cursor: grab;
+  transition: transform 0.12s ease; cursor: grab;
 }
 input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.06); cursor: grabbing; }
-input[type="range"]::-moz-range-track {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--bg-sunken);
-  border: none;
-}
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--bg-sunken); border: none; }
 input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: none;
+  width: 20px; height: 20px; border-radius: 50%; background: #ffffff; border: none;
   box-shadow: 0 1px 3px rgba(31, 29, 26, 0.2), 0 0 0 0.5px rgba(31, 29, 26, 0.08);
   cursor: grab;
 }
-input[type="range"]:active::-moz-range-thumb { cursor: grabbing; }
+.slider-box input[type="number"] { width: 68px; height: 32px; text-align: center; padding: 0 6px; font-size: 12px; border-radius: 8px; }
 
-.slider-box input[type="number"] {
-  width: 68px;
-  height: 32px;
-  text-align: center;
-  padding: 0 6px;
-  font-size: 12px;
-  border-radius: 8px;
-}
-
-/* =========================================================================
- * 【样式 12】按钮
- * ========================================================================= */
+/* 按钮 */
 button, .file-btn {
   font-family: inherit; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
   height: var(--ctl-h); padding: 0 14px; font-size: 13px; font-weight: 500; cursor: pointer;
@@ -461,25 +294,19 @@ button, .file-btn {
 button:hover:not(:disabled), .file-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
 button:active:not(:disabled), .file-btn:active { transform: scale(0.97); box-shadow: var(--shadow-btn); }
 button:disabled { opacity: 0.35; cursor: not-allowed; }
-
 .btn-sm { height: 32px; padding: 0 10px; font-size: 12px; gap: 4px; }
 .btn-xs { height: 26px; padding: 0 8px; font-size: 11px; gap: 4px; border-radius: 8px; font-weight: 500; }
-
 .btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
 .btn-danger:hover:not(:disabled) { background: var(--danger-hover); box-shadow: var(--shadow-btn-hover); }
-
 .ios-btn-fill {
   background: var(--text-primary); border-color: var(--text-primary);
-  color: #fff; box-shadow: 0 2px 6px rgba(31, 29, 26, 0.15);
+  color: var(--bg-base); box-shadow: 0 2px 6px rgba(31, 29, 26, 0.15);
 }
 .ios-btn-fill:hover:not(:disabled) { background: var(--accent-dark); box-shadow: 0 3px 10px rgba(31, 29, 26, 0.2); }
 .ios-btn-fill:active:not(:disabled) { background: var(--accent); transform: scale(0.97); }
-
 .file-btn input[type="file"] { display: none !important; }
 
-/* =========================================================================
- * 【样式 13】缩略图 / 卡片列表
- * ========================================================================= */
+/* 缩略图 */
 .clickable-thumb {
   width: var(--ctl-h); height: var(--ctl-h); border-radius: var(--radius-sm);
   background: var(--bg-sunken); border: 1px solid var(--border-default);
@@ -494,15 +321,9 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-subtle);
 }
 .item-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
-.item-actions {
-  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
-  justify-content: flex-end; margin-left: auto;
-}
+.item-actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 .item-row { display: flex; align-items: center; gap: 8px; }
 
-/* =========================================================================
- * 【样式 14】命座编辑
- * ========================================================================= */
 .cons-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 8px; }
 @media (max-width: 600px) { .cons-grid { grid-template-columns: 1fr; } }
 .cons-item {
@@ -514,7 +335,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .cons-item.active {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  background: var(--accent-soft);
 }
 .cons-badge {
   width: 26px; height: 26px; border-radius: 50%;
@@ -526,9 +347,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 .cons-item.active .cons-badge { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* =========================================================================
- * 【样式 15】元素/主题色选择
- * ========================================================================= */
 .color-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; }
 .swatch-btn {
   display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -538,19 +356,13 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   transition: all 0.15s;
 }
 .swatch-btn:hover { background: var(--bg-hover); }
-.swatch-btn.active {
-  border-color: currentColor;
-  box-shadow: 0 0 0 1.5px currentColor;
-  background: var(--bg-surface);
-}
+.swatch-btn.active { border-color: currentColor; box-shadow: 0 0 0 1.5px currentColor; background: var(--bg-surface); }
 .swatch-icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 
-/* =========================================================================
- * 【样式 16】底部操作栏 + 主按钮
- * ========================================================================= */
+/* 底部工具条 */
 .bottom-dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-  background: rgba(237, 232, 225, 0.9);
+  background: var(--bg-base);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-top: 1px solid var(--border-subtle);
@@ -561,16 +373,14 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .export-btn-main {
   width: 100%; max-width: 480px; height: 48px;
   font-size: 15px; font-weight: 600;
-  background: var(--text-primary); color: #fff;
+  background: var(--text-primary); color: var(--bg-base);
   border: 1px solid var(--text-primary);
   border-radius: var(--radius-pill);
   box-shadow: 0 4px 16px rgba(31, 29, 26, 0.18);
 }
 .export-btn-main:active:not(:disabled) { background: var(--accent-dark); }
 
-/* =========================================================================
- * 【样式 17】Toast + Modal
- * ========================================================================= */
+/* Toast + Modal */
 .toast-container {
   position: fixed; top: 64px; right: 16px; z-index: 9999;
   display: flex; flex-direction: column; gap: 8px; pointer-events: none;
@@ -589,7 +399,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 9998;
-  background: rgba(31, 29, 26, 0.35);
+  background: var(--mask);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
@@ -606,40 +416,21 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; text-align: center; }
 .modal-message { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; text-align: center; }
 .modal-actions { display: flex; gap: 8px; }
-.modal-actions button {
-  flex: 1;
-  height: 42px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: var(--radius-pill);
-}
+.modal-actions button { flex: 1; height: 42px; font-size: 14px; font-weight: 600; border-radius: var(--radius-pill); }
 </style>
 </head>
 
 <body>
 
-<header class="app-header">
-  <div class="brand">原神一图流生成器</div>
-  <div class="header-actions">
-    <button type="button" class="btn-sm" onclick="App.exportConfig()">
-      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 19H20V12H22V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V12H4V19ZM14 9V15H10V9H5L12 2L19 9H14Z"></path></svg>
-      导出
-    </button>
-    <label class="btn-sm file-btn">
-      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 19H20V12H22V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V12H4V19ZM14 9H19L12 16L5 9H10V3H14V9Z"></path></svg>
-      导入
-      <input type="file" id="importJsonInput" accept=".json" onchange="App.importConfig(this)" />
-    </label>
-    <button type="button" class="btn-sm btn-danger" onclick="App.clearAllData()" title="清空全部数据">
-      <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 10.5858L9.17157 7.75736L7.75736 9.17157L10.5858 12L7.75736 14.8284L9.17157 16.2426L12 13.4142L14.8284 16.2426L16.2426 14.8284L13.4142 12L16.2426 9.17157L14.8284 7.75736L12 10.5858Z"></path></svg>
-      清空
-    </button>
-  </div>
-</header>
-
 <main class="app-container">
   <section class="preview-pane">
     <div class="preview-card">
+      <div class="float-toolbar">
+        <button type="button" class="float-btn" id="floatExportBtn" onclick="App.exportConfig()" title="导出配置"></button>
+        <button type="button" class="float-btn" id="floatImportBtn" onclick="document.getElementById('importJsonInput').click()" title="导入配置"></button>
+        <button type="button" class="float-btn float-btn-danger" id="floatClearBtn" onclick="App.clearAllData()" title="清空全部数据"></button>
+        <input type="file" id="importJsonInput" accept=".json" onchange="App.importConfig(this)" style="display:none" />
+      </div>
       <div class="preview-header">
         <span class="preview-title">实时卡片渲染视口</span>
         <button class="ios-btn-fill btn-sm" onclick="App.exportPNG()" id="exportDesktopBtn">导出 4K PNG</button>
@@ -665,7 +456,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
           <div class="ios-section-header">角色信息</div>
           <div class="ios-group">
             <div class="field-grid">
-              <label class="ios-field">角色名称<input type="text" id="charName" oninput="App.setField('charName', this.value)" /></label>
+              <label class="ios-field">角色名称<input type="text" id="charName" oninput="App.setField('charName', this.value)" onblur="App.matchCharAvatar(this.value)" /></label>
               <label class="ios-field">适用版本<input type="text" id="version" oninput="App.setField('version', this.value)" /></label>
               <label class="ios-field">制作日期<input type="text" id="date" oninput="App.setField('date', this.value)" /></label>
               <label class="ios-field">攻略作者<input type="text" id="author" oninput="App.setField('author', this.value)" /></label>
@@ -704,7 +495,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
                 <div style="font-size:13px;font-weight:500;" id="labelCharImg">点击上传立绘</div>
               </div>
               <button class="btn-xs btn-danger" onclick="App.clearImage('charImg', 'thumbCharImg', 'labelCharImg')" title="删除立绘">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 6V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7ZM13.4142 13.9997L15.182 12.232L13.7678 10.8178L12 12.5855L10.2322 10.8178L8.81802 12.232L10.5858 13.9997L8.81802 15.7675L10.2322 17.1817L12 15.4139L13.7678 17.1817L15.182 15.7675L13.4142 13.9997ZM9 4V6H15V4H9Z"></path></svg>
+                <span class="icon-only" id="btnDelCharImg"></span>
                 删除
               </button>
               <input type="file" id="inputCharImg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.charImg = v; State.data.charImgMeta = { w, h }; App.updateImgXHint(); App.updateThumb('thumbCharImg', 'labelCharImg', v, '已载入立绘（点击更换）'); })" />
@@ -720,7 +511,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
                 <div style="font-size:13px;font-weight:500;" id="labelNameBg">点击上传元素图</div>
               </div>
               <button class="btn-xs btn-danger" onclick="App.clearImage('nameBgImg', 'thumbNameBg', 'labelNameBg')" title="删除元素图">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 6V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7ZM13.4142 13.9997L15.182 12.232L13.7678 10.8178L12 12.5855L10.2322 10.8178L8.81802 12.232L10.5858 13.9997L8.81802 15.7675L10.2322 17.1817L12 15.4139L13.7678 17.1817L15.182 15.7675L13.4142 13.9997ZM9 4V6H15V4H9Z"></path></svg>
+                <span class="icon-only" id="btnDelNameBg"></span>
                 删除
               </button>
               <input type="file" id="inputNameBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.nameBgImg = v; State.data.nameBgImgMeta = { w, h }; App.updateThumb('thumbNameBg', 'labelNameBg', v, '已载入元素图（点击更换）'); })" />
@@ -731,7 +522,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
                 <div style="font-size:13px;font-weight:500;" id="labelBg">默认暗黑原力色</div>
               </div>
               <button class="btn-xs btn-danger" onclick="App.clearImage('bgImg', 'thumbBg', 'labelBg')" title="删除大背景">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 6V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7ZM13.4142 13.9997L15.182 12.232L13.7678 10.8178L12 12.5855L10.2322 10.8178L8.81802 12.232L10.5858 13.9997L8.81802 15.7675L10.2322 17.1817L12 15.4139L13.7678 17.1817L15.182 15.7675L13.4142 13.9997ZM9 4V6H15V4H9Z"></path></svg>
+                <span class="icon-only" id="btnDelBg"></span>
                 删除
               </button>
               <input type="file" id="inputBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.bgImg = v; App.updateThumb('thumbBg', 'labelBg', v, '已载入大背景（点击更换）'); })" />
@@ -833,7 +624,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
                 <div style="font-size:13px;font-weight:500;" id="labelTeamCore">主角色一号位头像（点击更换）</div>
               </div>
               <button class="btn-xs btn-danger" onclick="App.clearImage('teamCoreImg', 'thumbTeamCore', 'labelTeamCore')" title="删除头像">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 6V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7ZM13.4142 13.9997L15.182 12.232L13.7678 10.8178L12 12.5855L10.2322 10.8178L8.81802 12.232L10.5858 13.9997L8.81802 15.7675L10.2322 17.1817L12 15.4139L13.7678 17.1817L15.182 15.7675L13.4142 13.9997ZM9 4V6H15V4H9Z"></path></svg>
+                <span class="icon-only" id="btnDelTeamCore"></span>
                 删除
               </button>
               <input type="file" id="inputTeamCore" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamCoreImg = v; App.updateThumb('thumbTeamCore', 'labelTeamCore', v, '已载入1号位头像（点击更换）'); })" />
@@ -843,8 +634,8 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
         <div>
           <div class="ios-section-header">
             <span>配队参考方案（最多 3 组）</span>
-            <button class="ios-btn-fill btn-xs" style="margin-left:auto;" onclick="App.addTeam()">
-              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM11 11H7V13H11V17H13V13H17V11H13V7H11V11Z"></path></svg>
+            <button class="ios-btn-fill btn-xs" style="margin-left:auto;" id="btnAddTeam" onclick="App.addTeam()">
+              <span class="icon-only" id="btnAddTeamIcon"></span>
               添加
             </button>
           </div>
@@ -873,7 +664,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   </div>
 </div>
 
-<!-- Tab 切换弹层：移动端 Bottom Sheet / 桌面端居中弹窗 -->
 <div class="tab-sheet-backdrop" id="tabSheetBackdrop" onclick="App.closeTabSheet()"></div>
 <div class="tab-sheet" id="tabSheet" role="dialog" aria-modal="true" aria-labelledby="tabSheetTitle">
   <div class="tab-sheet-handle" aria-hidden="true"></div>
@@ -881,47 +671,31 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   <div class="tab-sheet-list" id="tabSheetList"></div>
 </div>
 
+<script src="../icons.js"></script>
+<script src="../icons/icon-loader.js"></script>
+<script src="../icons/icon-dict.js"></script>
 <script>
 /* =========================================================================
- * 【JS 模块 1】图标常量
+ * 【JS 模块 1】图标：全部来自共享 icons.js
  * ========================================================================= */
+const SHARED = window.ICONS || { ui: {}, element: {}, artifact: {}, nav: {}, app: {} };
+
 const ICONS = {
-  up: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM13 12H16L12 8L8 12H11V16H13V12Z"></path></svg>`,
-  down: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM13 12V8H11V12H8L12 16L16 12H13Z"></path></svg>`,
-  trash: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 6V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7ZM13.4142 13.9997L15.182 12.232L13.7678 10.8178L12 12.5855L10.2322 10.8178L8.81802 12.232L10.5858 13.9997L8.81802 15.7675L10.2322 17.1817L12 15.4139L13.7678 17.1817L15.182 15.7675L13.4142 13.9997ZM9 4V6H15V4H9Z"></path></svg>`,
-  collapse: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="m12 16.9l-2.4 2.4q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l3.1-3.1q.15-.15.325-.212t.375-.063t.375.063t.325.212l3.1 3.1q.275.275.275.7t-.275.7t-.7.275t-.7-.275zm0-9.8l2.4-2.4q.275-.275.7-.275t.7.275t.275.7t-.275.7l-3.1 3.1q-.15.15-.325.213T12 9.475t-.375-.062T11.3 9.2L8.2 6.1q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275z"/></svg>`,
-  expand: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="m12 18.1l2.325-2.325q.3-.3.725-.3t.725.3t.3.725t-.3.725L12.7 20.3q-.15.15-.325.213t-.375.062t-.375-.062t-.325-.213l-3.075-3.075q-.3-.3-.3-.725t.3-.725t.725-.3t.725.3zM12 6L9.675 8.325q-.3.3-.725.3t-.725-.3t-.3-.725t.3-.725L11.3 3.8q.15-.15.325-.213T12 3.526t.375.063t.325.212l3.075 3.075q.3.3.3.725t-.3.725t-.725.3t-.725-.3z"/></svg>`,
-  plus: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM11 11H7V13H11V17H13V13H17V11H13V7H11V11Z"></path></svg>`,
-  export: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 19H20V12H22V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V12H4V19ZM14 9V15H10V9H5L12 2L19 9H14Z"></path></svg>`,
-  import: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 19H20V12H22V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V12H4V19ZM14 9H19L12 16L5 9H10V3H14V9Z"></path></svg>`,
-  clear: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 10.5858L9.17157 7.75736L7.75736 9.17157L10.5858 12L7.75736 14.8284L9.17157 16.2426L12 13.4142L14.8284 16.2426L16.2426 14.8284L13.4142 12L16.2426 9.17157L14.8284 7.75736L12 10.5858Z"></path></svg>`
+  up: SHARED.ui.arrowUp || '',
+  down: '<span class="icon-flip-y">' + (SHARED.ui.arrowUp || '') + '</span>',
+  trash: SHARED.ui.trash || '',
+  collapse: SHARED.ui.chevronDown || '',
+  expand: '<span class="icon-flip-y">' + (SHARED.ui.chevronDown || '') + '</span>',
+  plus: SHARED.ui.plus || '',
+  export: SHARED.ui.export || '',
+  import: SHARED.ui.import || '',
+  clear: SHARED.ui.trash || ''
 };
+
+const ELEMENT_ICONS = SHARED.element || {};
+const ARTIFACT_ICON_PATHS = SHARED.artifact || {};
 
 const PLUS_ICON_PATH = 'M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5z';
-
-const ELEMENT_ICONS = {
-  fire: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M724 458.67s-55.333-42.667-76-133.333c0 0-35.333 26-41.333 79.333 0 0-4.001 44.667 28.666 72.667 0 0 16 23.334 18 41.334 0 0-62-51.334-77.333-115.334 0 0-14.001-32.667 13.333-116.667 0 0-77.333 48-89.333 103.333 0 0-7.69 35.452 27.333 69.333 0 0-46.667-26.666-45.333-73.333 0 0-1.334-44 71.333-101.333 0 0 34-25.333 6.667-80.667 0 0-42-73.342-64-88.004 0 0 10 56-77 155 0 0-27 39-28 82 0 0-6 77 121 120 0 0 153 46 160 139 0 0 27 84-69 132 0 0-91 46-159-9 0 0-43.666-60.666 27.667-108.333 0 0-82-25.666-101 48.667 0 0-7.667 52.667 64.667 85 0 0 84 42.034 185 1.684S744.998 665.667 749.331 621c0 0 9-44-22-109 0 0 75 39.334 74 105.667 0 0 6.334 56.994-93.333 112.661S644.666 756.667 512 848.667c0 0-85-57.917-222-126.167 0 0-66.667-34.166-71.667-105.166 0 0-7-66.333 81.333-118.667 0 0-52.667 57.667-43.667 113 0 0 3.667 75.167 118.5 126.333 0 0-58.5-50.001-39.75-128.501 0 0 25.53-116.166 175.057-122.166 0 0-162.141-48.661-158.807-154.995 0 0-17 44.323-96 138.323 0 0-54 62.004-71 128.004 0 0-16 59.333 9 88.333 0 0 20 35.5 122.5 89 0 0 73 37 196.5 134.5 0 0 43.333-53.166 197.333-137.166 0 0 101.333-46 120-128.667 0.001 0.002 21.335-91.328-105.332-185.995z" fill="currentColor"/><path d="M623.5 634c-3.5-75-66.5-97-66.5-97-118.5-36-150.5 61.5-150.5 61.5C507 553.5 545 626 545 626c28 42-5 86-5 86 82-26 83.5-78 83.5-78z" fill="currentColor"/></svg>`,
-  water: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M889.071 478.092c-3-118.494-116.404-325.425-347.071-340.758S181.5 300 175 340.5s23.5 53.597 23.5 53.597c30 20.597 62.103 0 62.103 0 117.269-159.239 271.372-135.428 271.372-135.428 294.641 37.333 284.692 307.998 284.692 307.998C815.334 752 652.5 830 652.5 830 809 730.5 772 568 772 568c-45-230-260-221.333-260-221.333-78.667 2-108.333 25-108.333 25C374 394 386 427 386 427c11 45 58 36 58 36 49-19 87.975-10 87.975-10C725.949 486 714 664.667 714 664.667 691.333 852.668 512 854 512 854c-95.333 9.333-219.898-59.424-219.898-59.424 37.498 92.995 239.473 94.495 239.473 94.495 392.464-53.997 357.496-410.979 357.496-410.979z" fill="currentColor"/><path d="M498 644s36.5-4 45.5 49.5c0 0 16 45.5 65.5 29.5 0 0 37-9.5 28-71.5 0 0-19-87.5-125-92 0 0-114.5-5.961-136.5 124.77 0 0-6 133.23 136.5 144.73 0 0 69.5-1 108-55.5 0 0 8.833-10.334 7.5-14 0 0 0.5-3-6.5 2.5s-25.5 48.5-109 47c0 0-71-3-88.5-81 0 0-9.5-80 74.5-84z" fill="currentColor"/><path d="M189 518.735m-53 0a53 53 0 1 0 106 0 53 53 0 1 0-106 0Z" fill="currentColor"/><path d="M257 684m-37 0a37 37 0 1 0 74 0 37 37 0 1 0-74 0Z" fill="currentColor"/></svg>`,
-  wind: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M436.667 611.334c27.604 60.544-60.667 62-60.667 62 1.333 33.333 38.667 34.667 38.667 34.667 56-8 50.667-66.667 50.667-66.667-2-93.334-142-90.667-142-90.667-115.333 10.667-196-132-196-132-31.333 109.998 22 167.334 22 167.334 81.132 92 208 13.333 208 13.333 59.999-34.667 79.333 12 79.333 12zM471 512c-205-186-91-361-91-361-7-9-145.5 57-122 190 24.384 138.002 213 171 213 171z" fill="currentColor"/><path d="M615.965 718.018l-21.334 13.334s-80-15.346-76.334-79.346c0 0-3.332-106.669 184.334-125.336 0 0 218.334-28.67 100.334-264.67 0 0-1 185.523-213 259.262 0 0-71.965 37.738-84.483 88.738C492.964 559 421 521.262 421 521.262 209 447.523 208 262 208 262 90 498 308.333 526.67 308.333 526.67c187.665 18.667 184.333 125.336 184.333 125.336 3.667 64-76.333 79.346-76.333 79.346L395 718.018c-21-3-31.333 5.329-31.333 5.329 108 95.343 141.815 196.334 141.815 196.334s33.815-100.991 141.815-196.334c0 0-10.332-8.329-31.332-5.329zM505.482 848.343c-3.518-12.666-34.148-56.676-34.148-56.676 19.667-7.666 34.148-23 34.148-23s14.481 15.334 34.149 23c0 0-30.631 44.01-34.149 56.676z m0-107.01c-23.851 31-61.148 16.667-61.148 16.667 43.333-7.667 61.148-51.667 61.148-51.667s17.815 44 61.149 51.667c0 0-37.297 14.333-61.149-16.667z" fill="currentColor"/><path d="M752.965 341c23.5-133-115-199-122-190 0 0 114 175-91 361 0 0 188.615-32.998 213-171zM883.631 418.667s-80.666 142.667-196 132c0 0-140-2.667-142 90.667 0 0-5.334 58.667 50.666 66.667 0 0 37.334-1.334 38.668-34.667 0 0-88.271-1.456-60.668-62 0 0 19.334-46.667 79.334-12 0 0 126.867 78.667 208-13.333 0 0 53.334-57.337 22-167.334z" fill="currentColor"/></svg>`,
-  thunder: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M506.482 707.444s-60.077-91.746 14.887-164.088l0.082 0.273s61.361-56.949 118.21-28.747c56.849 28.203 39.907 81.545 28.884 105.973 0 0 106.062-30.37 129.396-145.455 0 0 13.834-61.294-12.812-149.81 0 0 49.431 22.38 105.318 136.246 0 0-17.828-155.785-146.725-252.528 0 0-105.854-81.322-231.335-76.981 0 0 260.969 111.988 171.63 286.729 0 0-49.416 97.901-149.548 69.152l0.196-0.208s-80-24.666-84-87.999 50.667-75.333 77.333-78c0 0-79.333-76.667-190.667-39.333 0 0-60 18.667-123.333 86 0 0-5.333-53.998 65.333-159.332 0 0-126 93.332-145.333 253.332 0 0-17.5 132.332 49 238.832 0 0-33.5-282 162.5-292 0 0 109.491-6.154 134.66 94.936l-0.277-0.066s18.639 81.615-34.209 116.746c-52.849 35.131-90.574-6.212-106.217-27.972 0 0-26.729 107.037 61.27 184.788 0 0 46.166 42.628 136.145 63.81 0 0-44.098 31.618-170.652 23.085 0 0 143.828 62.453 292.059-0.803 0 0 123.354-51.011 182.335-161.852 0 0.001-227.469 170.013-334.13 5.272z" fill="currentColor"/></svg>`,
-  grass: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M511.572 316.734V317c0.073-0.044 0.142-0.089 0.214-0.133L512 317v-0.266c127.394-77.83 8.078-196.516 0-204.324V112l-0.214 0.204-0.214-0.204v0.41c-8.078 7.809-127.394 126.494 0 204.324zM287.5 580s21-21.75 59.75-10c0 0 36.25 11 58.5 29.25 0 0 52.5 31 64 35 0 0-81-66.5-92.5-133.5 0 0-9.75-77.75 81.75-71.75 0 0-10-44.5-78.5-41 0 0-73-2.5-82 82.5 0 0-2.25 31 35.75 71.75 0 0-40-5.25-46.75 37.75z" fill="currentColor"/><path d="M824.572 530c11-113.5-45.5-169-45.5-169 98 31 105.5-91.5 105.5-91.5-130-21.5-116.5 79.5-116.5 79.5-145-126-243-5-243-5-13 24 27.5 48 27.5 48 18.5-56 80.5-51.5 80.5-51.5 145 1.5 142.5 142 142.5 142 1.5 140-122.5 184-122.5 184-112.15 41.643-138.757 94.765-141.286 100.34-2.53-5.575-29.136-58.697-141.286-100.34 0 0-124-44-122.5-184 0 0-2.5-140.5 142.5-142 0 0 62-4.5 80.5 51.5 0 0 40.5-24 27.5-48 0 0-98-121-243 5 0 0 13.5-101-116.5-79.5 0 0 7.5 122.5 105.5 91.5 0 0-56.5 55.5-45.5 169 0 0-36.5-48-87 21 0 0 62.5 51 89.5-8 0 0 13.5 99 114.5 159 0 0 54.25 38.75 96.5 54.25 0 0 57.766 21.61 99.072 128.65v1.099c0.071-0.186 0.143-0.364 0.214-0.549 0.071 0.185 0.143 0.363 0.214 0.549V884.9c41.305-107.04 99.072-128.65 99.072-128.65 42.25-15.5 96.5-54.25 96.5-54.25 101-60 114.5-159 114.5-159 27 59 89.5 8 89.5 8-50.5-69-87-21-87-21z" fill="currentColor"/><path d="M553.822 634.25c11.5-4 64-35 64-35 22.25-18.25 58.5-29.25 58.5-29.25 38.75-11.75 59.75 10 59.75 10-6.75-43-46.75-37.75-46.75-37.75 38-40.75 35.75-71.75 35.75-71.75-9-85-82-82.5-82-82.5-68.5-3.5-78.5 41-78.5 41 91.5-6 81.75 71.75 81.75 71.75-11.5 67-92.5 133.5-92.5 133.5z" fill="currentColor"/></svg>`,
-  ice: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M475 257s35.999-28 37-39V97s-72 148-108 192l34-10s49.999 43 74 184v-91s-20-101-37-115zM512 97v121c1.001 11 37 39 37 39-17 14-37 115-37 115v91c24.001-141 74-184 74-184l34 10C584 245 512 97 512 97z" fill="currentColor"/><path d="M492.592 409.814l-42.58-18.126-0.012-0.021-0.002 0.015-0.015-0.006 0.013 0.022-5.33 45.969s59.007 56.596 67.194 60.545l0.064 0.111 0.004-0.077 0.07 0.035-0.065-0.113c0.624-9.067-19.341-88.354-19.341-88.354zM702.324 345.598s42.248 17.176 52.274 12.542l104.789-60.5s-164.171 11.646-220.276 2.47l25.66 24.445s-12.239 64.8-122.349 156.085l78.809-45.5c0 0.001 77.469-67.819 81.093-89.542zM859.389 297.641l-104.789 60.5c-9.026 6.367-15.275 51.543-15.275 51.543-20.624-7.723-118.093 25.457-118.093 25.457l-78.809 45.5c134.11-49.714 196.349-27.914 196.349-27.914l8.34 34.445c20.105-53.177 112.277-189.531 112.277-189.531z" fill="currentColor"/><path d="M578.779 437.241l-5.592-45.938 0.012-0.021-0.014 0.006-0.002-0.016-0.013 0.022-42.476 18.369s-19.51 79.399-18.836 88.464l-0.063 0.111c0.021-0.009 0.047-0.024 0.068-0.035 0.002 0.024 0.002 0.055 0.005 0.078l0.065-0.113c8.165-3.995 66.846-60.927 66.846-60.927z" fill="currentColor"/><path d="M739.258 586.766s6.249 45.176 15.275 51.542l104.789 60.5s-92.172-136.353-112.277-189.53l-8.34 34.445s-62.238 21.801-196.348-27.914l78.808 45.5s97.469 33.179 118.093 25.457z" fill="currentColor"/><path d="M859.322 698.809L754.533 638.31c-10.026-4.634-52.275 12.542-52.275 12.542-3.624-21.722-81.093-89.543-81.093-89.543l-78.809-45.5c110.109 91.286 122.349 156.086 122.349 156.086l-25.66 24.445c56.105-9.177 220.277 2.469 220.277 2.469zM598.121 525.594l36.987-27.812h0.024l-0.012-0.009 0.013-0.010h-0.025l-37.146-27.6s-78.517 22.804-86.03 27.919l-0.128 0.001 0.064 0.042-0.065 0.043h0.131c7.541 5.073 86.187 27.426 86.187 27.426z" fill="currentColor"/><path d="M548.868 739.335s-35.999 28-37 39v121s71.999-148 108-192l-34 10s-50-43-74-183.999v90.999s20 101 37 115zM511.868 899.335l-0.001-120.999c-1-11-37-39.001-37-39.001 17-13.999 37-115 37-115v-91c-24.001 141-74 184-74 184l-34-10c36 44.001 108.001 192 108.001 192z" fill="currentColor"/><path d="M531.275 586.521l42.579 18.126 0.013 0.021 0.002-0.015 0.015 0.007-0.013-0.022 5.329-45.97s-59.007-56.596-67.193-60.544l-0.065-0.111c-0.002 0.022-0.002 0.053-0.003 0.077l-0.07-0.035 0.066 0.113c-0.624 9.067 19.34 88.353 19.34 88.353z" fill="currentColor"/><path d="M321.544 650.737s-42.248-17.176-52.275-12.542l-104.789 60.5s164.171-11.647 220.277-2.47l-25.66-24.445s12.239-64.801 122.348-156.085l-78.808 45.499s-77.469 67.821-81.093 89.543z" fill="currentColor"/><path d="M164.48 698.694l104.788-60.5c9.026-6.367 15.276-51.543 15.276-51.543 20.623 7.723 118.093-25.457 118.093-25.457l78.808-45.5c-134.11 49.714-196.349 27.914-196.349 27.914l-8.34-34.446C256.65 562.34 164.48 698.694 164.48 698.694zM445.088 559.095l5.592 45.938-0.012 0.021 0.014-0.006 0.001 0.017 0.013-0.022 42.476-18.37s19.51-79.399 18.836-88.463l0.063-0.112c-0.021 0.009-0.048 0.024-0.068 0.035l-0.004-0.078-0.065 0.114c-8.164 3.993-66.846 60.926-66.846 60.926z" fill="currentColor"/><path d="M284.61 409.57s-6.25-45.176-15.276-51.542l-104.789-60.5s92.173 136.353 112.277 189.53l8.34-34.445s62.238-21.801 196.347 27.914l-78.807-45.5c0.001 0-97.468-33.179-118.092-25.457zM164.546 297.527l104.788 60.499c10.027 4.633 52.276-12.542 52.276-12.542 3.624 21.722 81.093 89.543 81.093 89.543l78.808 45.5c-110.108-91.286-122.349-156.086-122.349-156.086l25.661-24.445c-56.106 9.176-220.277-2.469-220.277-2.469z" fill="currentColor"/><path d="M425.747 470.741l-36.987 27.812h-0.024l0.012 0.009-0.014 0.01h0.026l37.147 27.6s78.517-22.803 86.029-27.918l0.129-0.001-0.065-0.042c0.02-0.014 0.046-0.029 0.066-0.042h-0.132c-7.541-5.074-86.187-27.428-86.187-27.428z" fill="currentColor"/></svg>`,
-  rock: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M512 123S364 228 255 362c0 0 31 109 65 164 0 0 126.999-138 192-153 0 0 65 52 79 103 0 0-83 77-91 84 0 0 14 21 31 38 0 0 109-77 135-114 0 0-56.001-111-154-205 0 0-137 113-165 140 0 0 6.999-92 165-253 0 0 196 207 284 457 0 0 52-62.334 80-111 0 0-123-224-364-389z" fill="currentColor"/><path d="M512 651s-65-52-79-103c0 0 83-77 91-84 0 0-14-21-31-38 0 0-109 77-135 114 0 0 56.001 111 154 205 0 0 137-113 165-140 0 0-6.999 92-165 253 0 0-196-207-284-457 0 0-52 62.334-80 111 0 0 123 224 364 389 0 0 148-105 257-239 0 0-31-109-65-164 0 0-126.999 138-192 153z" fill="currentColor"/></svg>`,
-  none: `<svg class="swatch-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M509.098667 43.946667a4.949333 4.949333 0 0 1 3.2-1.28c2.56 0 4.522667 1.877333 4.522666 4.352l1.92 6.826666c7.68 24.96 14.72 49.28 29.44 71.68 5.76 8.746667 13.44 16.213333 23.04 21.802667 21.162667 11.861333 44.842667 19.328 68.522667 26.197333l1.92 0.597334a32.853333 32.853333 0 0 1 11.52 5.632c0.682667 4.352-3.157333 5.589333-6.4 6.826666-0.597333 0-1.28 0.64-1.92 0.64-17.92 4.992-36.48 10.581333-54.4 17.450667l-10.88 4.992c-10.24 5.589333-20.48 11.221333-27.562667 20.565333-3.84 4.352-7.04 9.941333-9.6 14.933334-1.28 2.474667-2.56 4.992-3.84 6.826666l-1.92 0.64 0.64 1.28c-7.68 19.285333-14.08 38.613333-19.84 57.941334 0 4.949333-7.68 8.106667-8.96 2.474666-1.28-3.114667-1.962667-6.826667-3.242666-9.984a376.618667 376.618667 0 0 0-18.56-51.072c-7.04-14.336-15.36-28.672-29.44-37.376-20.48-13.098667-44.202667-19.968-67.242667-26.794666-3.84-1.28-7.04-1.877333-10.88-3.114667a24.234667 24.234667 0 0 1-9.642667-5.632 23.125333 23.125333 0 0 1 9.642667-6.229333c2.56-0.597333 5.12-1.237333 7.68-2.474667 22.4-6.826667 44.8-13.696 65.28-24.917333 9.642667-4.992 17.322667-12.458667 23.722667-21.205334 14.08-21.162667 21.76-46.08 29.44-70.4 0.64-3.114667 1.92-6.229333 2.56-9.344q0.64-1.28 1.28-1.877333z m235.050666 157.013333a24.533333 24.533333 0 0 0-19.2 6.826667c-5.12 4.992-8.32 11.221333-12.202666 17.450666-1.28 2.474667-3.2 5.589333-5.12 8.106667-7.68 13.653333-17.92 26.154667-31.36 34.261333-1.28 0.597333-3.2 1.237333-4.48 1.877334-2.56 0.597333-5.12 1.237333-6.4 4.352-3.2 4.992-5.12 10.581333-6.4 16.213333 26.24 7.466667 53.76 10.581333 81.322666 13.056 10.24 1.28 19.84 1.877333 30.08 3.114667 58.922667 7.466667 119.125333 18.090667 172.928 43.605333l13.44 7.509333c-6.4-1.877333-12.8-3.114667-18.56-4.992-3.2-1.28-7.04-1.877333-10.24-3.114666-0.64 1.237333-0.64 2.474667-1.28 3.712-0.64 3.754667-1.962667 7.509333-5.802666 9.984-4.48 3.114667-9.6 4.992-14.08 6.826666-6.4 2.56-12.8 4.394667-17.92 9.386667 15.36 1.877333 30.72 1.237333 46.08-1.877333 29.482667-5.632 59.605333-16.213333 80.725333-37.376 4.48-6.229333 7.68-13.738667 8.32-21.205334-34.56-31.146667-76.202667-53.589333-119.765333-69.76-49.28-18.688-99.882667-32.426667-151.125334-44.885333a12.202667 12.202667 0 0 0-8.96-3.114667z m-462.378666 0c-3.2 0-6.4 0-8.96 1.194667a1306.453333 1306.453333 0 0 0-136.405334 39.253333c-33.28 11.861333-65.962667 26.197333-95.402666 44.885333-12.202667 8.106667-23.722667 16.213333-34.56 25.557334-3.242667 2.474667-5.802667 4.949333-6.442667 8.106666 3.2 21.162667 23.68 32.384 41.642667 41.088 28.8 13.098667 62.122667 20.565333 94.122666 16.853334-5.12-4.394667-11.52-6.869333-17.28-8.746667-5.12-1.877333-10.88-3.754667-15.36-7.466667-3.242667-2.517333-3.84-6.229333-4.522666-9.984 0-1.237333-0.64-1.877333-0.64-3.114666-5.12 1.28-10.88 2.517333-16 4.352-4.48 1.28-8.96 2.517333-12.8 3.754666 5.76-3.114667 11.52-6.229333 17.28-8.704 3.84-1.877333 7.04-3.114667 10.88-4.992 49.962667-21.205333 103.765333-29.909333 157.568-36.778666 8.32-0.597333 16.64-1.877333 24.32-2.474667 29.44-2.517333 58.922667-4.992 87.082666-13.738667a11.306667 11.306667 0 0 1-1.28-4.352c-2.56-7.466667-4.48-14.933333-13.44-16.213333-18.56-9.301333-28.8-26.752-39.04-43.605333-2.56-3.712-4.48-7.466667-7.082666-11.221334-5.76-8.704-14.08-13.653333-23.68-13.653333zM355.84 394.965333c-17.28 0-34.56 1.237333-51.882667 4.992a257.834667 257.834667 0 0 0-149.888 92.16 273.749333 273.749333 0 0 0-46.08 86.016 286.208 286.208 0 0 0 32.682667 245.504c0.64 0.64 1.28 1.28 1.28 1.877334 0.597333 1.237333 1.92 3.114667 3.84 3.114666h-1.28c15.36 21.162667 33.28 40.490667 54.4 56.661334h0.682667c19.84 15.616 41.6 28.074667 65.28 36.778666 33.28 12.458667 69.162667 18.090667 105.045333 16.213334 57.6-1.877333 117.162667-13.098667 167.125333-42.368 15.36-8.106667 29.44-18.090667 40.96-30.549334v-36.138666-16.213334-40.490666-10.581334c0-8.704 0-18.048 3.84-26.154666l-0.597333 0.597333c5.12-9.344 13.44-17.450667 23.04-21.76 3.84-1.877333 8.32-3.157333 12.16-4.394667 5.76-1.877333 11.52-3.114667 16-6.826666v-3.754667-1.877333c-6.4-0.64-13.44-0.64-19.84-0.64H367.36c-4.48-1.237333-10.88 3.114667-7.04 8.106666 4.48 3.754667 10.282667 5.632 16.042667 6.826667l5.76 1.92c21.76 4.352 43.52 14.336 57.6 32.426667 4.522667 8.064 8.96 16.768 8.96 26.112V856.064c0 1.877333 0.042667 3.754667-0.597334 6.229333-0.64 12.458667-1.92 24.917333-7.04 36.778667-8.32 9.344-21.12 8.704-33.28 8.106667-3.84 0-8.32-0.64-12.16 0a135.338667 135.338667 0 0 1-70.485333-32.426667 198.784 198.784 0 0 1-44.202667-56.064c-10.24-18.688-17.92-39.253333-23.68-59.818667-3.2-11.818667-5.12-24.32-7.68-36.138666-2.56-21.802667-3.84-43.605333-3.2-65.408 1.28-27.434667 6.4-54.826667 14.08-81.024h0.64a259.413333 259.413333 0 0 1 41.002667-80.341334c12.16-14.336 24.96-27.434667 40.96-37.418666a118.741333 118.741333 0 0 1 90.282667-17.450667c33.28 7.509333 60.842667 29.909333 81.365333 55.466667 13.44 17.450667 24.32 36.778667 32.64 56.746666 3.84 9.301333 7.082667 18.645333 9.642667 28.586667 0.64 1.28 0.64 2.56 1.28 3.754667 1.28 4.992 2.56 9.984 6.4 13.098666 5.717333-11.221333 6.4-23.04 7.68-35.498666 0-4.394667 0.597333-8.746667 1.28-13.098667 0.597333-16.213333 1.28-33.024 1.28-49.237333v-9.941334c0-13.738667-0.64-26.794667-5.12-39.893333-30.72 0.64-59.562667-9.984-85.802667-24.32a277.930667 277.930667 0 0 0-128.085333-31.744z m187.306667 11.818667c26.88-1.237333 54.4-1.237333 81.322666-1.237333h176.128c22.4 0 44.8-0.64 67.2 1.28-0.64 9.301333-9.6 11.818667-17.28 13.653333-2.56 0.64-4.48 1.28-7.04 1.877333-22.442667 4.992-46.08 14.933333-58.282666 34.901334-7.68 11.861333-7.68 26.197333-7.04 39.893333v341.461333c0 13.653333-0.64 27.392 3.242666 41.088l-0.682666 3.114667 3.2 0.64c10.24 16.213333 26.282667 28.032 44.8 33.621333 4.522667 1.877333 8.96 2.517333 14.08 3.754667 9.002667 1.877333 17.322667 4.352 25.002666 9.344 1.92 7.466667-5.76 7.466667-11.52 7.466667H744.192c-53.12 0-106.922667 0-160.085333-0.597334h-10.88a155.306667 155.306667 0 0 1-29.44-0.64c-0.682667-9.984 8.96-11.818667 17.237333-13.696 2.56-0.64-12.202667-1.28-9.642667-1.877333 28.16-5.589333 73.728-21.802667 81.408-49.834667 0.64-13.738667 0.64-28.032 0.64-41.770666v-19.925334-10.581333-29.312a951.466667 951.466667 0 0 1 0-60.416v-38.016-57.941333-115.285334c2.56-20.565333-19.925333-42.965333-37.845333-56.704-10.88-9.941333-8.277333-14.293333-23.04-18.048a123.904 123.904 0 0 1-26.837333-9.386666v-2.474667c-2.56-0.597333-2.56-2.474667-2.56-4.352z" fill="currentColor"/></svg>`
-};
-
-const ARTIFACT_ICON_PATHS = {
-  flower: [
-    'M273.001 227.604v-16.773l-1.745 129.095s106.416 130.839 174.452 179.685v33.146s-151.773 134.327-165.729 162.24l-2.907 130.838-58.151 32.565-1.162 81.413H512v-0.19h294.241l-1.161-81.41-58.153-32.565-2.905-130.838c-13.957-27.912-165.73-162.24-165.73-162.24v-33.146c68.037-48.846 174.453-179.686 174.453-179.686L751 210.644v16.961H273.001zM531.77 446.75v276.783l132.003 94.218v41.869H512v0.185H360.226v-41.866l132.002-94.218V446.938l-56.115-25.586 1.455-26.743H512v-0.187h74.432l1.456 26.742-56.118 25.586z',
-    'M815.546 102.484H512v0.188H208.454v108.159h64.547l477.998-0.187h64.547z'
-  ],
-  cup: [
-    'M116.082 135.948h788.351s35.299 35.299 0 101.976H116.082c0-0.001-27.456-31.378 0-101.976zM512 264.586H143.019V398.08s37.498 217.489 242.988 277.487c0 0 0 56.996 59.997 94.494v52.498s-181.491 62.996-197.99 100.494l-1.5 33H512V570.57s-7.5-92.995-97.495-103.494c0 0 92.996-16.499 97.495-101.995V264.586z m0 100.496c4.5 85.496 97.495 101.995 97.495 101.995C519.5 477.576 512 570.57 512 570.57v385.482h265.486l-1.5-33c-16.498-37.498-197.99-100.494-197.99-100.494V770.06c59.997-37.498 59.998-94.494 59.998-94.494C843.483 615.568 880.981 398.08 880.981 398.08V264.586H512v100.496z'
-  ],
-  crown: [
-    'M942.246 318.937l-52.517 27.805-9.267 58.697-105.05 84.965-64.878-4.635-145.198-194.638-3.099-37.075 15.451-24.719V179.91l-58.692-77.229-58.693 77.229v49.427l15.451 24.719-3.097 37.075-145.2 194.638-64.878 4.635-105.049-84.965-9.268-58.697-52.516-27.805-24.719 3.086v52.524l160.652 395.457 231.71 108.127h111.213l231.711-108.127 160.65-395.457v-52.524l-24.717-3.086zM613.413 633.521l-1.136 0.003c-19.509 4.509-51.31 27.141-59.777 36.853-8.128 9.312-30.185 52.305-32.754 57.335l0.004 0.486c-0.022-0.111-0.054-0.229-0.078-0.342l-0.174 0.342-0.006-1.131c-4.561-19.499-27.283-51.244-37.015-59.685-9.918-8.608-57.908-32.849-57.908-32.849l94.422-0.761H424.57c19.406-3.764 52.425-26.934 61.114-36.782 8.177-9.268 30.456-52.126 33.057-57.151l-0.001-0.487c0.021 0.111 0.053 0.229 0.076 0.343l0.177-0.343v1.138c4.454 19.521 27.008 51.38 36.694 59.876 9.283 8.151 52.206 30.317 57.239 32.905l0.487-0.003c-0.112 0.022-0.229 0.054-0.343 0.077l0.343 0.176z'
-  ]
-};
 
 /* =========================================================================
  * 【JS 模块 2】全局常量
@@ -939,63 +713,30 @@ const LAYOUT = {
   left: { x: 20, y: 20, w: 340, h: 680 },
   right: { x: 380, y: 20, w: 880, h: 680 },
   title: { offX: 20, offY: 20, fs: 15, dotR: 4, dotGap: 11 },
-  padX: 20,
-  bottomPad: 15,
-  contentOffsetY: 42.5,
-
+  padX: 20, bottomPad: 15, contentOffsetY: 42.5,
   layers: {
     weapon: { y: 20, h: 135 },
-    row2:   { y: 165, h: 120 },
+    row2: { y: 165, h: 120 },
     artifact: { x: 380, w: 580 },
-    talent:   { x: 970, w: 290 },
+    talent: { x: 970, w: 290 },
     mid: {
       y: 295, h: 175,
-      stat:   { x: 380, w: 290 },
-      panel:  { x: 680, w: 280 },
-      cons:   { x: 970, w: 290 }
+      stat: { x: 380, w: 290 },
+      panel: { x: 680, w: 280 },
+      cons: { x: 970, w: 290 }
     },
     team: { y: 480, h: 220 }
   },
-
   iconSize: 55, iconGap: 10, doubleGap: 2,
-  weaponSlotY: 62.5,
-  artifactSlotY: 207.5,
+  weaponSlotY: 62.5, artifactSlotY: 207.5,
   weaponLabelOffsetY: 10, weaponLabelFs: 12,
-
-  stat: {
-    boxW: 76, boxH: 62, gap: 10,
-    subH: 45.5, subGap: 10,
-    iconSize: 12, labelFs: 12, subLabelFs: 12
-  },
+  stat: { boxW: 76, boxH: 62, gap: 10, subH: 45.5, subGap: 10, iconSize: 12, labelFs: 12, subLabelFs: 12 },
   talent: { colGap: 10, boxH: 62.5, labelFs: 12, valueFs: 20 },
-  panel: {
-    cols: 2, rows: 3,
-    cellW: 115, cellH: 32.5,
-    gapX: 10, gapY: 10,
-    innerPadX: 10,
-    labelFs: 12, valueFs: 12
-  },
+  panel: { cols: 2, rows: 3, cellW: 115, cellH: 32.5, gapX: 10, gapY: 10, innerPadX: 10, labelFs: 12, valueFs: 12 },
   cons: { boxW: 120, boxH: 32.5, gapX: 10, gapY: 10, seqFs: 12, descFs: 10 },
-  team: {
-    w: 270, gap: 15,
-    mainSize: 35, mainGap: 20,
-    altSize: 25, altGap: 10, altRowGap: 5,
-    nameFs: 12,
-    nameOffsetY: 16,
-    mainOffsetY: 27,
-    altOffsetY: 67,
-    altLabelPadL: 20,
-    altRangePadR: 20
-  },
-  plusSize: 14,
-  plusStrokeW: 1.5,
-
-  charInfo: {
-    padL: 20,
-    padB: 20,
-    lineGap: 15
-  },
-
+  team: { w: 270, gap: 15, mainSize: 35, mainGap: 20, altSize: 25, altGap: 10, altRowGap: 5, nameFs: 12, nameOffsetY: 16, mainOffsetY: 27, altOffsetY: 67, altLabelPadL: 20, altRangePadR: 20 },
+  plusSize: 14, plusStrokeW: 1.5,
+  charInfo: { padL: 20, padB: 20, lineGap: 15 },
   radius: { panel: 12, inner: 6, slotFactor: 0.15 },
   labelColor: '#FFE898',
   innerBoxFill: 'rgba(255,255,255,.15)'
@@ -1003,14 +744,9 @@ const LAYOUT = {
 const MID_CONTENT_Y = LAYOUT.layers.mid.y + LAYOUT.contentOffsetY;
 
 const elementColors = [
-  ['火', '#EC4923', 'fire'],
-  ['水', '#498FCC', 'water'],
-  ['风', '#359697', 'wind'],
-  ['雷', '#6957C2', 'thunder'],
-  ['草', '#66AD16', 'grass'],
-  ['冰', '#35AACC', 'ice'],
-  ['岩', '#CC9046', 'rock'],
-  ['无', '#939393', 'none']
+  ['火', '#EC4923', 'fire'], ['水', '#498FCC', 'water'], ['风', '#359697', 'wind'],
+  ['雷', '#6957C2', 'thunder'], ['草', '#66AD16', 'grass'], ['冰', '#35AACC', 'ice'],
+  ['岩', '#CC9046', 'rock'], ['无', '#939393', 'none']
 ];
 
 const FONT_FAMILY_DEFAULT = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
@@ -1021,19 +757,16 @@ const PANEL_PRIMARY_KEYS = ['hp', 'atk', 'def'];
 const PANEL_EMPTY_TEXT = '任意';
 const EMPTY_FILL = 'rgba(255,255,255,.5)';
 
-/* =========================================================================
- * 【JS 模块 2.5】Tab 清单
- * ========================================================================= */
 const TAB_DEFS = [
-  { key: 'style',    label: '外观样式' },
-  { key: 'base',     label: '立绘区' },
-  { key: 'weapon',   label: '武器区' },
+  { key: 'style', label: '外观样式' },
+  { key: 'base', label: '立绘区' },
+  { key: 'weapon', label: '武器区' },
   { key: 'artifact', label: '圣遗物区' },
-  { key: 'talent',   label: '天赋区' },
-  { key: 'stats',    label: '词条区' },
-  { key: 'panel',    label: '面板区' },
-  { key: 'cons',     label: '命座区' },
-  { key: 'team',     label: '配队区' }
+  { key: 'talent', label: '天赋区' },
+  { key: 'stats', label: '词条区' },
+  { key: 'panel', label: '面板区' },
+  { key: 'cons', label: '命座区' },
+  { key: 'team', label: '配队区' }
 ];
 let currentTab = 'style';
 let tabSheetOpen = false;
@@ -1067,7 +800,6 @@ function openDatabase() {
     req.onerror = () => reject(req.error);
   });
 }
-
 async function saveStateToIDB() {
   try {
     const db = await openDatabase();
@@ -1075,12 +807,10 @@ async function saveStateToIDB() {
     tx.objectStore(STORE_NAME).put(State.data, 'current_state');
   } catch (e) {}
 }
-
 function debouncedSave() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { saveTimer = null; saveStateToIDB(); }, 500);
 }
-
 async function loadStateFromIDB() {
   try {
     const db = await openDatabase();
@@ -1109,7 +839,6 @@ function showToast(message, type = 'info') {
     setTimeout(() => el.remove(), 300);
   }, 2400);
 }
-
 function showConfirm(title, message) {
   return new Promise(resolve => {
     const backdrop = document.getElementById('modalBackdrop');
@@ -1140,7 +869,6 @@ function esc(v) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
 function darken(hex, amt) {
   if (!hex || typeof hex !== 'string') return '#333333';
   let h = hex.startsWith('#') ? hex.slice(1) : hex;
@@ -1155,19 +883,16 @@ function darken(hex, amt) {
   const bb = Math.max(0, b - amt);
   return `#${rr.toString(16).padStart(2,'0')}${gg.toString(16).padStart(2,'0')}${bb.toString(16).padStart(2,'0')}`;
 }
-
 function placeholder(label) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="100" y="112" font-size="52" text-anchor="middle" fill="#666" font-family="sans-serif">${esc(label)}</text></svg>`;
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
-
 function formatBytes(bytes) {
   if (!bytes) return '';
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / 1024 / 1024).toFixed(2) + ' MB';
 }
-
 function moveItem(arr, from, dir) {
   const to = from + dir;
   if (to < 0 || to >= arr.length) return false;
@@ -1189,46 +914,30 @@ function tightenSvgToSquareViewBox(svgString) {
   host.style.visibility = 'hidden';
   host.setAttribute('aria-hidden', 'true');
   document.body.appendChild(host);
-
   const wrap = document.createElementNS(ns, 'svg');
   wrap.innerHTML = svgString;
   host.appendChild(wrap);
-
   const paths = wrap.querySelectorAll('path');
   if (!paths.length) { host.remove(); return svgString; }
-
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   paths.forEach(p => {
     let b;
     try { b = p.getBBox(); } catch (e) { return; }
     if (!b || (b.width === 0 && b.height === 0)) return;
-    minX = Math.min(minX, b.x);
-    minY = Math.min(minY, b.y);
-    maxX = Math.max(maxX, b.x + b.width);
-    maxY = Math.max(maxY, b.y + b.height);
+    minX = Math.min(minX, b.x); minY = Math.min(minY, b.y);
+    maxX = Math.max(maxX, b.x + b.width); maxY = Math.max(maxY, b.y + b.height);
   });
   host.remove();
   if (!isFinite(minX) || !isFinite(minY)) return svgString;
-
-  const w = maxX - minX;
-  const h = maxY - minY;
-  const side = Math.max(w, h);
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
-  const nx = cx - side / 2;
-  const ny = cy - side / 2;
+  const w = maxX - minX, h = maxY - minY, side = Math.max(w, h);
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const nx = cx - side / 2, ny = cy - side / 2;
   const fmt = n => +n.toFixed(4);
   const vb = `${fmt(nx)} ${fmt(ny)} ${fmt(side)} ${fmt(side)}`;
   return svgString.replace(/viewBox="[^"]*"/, `viewBox="${vb}"`);
 }
-
 function tightenAllIconViewBoxes() {
-  Object.keys(ICONS).forEach(k => {
-    ICONS[k] = tightenSvgToSquareViewBox(ICONS[k]);
-  });
-  Object.keys(ELEMENT_ICONS).forEach(k => {
-    ELEMENT_ICONS[k] = tightenSvgToSquareViewBox(ELEMENT_ICONS[k]);
-  });
+  Object.keys(ELEMENT_ICONS).forEach(k => { ELEMENT_ICONS[k] = tightenSvgToSquareViewBox(ELEMENT_ICONS[k]); });
   document.querySelectorAll('svg.icon').forEach(svg => {
     const outer = svg.outerHTML;
     const fixed = tightenSvgToSquareViewBox(outer);
@@ -1266,27 +975,18 @@ function text(x, y, content, size, opts = {}) {
   const opacity = opts.opacity == null ? 1 : opts.opacity;
   const baseline = opts.baseline || 'middle';
   const parts = [
-    `x="${x}"`, `y="${y}"`,
-    `fill="${fill}"`, `font-size="${size}"`,
+    `x="${x}"`, `y="${y}"`, `fill="${fill}"`, `font-size="${size}"`,
     `font-weight="${weight}"`, `text-anchor="${anchor}"`,
     `dominant-baseline="${baseline}"`, `opacity="${opacity}"`
   ];
   if (opts.stroke) {
-    parts.push(
-      `stroke="${opts.stroke}"`,
-      `stroke-width="${opts.strokeWidth || 0}"`,
-      `stroke-linejoin="round"`, `stroke-linecap="round"`,
-      `paint-order="stroke fill"`
-    );
+    parts.push(`stroke="${opts.stroke}"`, `stroke-width="${opts.strokeWidth || 0}"`,
+      `stroke-linejoin="round"`, `stroke-linecap="round"`, `paint-order="stroke fill"`);
   }
   if (opts.extra) parts.push(opts.extra);
   if (opts.field) parts.push(`data-field="${esc(opts.field)}"`);
   if (opts.fit) {
-    parts.push(
-      `data-fit-max-w="${opts.fit.maxW}"`,
-      `data-fit-base="${opts.fit.base}"`,
-      `data-fit-min="${opts.fit.min || 8}"`
-    );
+    parts.push(`data-fit-max-w="${opts.fit.maxW}"`, `data-fit-base="${opts.fit.base}"`, `data-fit-min="${opts.fit.min || 8}"`);
   }
   return `<text ${parts.join(' ')}>${esc(content)}</text>`;
 }
@@ -1354,7 +1054,6 @@ function sectionTitle(x, y, title) {
     ${text(textX, y, title, fs, { weight: 500 })}
   `;
 }
-
 function slot(x, y, size, img, name, key, field) {
   const cp = `clip_${key}`;
   const radius = Math.round(size * LAYOUT.radius.slotFactor);
@@ -1383,7 +1082,6 @@ function slot(x, y, size, img, name, key, field) {
     ${bg}${labelEl}
   `;
 }
-
 function doubleArtifact(x, y, size, a, key, field) {
   const gap = LAYOUT.doubleGap;
   const w = size * 2 + gap;
@@ -1400,10 +1098,7 @@ function doubleArtifact(x, y, size, a, key, field) {
   let labelEl = '';
   if (showLabel) {
     const opts = { anchor: 'middle', baseline: 'alphabetic' };
-    if (field) {
-      opts.field = field;
-      opts.fit = { maxW, base, min: 4 };
-    }
+    if (field) { opts.field = field; opts.fit = { maxW, base, min: 4 }; }
     labelEl = text(x + w / 2, labelTextY, a.name || '', fs, opts);
   }
   const bg = showLabel ? `
@@ -1425,7 +1120,6 @@ function doubleArtifact(x, y, size, a, key, field) {
 /* =========================================================================
  * 【JS 模块 7】SVG 图层
  * ========================================================================= */
-
 function midSection(layerCfg, title, contentSvg) {
   const y = LAYOUT.layers.mid.y;
   const h = LAYOUT.layers.mid.h;
@@ -1434,7 +1128,6 @@ function midSection(layerCfg, title, contentSvg) {
     ${sectionTitle(layerCfg.x + LAYOUT.title.offX, y + LAYOUT.title.offY, title)}
     ${contentSvg}`;
 }
-
 function buildWeapons() {
   const keys = WEAPON_ORDER.filter(k => State.data.weaponData[k].length);
   if (!keys.length) return '';
@@ -1462,7 +1155,6 @@ function buildWeapons() {
   });
   return out;
 }
-
 function buildArtifacts() {
   if (!State.data.artifactData.length) return '';
   let out = '';
@@ -1482,7 +1174,6 @@ function buildArtifacts() {
   });
   return out;
 }
-
 function renderArtifactIcon(iconKey, cx, cy, size) {
   const paths = ARTIFACT_ICON_PATHS[iconKey];
   if (!paths) return '';
@@ -1492,7 +1183,6 @@ function renderArtifactIcon(iconKey, cx, cy, size) {
   const pathsStr = paths.map(d => `<path d="${d}"/>`).join('');
   return `<g transform="translate(${iconX}, ${iconY}) scale(${scale})" fill="${State.data.theme}" filter="url(#glowThemeSmall)">${pathsStr}</g>`;
 }
-
 function statBox(x, y, w, h, iconKey, title, value, field) {
   const boxRx = LAYOUT.radius.inner;
   const iconSize = LAYOUT.stat.iconSize;
@@ -1510,10 +1200,7 @@ function statBox(x, y, w, h, iconKey, title, value, field) {
   const valueMidY = valueAreaTop + valueAreaH / 2;
   const maxW = w - boxRx * 2;
   const opts = { fill: '#fff', anchor: 'middle' };
-  if (field) {
-    opts.field = field;
-    opts.fit = { maxW, base: 12, min: 6 };
-  }
+  if (field) { opts.field = field; opts.fit = { maxW, base: 12, min: 6 }; }
   return `
     ${rect(x, y, w, h, LAYOUT.innerBoxFill, '', 0, boxRx)}
     ${iconElem}
@@ -1521,7 +1208,6 @@ function statBox(x, y, w, h, iconKey, title, value, field) {
     ${text(x + w / 2, valueMidY, value || '', fitSize(value, maxW, 12, 6), opts)}
   `;
 }
-
 function buildStats() {
   const layer = LAYOUT.layers.mid.stat;
   const contentX = layer.x + LAYOUT.padX;
@@ -1535,14 +1221,12 @@ function buildStats() {
   const subY = contentY + boxH + subGap;
   const totalW = boxW * 3 + gap * 2;
   const offsetX = contentX + (contentW - totalW) / 2;
-
   const subLabelX = offsetX + 10;
   const subLabelFs = LAYOUT.stat.subLabelFs;
   const subLabelW = measureTextWidth('副词条：', subLabelFs);
   const subTextX = subLabelX + subLabelW + 5;
   const subRightLimit = offsetX + totalW - 10;
   const subTextW = subRightLimit - subTextX;
-
   return `
     ${statBox(offsetX, contentY, boxW, boxH, 'flower', '时之沙', State.data.sandMain, 'stat.sandMain')}
     ${statBox(offsetX + boxW + gap, contentY, boxW, boxH, 'cup', '空之杯', State.data.gobMain, 'stat.gobMain')}
@@ -1552,7 +1236,6 @@ function buildStats() {
     ${wrappedLeftText(subTextX, subY, subTextW, subH, State.data.subStats, subTextW, 12, 6, '#fff', 4)}
   `;
 }
-
 function buildTalents() {
   const layer = LAYOUT.layers.talent;
   const contentX = layer.x + LAYOUT.padX;
@@ -1576,16 +1259,10 @@ function buildTalents() {
     const base = LAYOUT.talent.valueFs;
     return `
       ${rect(x, contentY, colW, contentH, LAYOUT.innerBoxFill, '', 0, r)}
-      ${text(x + colW / 2, labelY, it[0], LAYOUT.talent.labelFs,
-             { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500 })}
-      ${text(x + colW / 2, valueY, val,
-             fitSize(val, maxW, base, 10),
-             { fill: '#fff', anchor: 'middle', weight: 600,
-               field: it[2],
-               fit: { maxW, base, min: 10 } })}`;
+      ${text(x + colW / 2, labelY, it[0], LAYOUT.talent.labelFs, { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500 })}
+      ${text(x + colW / 2, valueY, val, fitSize(val, maxW, base, 10), { fill: '#fff', anchor: 'middle', weight: 600, field: it[2], fit: { maxW, base, min: 10 } })}`;
   }).join('');
 }
-
 function buildPanel() {
   const d = State.data.panel || {};
   const P = LAYOUT.panel;
@@ -1593,19 +1270,15 @@ function buildPanel() {
   const contentX = layer.x + LAYOUT.padX;
   const baseY = MID_CONTENT_Y;
   const r = LAYOUT.radius.inner;
-
   const primaryLabel = PANEL_PRIMARY_LABELS[d.primaryKey] || PANEL_PRIMARY_LABELS.hp;
-
   const items = [
     { key: 'primaryValue', label: primaryLabel, value: d.primaryValue || '' },
-    { key: 'em',           label: '元素精通',   value: d.em || '' },
-    { key: 'cr',           label: '暴击率',     value: d.cr || '' },
-    { key: 'cd',           label: '暴击伤害',   value: d.cd || '' },
-    { key: 'er',           label: '充能效率',   value: d.er || '' }
+    { key: 'em', label: '元素精通', value: d.em || '' },
+    { key: 'cr', label: '暴击率', value: d.cr || '' },
+    { key: 'cd', label: '暴击伤害', value: d.cd || '' },
+    { key: 'er', label: '充能效率', value: d.er || '' }
   ];
-
   const { cols, cellW, cellH, gapX, gapY, innerPadX, labelFs, valueFs } = P;
-
   return items.map((it, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
@@ -1615,14 +1288,10 @@ function buildPanel() {
     const empty = !it.value;
     return `
       ${rect(cx, cy, cellW, cellH, LAYOUT.innerBoxFill, '', 0, r)}
-      ${text(cx + innerPadX, midY, it.label, labelFs,
-             { fill: LAYOUT.labelColor, weight: 500 })}
-      ${text(cx + cellW - innerPadX, midY, empty ? PANEL_EMPTY_TEXT : it.value, valueFs,
-             { fill: empty ? EMPTY_FILL : '#fff', anchor: 'end', weight: 400,
-               field: `panel.${it.key}` })}`;
+      ${text(cx + innerPadX, midY, it.label, labelFs, { fill: LAYOUT.labelColor, weight: 500 })}
+      ${text(cx + cellW - innerPadX, midY, empty ? PANEL_EMPTY_TEXT : it.value, valueFs, { fill: empty ? EMPTY_FILL : '#fff', anchor: 'end', weight: 400, field: `panel.${it.key}` })}`;
   }).join('');
 }
-
 function buildConstellations() {
   const layer = LAYOUT.layers.mid.cons;
   const colX = layer.x + LAYOUT.padX;
@@ -1661,30 +1330,22 @@ function buildConstellations() {
       ${descText}`;
   }).join('');
 }
-
 function buildTeams() {
   if (!State.data.teamData.length) return '';
   const T = LAYOUT.team;
   const whiteBoxY = LAYOUT.layers.team.y + LAYOUT.contentOffsetY;
   const whiteBoxH = LAYOUT.layers.team.h - LAYOUT.contentOffsetY - LAYOUT.bottomPad;
-
   return State.data.teamData.slice(0, 3).map((team, ti) => {
     const teamW = T.w;
     const teamGap = T.gap;
     const x = LAYOUT.right.x + LAYOUT.padX + ti * (teamW + teamGap);
     const teamRx = LAYOUT.radius.inner;
-
     let out = `<rect x="${x}" y="${whiteBoxY}" width="${teamW}" height="${whiteBoxH}" rx="${teamRx}" fill="${LAYOUT.innerBoxFill}"/>`;
-
     const nameY = whiteBoxY + T.nameOffsetY;
     if (team.name) {
-      out += text(x + teamW / 2, nameY, team.name,
-        fitSize(team.name, 240, T.nameFs, 8),
-        { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500,
-          field: `team.${ti}.name`,
-          fit: { maxW: 240, base: T.nameFs, min: 8 } });
+      out += text(x + teamW / 2, nameY, team.name, fitSize(team.name, 240, T.nameFs, 8),
+        { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500, field: `team.${ti}.name`, fit: { maxW: 240, base: T.nameFs, min: 8 } });
     }
-
     const mainSize = T.mainSize;
     const mainGap = T.mainGap;
     const mainStartX = x + (teamW - (mainSize * 4 + mainGap * 3)) / 2;
@@ -1706,7 +1367,6 @@ function buildTeams() {
         out += `<g transform="translate(${plusX}, ${plusY}) scale(${plusScale})"><path d="${PLUS_ICON_PATH}" fill="${LAYOUT.labelColor}" stroke="${LAYOUT.labelColor}" stroke-width="${LAYOUT.plusStrokeW}" stroke-linejoin="round"/></g>`;
       }
     });
-
     const altStartY = whiteBoxY + T.altOffsetY;
     team.chars.slice(1, 4).forEach((c, ci) => {
       const rowY = altStartY + ci * (T.altSize + T.altRowGap);
@@ -1716,15 +1376,12 @@ function buildTeams() {
       const label = `${ci + 2}号位备选`;
       const labelFs = 10;
       const labelW = measureTextWidth(label, labelFs);
-
       const rangeL = x + T.altLabelPadL + labelW;
       const rangeR = x + teamW - T.altRangePadR;
       const rangeW = rangeR - rangeL;
       const centerX = rangeL + rangeW / 2;
-
       const clusterW = alts.length ? alts.length * altSize + (alts.length - 1) * altGap : 0;
       const startX = centerX - clusterW / 2;
-
       const emptyAltText = c.emptyAltText || '暂无备选';
       out += text(x + T.altLabelPadL, rowY + altSize / 2, label, labelFs, { fill: LAYOUT.labelColor, weight: 500 });
       if (!alts.length) out += wrappedCenteredText(rangeL, rowY, rangeW, altSize, emptyAltText, rangeW, 10, 5, EMPTY_FILL);
@@ -1737,12 +1394,10 @@ function buildTeams() {
     return out;
   }).join('');
 }
-
 function panelRect(x, y, w, h, rx) {
   const theme = State.data.theme || '#939393';
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="rgba(0,0,0,.5)" stroke="${theme}" stroke-width="2" filter="url(#glowTheme)"/>`;
 }
-
 function buildSVG(scale = 1) {
   const d = State.data;
   const W = SVG_W * scale;
@@ -1783,13 +1438,10 @@ function buildSVG(scale = 1) {
   infoRows.forEach((r, i) => {
     const ix = leftX + CI.padL;
     const iy = infoBottomCenterY - (infoRows.length - 1 - i) * CI.lineGap;
-    info += text(ix, iy, `${r[0]} ${r[1]}`, infoFs,
-      { fill: '#ffffff', stroke: '#000000', strokeWidth: 1.2, field: r[2] });
+    info += text(ix, iy, `${r[0]} ${r[1]}`, infoFs, { fill: '#ffffff', stroke: '#000000', strokeWidth: 1.2, field: r[2] });
   });
-
   const row2Y = LAYOUT.layers.row2.y;
   const row2H = LAYOUT.layers.row2.h;
-
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${SVG_W} ${SVG_H}">
     <defs>
       <style>${fontFace} text { font-family: ${fontFamily}; paint-order: stroke fill; }</style>
@@ -1804,61 +1456,42 @@ function buildSVG(scale = 1) {
         <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
       </linearGradient>
       <filter id="glowTheme" x="-200%" y="-200%" width="500%" height="500%">
-        <feComponentTransfer in="SourceAlpha" result="alphaFull">
-          <feFuncA type="linear" slope="2" intercept="0"/>
-        </feComponentTransfer>
+        <feComponentTransfer in="SourceAlpha" result="alphaFull"><feFuncA type="linear" slope="2" intercept="0"/></feComponentTransfer>
         <feGaussianBlur in="alphaFull" stdDeviation="1.8" result="blur"/>
         <feComposite in="blur" in2="alphaFull" operator="out" result="outer"/>
         <feFlood flood-color="#ffffff" flood-opacity="1" result="white"/>
         <feComposite in="white" in2="outer" operator="in" result="glow"/>
-        <feMerge>
-          <feMergeNode in="glow"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
+        <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
       <filter id="glowThemeSmall" x="-100%" y="-100%" width="300%" height="300%">
         <feGaussianBlur in="SourceAlpha" stdDeviation="100" result="blur"/>
         <feComposite in="blur" in2="SourceAlpha" operator="out" result="outer"/>
         <feFlood flood-color="#ffffff" flood-opacity="1" result="white"/>
         <feComposite in="white" in2="outer" operator="in" result="glow"/>
-        <feMerge>
-          <feMergeNode in="glow"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
+        <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
       <clipPath id="leftClip"><rect x="${leftX}" y="${leftY}" width="${leftW}" height="${leftH}" rx="${LAYOUT.radius.panel}"/></clipPath>
     </defs>
     <rect width="${SVG_W}" height="${SVG_H}" fill="#000"/>
     ${d.bgImg ? image(d.bgImg, 0, 0, SVG_W, SVG_H) : ''}
     <rect width="${SVG_W}" height="${SVG_H}" fill="rgba(0,0,0,0.25)"/>
-
     ${rect(leftX, leftY, leftW, leftH, 'rgba(0,0,0,.5)', '', 0, LAYOUT.radius.panel)}
     ${d.charImg ? image(d.charImg, charDrawX, charDrawY, charDrawW, charDrawH, 'xMidYMid meet', 'clip-path="url(#leftClip)"') : ''}
     ${info}
     ${d.nameBgImg ? image(d.nameBgImg, elemBgX, elemBgY, elemBgW, elemBgH, 'xMidYMid meet', 'opacity="0.75"') : ''}
-    ${text(nameElemCenterX, nameElemCenterY, d.charName, nameFs, {
-      anchor: 'middle', weight: 400,
-      field: 'charName',
-      fit: { maxW: 280, base: 50, min: 18 },
-      extra: 'filter="drop-shadow(0 3px 5px rgba(0,0,0,.9))"'
-    })}
-
+    ${text(nameElemCenterX, nameElemCenterY, d.charName, nameFs, { anchor: 'middle', weight: 400, field: 'charName', fit: { maxW: 280, base: 50, min: 18 }, extra: 'filter="drop-shadow(0 3px 5px rgba(0,0,0,.9))"' })}
     ${panelRect(LAYOUT.right.x, LAYOUT.layers.weapon.y, LAYOUT.right.w, LAYOUT.layers.weapon.h, LAYOUT.radius.panel)}
     ${sectionTitle(LAYOUT.right.x + LAYOUT.title.offX, LAYOUT.layers.weapon.y + LAYOUT.title.offY, '武器推荐')}
     ${buildWeapons()}
-
     ${panelRect(LAYOUT.layers.artifact.x, row2Y, LAYOUT.layers.artifact.w, row2H, LAYOUT.radius.panel)}
     ${sectionTitle(LAYOUT.layers.artifact.x + LAYOUT.title.offX, row2Y + LAYOUT.title.offY, '圣遗物推荐')}
     ${buildArtifacts()}
-
     ${panelRect(LAYOUT.layers.talent.x, row2Y, LAYOUT.layers.talent.w, row2H, LAYOUT.radius.panel)}
     ${sectionTitle(LAYOUT.layers.talent.x + LAYOUT.title.offX, row2Y + LAYOUT.title.offY, '天赋加点')}
     ${buildTalents()}
-
     ${midSection(LAYOUT.layers.mid.stat, '词条推荐', buildStats())}
     ${midSection(LAYOUT.layers.mid.panel, '面板参考', buildPanel())}
     ${midSection(LAYOUT.layers.mid.cons, '核心命座', buildConstellations())}
-
     ${panelRect(LAYOUT.right.x, LAYOUT.layers.team.y, LAYOUT.right.w, LAYOUT.layers.team.h, LAYOUT.radius.panel)}
     ${sectionTitle(LAYOUT.right.x + LAYOUT.title.offX, LAYOUT.layers.team.y + LAYOUT.title.offY, '配队参考')}
     ${buildTeams()}
@@ -1871,7 +1504,6 @@ function buildSVG(scale = 1) {
 let previewSvgEl = null;
 const previewIndex = new Map();
 let renderTimer = null;
-
 function mountPreview() {
   const host = document.getElementById('svgPreviewHost');
   if (!host) return;
@@ -1887,7 +1519,6 @@ function mountPreview() {
     });
   }
 }
-
 function applyTextFieldUpdate(el, textValue, fill) {
   el.textContent = textValue == null ? '' : String(textValue);
   if (fill) el.setAttribute('fill', fill);
@@ -1898,19 +1529,18 @@ function applyTextFieldUpdate(el, textValue, fill) {
     el.setAttribute('font-size', fitSize(String(textValue || ''), +maxW, base, min));
   }
 }
-
 function getFieldDisplayValue(field) {
   const d = State.data;
   if (field === 'charName') return { text: d.charName || '' };
-  if (field === 'version')  return { text: d.version ? `当前版本: ${d.version}` : '' };
-  if (field === 'date')     return { text: d.date ? `制作日期: ${d.date}` : '' };
-  if (field === 'author')   return { text: d.author ? `作者: ${d.author}` : '' };
+  if (field === 'version') return { text: d.version ? `当前版本: ${d.version}` : '' };
+  if (field === 'date') return { text: d.date ? `制作日期: ${d.date}` : '' };
+  if (field === 'author') return { text: d.author ? `作者: ${d.author}` : '' };
   if (field === 'talent.A') return { text: d.talentA || '—' };
   if (field === 'talent.E') return { text: d.talentE || '—' };
   if (field === 'talent.Q') return { text: d.talentQ || '—' };
   if (field === 'stat.sandMain') return { text: d.sandMain || '' };
-  if (field === 'stat.gobMain')  return { text: d.gobMain || '' };
-  if (field === 'stat.cirMain')  return { text: d.cirMain || '' };
+  if (field === 'stat.gobMain') return { text: d.gobMain || '' };
+  if (field === 'stat.cirMain') return { text: d.cirMain || '' };
   if (field.startsWith('panel.')) {
     const key = field.slice(6);
     const v = (d.panel && d.panel[key]) || '';
@@ -1945,7 +1575,6 @@ function getFieldDisplayValue(field) {
   }
   return null;
 }
-
 function updatePreviewField(field) {
   if (!previewSvgEl || !previewIndex.size) { mountPreview(); return; }
   const els = previewIndex.get(field);
@@ -1954,7 +1583,6 @@ function updatePreviewField(field) {
   if (!info) { mountPreview(); return; }
   els.forEach(el => applyTextFieldUpdate(el, info.text, info.fill));
 }
-
 function scheduleRender() {
   clearTimeout(renderTimer);
   renderTimer = setTimeout(() => {
@@ -1963,7 +1591,6 @@ function scheduleRender() {
     debouncedSave();
   }, 40);
 }
-
 function syncInputs() {
   const map = ['charName','version','date','author','sandMain','gobMain','cirMain','subStats','talentA','talentE','talentQ'];
   map.forEach(id => {
@@ -1974,27 +1601,22 @@ function syncInputs() {
   const sImgX = document.getElementById('imgXSlider');
   if (elImgX && document.activeElement !== elImgX) elImgX.value = State.data.imgX ?? 0;
   if (sImgX && document.activeElement !== sImgX) sImgX.value = State.data.imgX ?? 0;
-
   const p = State.data.panel || {};
   const panelMap = {
     panelPrimaryKey: p.primaryKey || 'hp',
     panelPrimaryValue: p.primaryValue || '',
-    panelCr: p.cr || '',
-    panelCd: p.cd || '',
-    panelEm: p.em || '',
-    panelEr: p.er || ''
+    panelCr: p.cr || '', panelCd: p.cd || '', panelEm: p.em || '', panelEr: p.er || ''
   };
   Object.keys(panelMap).forEach(id => {
     const el = document.getElementById(id);
     if (el && document.activeElement !== el) el.value = panelMap[id];
   });
-
   document.documentElement.style.setProperty('--accent', State.data.theme);
   document.documentElement.style.setProperty('--accent-dark', darken(State.data.theme, 50));
 }
 
 /* =========================================================================
- * 【JS 模块 8.5】Tab Sheet：打开 / 关闭 / 切换
+ * 【JS 模块 8.5】Tab Sheet
  * ========================================================================= */
 function renderTabSheetList() {
   const el = document.getElementById('tabSheetList');
@@ -2002,13 +1624,10 @@ function renderTabSheetList() {
   el.innerHTML = TAB_DEFS.map(t => `
     <button type="button" class="tab-sheet-item ${t.key === currentTab ? 'active' : ''}" onclick="App.selectTab('${t.key}')">
       <span>${t.label}</span>
-      <svg class="tab-sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
+      <svg class="tab-sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
     </button>
   `).join('');
 }
-
 function openTabSheet() {
   if (tabSheetOpen) return;
   tabSheetOpen = true;
@@ -2018,7 +1637,6 @@ function openTabSheet() {
   const trigger = document.getElementById('tabTrigger');
   if (trigger) trigger.setAttribute('aria-expanded', 'true');
 }
-
 function closeTabSheet() {
   if (!tabSheetOpen) return;
   tabSheetOpen = false;
@@ -2027,31 +1645,20 @@ function closeTabSheet() {
   const trigger = document.getElementById('tabTrigger');
   if (trigger) trigger.setAttribute('aria-expanded', 'false');
 }
-
 function selectTab(tabId) {
   if (!TAB_DEFS.find(t => t.key === tabId)) return;
   currentTab = tabId;
-
   document.querySelectorAll('.tabs-content .tab-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById(`tab-${tabId}`);
   if (panel) panel.classList.add('active');
-
   const label = document.getElementById('tabTriggerLabel');
   if (label) label.textContent = TAB_DEFS.find(t => t.key === tabId).label;
-
   const tc = document.querySelector('.tabs-content');
   if (tc) tc.scrollTop = 0;
-
   closeTabSheet();
 }
-
-/* 兼容旧调用 */
 function switchTab(tabId) { selectTab(tabId); }
-
-/* Esc 键关闭 */
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && tabSheetOpen) closeTabSheet();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && tabSheetOpen) closeTabSheet(); });
 
 /* =========================================================================
  * 【JS 模块 9】UI 编辑器
@@ -2072,7 +1679,6 @@ function renderColorPicker() {
     </div>`;
   }).join('');
 }
-
 function setTheme(color) {
   State.data.theme = color;
   document.documentElement.style.setProperty('--accent', color);
@@ -2081,7 +1687,6 @@ function setTheme(color) {
   mountPreview();
   debouncedSave();
 }
-
 function renderConstellationEditor() {
   const el = document.getElementById('constellationEditor');
   if (!el) return;
@@ -2092,21 +1697,16 @@ function renderConstellationEditor() {
     </div>
   `).join('');
 }
-
 function toggleConstellation(i) {
   if (!State.data.constellationData[i]) return;
   State.data.constellationData[i].active = !State.data.constellationData[i].active;
-  renderConstellationEditor();
-  mountPreview();
-  debouncedSave();
+  renderConstellationEditor(); mountPreview(); debouncedSave();
 }
 function setConstellationDesc(i, value) {
   if (!State.data.constellationData[i]) return;
   State.data.constellationData[i].desc = value;
-  mountPreview();
-  debouncedSave();
+  mountPreview(); debouncedSave();
 }
-
 function renderWeaponEditor() {
   const el = document.getElementById('weaponEditor');
   if (!el) return;
@@ -2124,32 +1724,30 @@ function renderWeaponEditor() {
         <div class="item-header">
           <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">#${i + 1} ${WEAPON_LABELS[type]}武器</span>
           <div class="item-actions">
-            <button class="btn-xs" onclick="App.moveWeapon('${type}',${i},-1)" ${upDisabled ? 'disabled' : ''} title="上移">${ICONS.up}上移</button>
-            <button class="btn-xs" onclick="App.moveWeapon('${type}',${i},1)" ${downDisabled ? 'disabled' : ''} title="下移">${ICONS.down}下移</button>
-            <button class="btn-xs btn-danger" onclick="App.removeWeapon('${type}',${i})" title="删除">${ICONS.trash}删除</button>
+            <button class="btn-xs" onclick="App.moveWeapon('${type}',${i},-1)" ${upDisabled ? 'disabled' : ''}>${ICONS.up}上移</button>
+            <button class="btn-xs" onclick="App.moveWeapon('${type}',${i},1)" ${downDisabled ? 'disabled' : ''}>${ICONS.down}下移</button>
+            <button class="btn-xs btn-danger" onclick="App.removeWeapon('${type}',${i})">${ICONS.trash}删除</button>
           </div>
         </div>
         <div class="item-row">
-          <img src="${w.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('w_img_${type}_${i}')" title="点击上传/更换图片" alt="" />
-          <input type="text" value="${esc(w.name)}" oninput="App.setWeaponName('${type}',${i},this.value)" style="flex:1;" />
+          <img src="${w.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('w_img_${type}_${i}')" alt="" />
+          <input type="text" value="${esc(w.name)}" oninput="App.setWeaponName('${type}',${i},this.value)" onblur="App.matchWeaponIcon('${type}',${i},this.value)" style="flex:1;" />
           <input type="file" id="w_img_${type}_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.weaponData['${type}'][${i}].img = v; App.renderWeaponEditor(); App.mountPreview(); App.debouncedSave(); })" />
         </div>
-      </div>
-    `;
+      </div>`;
     }).join('');
     return `<div class="ios-group" style="padding:10px;">
       <div style="display:flex;align-items:center;margin-bottom:${collapsed ? '0' : '8px'};flex-wrap:wrap;gap:6px;">
         <span style="font-size:13px;font-weight:600;color:var(--accent);">${WEAPON_LABELS[type]}武器 (${group.length}/${WEAPON_MAX})</span>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;">
           <button class="ios-btn-fill btn-xs" onclick="App.addWeapon('${type}')">${ICONS.plus}添加</button>
-          <button class="btn-xs" onclick="App.toggleCollapse('${key}')" title="${toggleText}">${toggleIcon}${toggleText}</button>
+          <button class="btn-xs" onclick="App.toggleCollapse('${key}')">${toggleIcon}${toggleText}</button>
         </div>
       </div>
       ${collapsed ? '' : `<div style="display:flex;flex-direction:column;gap:6px;">${list || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂无配置</div>'}</div>`}
     </div>`;
   }).join('');
 }
-
 function renderArtifactEditor() {
   const sectionKey = 'artifact_section';
   const isSectionCollapsed = isCollapsed(sectionKey);
@@ -2161,7 +1759,7 @@ function renderArtifactEditor() {
       <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end; margin-left:auto;">
         <button class="ios-btn-fill btn-xs" onclick="App.addArtifact('single')">${ICONS.plus}整套</button>
         <button class="ios-btn-fill btn-xs" onclick="App.addArtifact('double')">${ICONS.plus}散搭</button>
-        <button class="btn-xs" onclick="App.toggleCollapse('${sectionKey}')" title="${toggleText}">${toggleIcon}${toggleText}</button>
+        <button class="btn-xs" onclick="App.toggleCollapse('${sectionKey}')">${toggleIcon}${toggleText}</button>
       </div>`;
   }
   const editorEl = document.getElementById('artifactEditor');
@@ -2174,20 +1772,20 @@ function renderArtifactEditor() {
         <div class="item-header">
           <span style="font-size:12px;color:var(--accent);font-weight:600;">散搭 #${i + 1}</span>
           <div class="item-actions">
-            <button class="btn-xs" onclick="App.moveArtifact(${i},-1)" ${i === 0 ? 'disabled' : ''} title="上移">${ICONS.up}上移</button>
-            <button class="btn-xs" onclick="App.moveArtifact(${i},1)" ${i === State.data.artifactData.length - 1 ? 'disabled' : ''} title="下移">${ICONS.down}下移</button>
-            <button class="btn-xs btn-danger" onclick="App.removeArtifact(${i})" title="删除">${ICONS.trash}删除</button>
+            <button class="btn-xs" onclick="App.moveArtifact(${i},-1)" ${i === 0 ? 'disabled' : ''}>${ICONS.up}上移</button>
+            <button class="btn-xs" onclick="App.moveArtifact(${i},1)" ${i === State.data.artifactData.length - 1 ? 'disabled' : ''}>${ICONS.down}下移</button>
+            <button class="btn-xs btn-danger" onclick="App.removeArtifact(${i})">${ICONS.trash}删除</button>
           </div>
         </div>
-        <input type="text" value="${esc(a.name)}" oninput="App.setArtifactName(${i},this.value)" />
+        <input type="text" value="${esc(a.name)}" oninput="App.setArtifactName(${i},this.value)" onblur="App.matchArtifactIcon(${i},this.value)" />
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
-            <img src="${a.img1 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img1_${i}')" title="点击上传部件1图片" alt="" />
+            <img src="${a.img1 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img1_${i}')" alt="" />
             <span style="font-size:12px;color:var(--text-secondary);cursor:pointer;" onclick="App.triggerUpload('a_img1_${i}')">部件1图片</span>
             <input type="file" id="a_img1_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img1 = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
-            <img src="${a.img2 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img2_${i}')" title="点击上传部件2图片" alt="" />
+            <img src="${a.img2 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img2_${i}')" alt="" />
             <span style="font-size:12px;color:var(--text-secondary);cursor:pointer;" onclick="App.triggerUpload('a_img2_${i}')">部件2图片</span>
             <input type="file" id="a_img2_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img2 = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
@@ -2198,20 +1796,19 @@ function renderArtifactEditor() {
       <div class="item-header">
         <span style="font-size:12px;color:var(--text-primary);font-weight:600;">整套 #${i + 1}</span>
         <div class="item-actions">
-          <button class="btn-xs" onclick="App.moveArtifact(${i},-1)" ${i === 0 ? 'disabled' : ''} title="上移">${ICONS.up}上移</button>
-          <button class="btn-xs" onclick="App.moveArtifact(${i},1)" ${i === State.data.artifactData.length - 1 ? 'disabled' : ''} title="下移">${ICONS.down}下移</button>
-          <button class="btn-xs btn-danger" onclick="App.removeArtifact(${i})" title="删除">${ICONS.trash}删除</button>
+          <button class="btn-xs" onclick="App.moveArtifact(${i},-1)" ${i === 0 ? 'disabled' : ''}>${ICONS.up}上移</button>
+          <button class="btn-xs" onclick="App.moveArtifact(${i},1)" ${i === State.data.artifactData.length - 1 ? 'disabled' : ''}>${ICONS.down}下移</button>
+          <button class="btn-xs btn-danger" onclick="App.removeArtifact(${i})">${ICONS.trash}删除</button>
         </div>
       </div>
       <div class="item-row">
-        <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img_${i}')" title="点击上传/更换图片" alt="" />
-        <input type="text" value="${esc(a.name)}" oninput="App.setArtifactName(${i},this.value)" style="flex:1;" />
+        <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img_${i}')" alt="" />
+        <input type="text" value="${esc(a.name)}" oninput="App.setArtifactName(${i},this.value)" onblur="App.matchArtifactIcon(${i},this.value)" style="flex:1;" />
         <input type="file" id="a_img_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
       </div>
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂无圣遗物</div>';
 }
-
 function renderTeamEditor() {
   const el = document.getElementById('teamEditor');
   if (!el) return;
@@ -2224,10 +1821,10 @@ function renderTeamEditor() {
       <div class="item-header" style="margin-bottom:${teamCollapsed ? '0' : '8px'};">
         <span style="font-size:13px;color:var(--accent);font-weight:600;">队伍 ${ti + 1}</span>
         <div class="item-actions">
-          <button class="btn-xs" onclick="App.moveTeam(${ti},-1)" ${ti === 0 ? 'disabled' : ''} title="上移队伍">${ICONS.up}上移</button>
-          <button class="btn-xs" onclick="App.moveTeam(${ti},1)" ${ti === State.data.teamData.length - 1 ? 'disabled' : ''} title="下移队伍">${ICONS.down}下移</button>
-          <button class="btn-xs" onclick="App.toggleCollapse('${teamKey}')" title="${teamToggleText}">${teamToggleIcon}${teamToggleText}</button>
-          <button class="btn-xs btn-danger" onclick="App.removeTeam(${ti})" title="删除队伍">${ICONS.trash}删除</button>
+          <button class="btn-xs" onclick="App.moveTeam(${ti},-1)" ${ti === 0 ? 'disabled' : ''}>${ICONS.up}上移</button>
+          <button class="btn-xs" onclick="App.moveTeam(${ti},1)" ${ti === State.data.teamData.length - 1 ? 'disabled' : ''}>${ICONS.down}下移</button>
+          <button class="btn-xs" onclick="App.toggleCollapse('${teamKey}')">${teamToggleIcon}${teamToggleText}</button>
+          <button class="btn-xs btn-danger" onclick="App.removeTeam(${ti})">${ICONS.trash}删除</button>
         </div>
       </div>
       ${teamCollapsed ? '' : `
@@ -2243,15 +1840,15 @@ function renderTeamEditor() {
               <div class="item-header">
                 <span style="font-size:12px;color:var(--accent);font-weight:600;">${ci + 1}号位主角色</span>
                 <div class="item-actions">
-                  <button class="btn-xs" onclick="App.moveTeamChar(${ti},${ci},-1)" ${ci === 1 ? 'disabled' : ''} title="上移角色">${ICONS.up}上移</button>
-                  <button class="btn-xs" onclick="App.moveTeamChar(${ti},${ci},1)" ${ci === 3 ? 'disabled' : ''} title="下移角色">${ICONS.down}下移</button>
-                  <button class="btn-xs" onclick="App.toggleCollapse('${charKey}')" title="${charToggleText}">${charToggleIcon}${charToggleText}</button>
+                  <button class="btn-xs" onclick="App.moveTeamChar(${ti},${ci},-1)" ${ci === 1 ? 'disabled' : ''}>${ICONS.up}上移</button>
+                  <button class="btn-xs" onclick="App.moveTeamChar(${ti},${ci},1)" ${ci === 3 ? 'disabled' : ''}>${ICONS.down}下移</button>
+                  <button class="btn-xs" onclick="App.toggleCollapse('${charKey}')">${charToggleIcon}${charToggleText}</button>
                 </div>
               </div>
               ${charCollapsed ? '' : `
                 <div class="item-row">
-                  <img src="${c.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_img')" title="点击上传/更换头像" alt="" />
-                  <input type="text" value="${esc(c.name)}" oninput="App.setTeamCharName(${ti},${ci},this.value)" style="flex:1;" />
+                  <img src="${c.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_img')" alt="" />
+                  <input type="text" value="${esc(c.name)}" oninput="App.setTeamCharName(${ti},${ci},this.value)" onblur="App.matchTeamCharIcon(${ti},${ci},this.value)" style="flex:1;" />
                   <input type="file" id="t_${ti}_${ci}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].img = v; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                 </div>
                 <div style="margin-left:8px;padding-left:8px;border-left:2px solid var(--border-subtle);display:flex;flex-direction:column;gap:6px;margin-top:4px;">
@@ -2264,13 +1861,13 @@ function renderTeamEditor() {
                       <div class="item-header">
                         <span style="font-size:11px;color:var(--text-secondary);">备选 #${ai + 1}</span>
                         <div class="item-actions">
-                          <button class="btn-xs" onclick="App.moveAlt(${ti},${ci},${ai},-1)" ${ai === 0 ? 'disabled' : ''} title="上移备选">${ICONS.up}上移</button>
-                          <button class="btn-xs" onclick="App.moveAlt(${ti},${ci},${ai},1)" ${ai === c.alts.length - 1 ? 'disabled' : ''} title="下移备选">${ICONS.down}下移</button>
-                          <button class="btn-xs btn-danger" onclick="App.removeAlt(${ti},${ci},${ai})" title="删除备选">${ICONS.trash}删除</button>
+                          <button class="btn-xs" onclick="App.moveAlt(${ti},${ci},${ai},-1)" ${ai === 0 ? 'disabled' : ''}>${ICONS.up}上移</button>
+                          <button class="btn-xs" onclick="App.moveAlt(${ti},${ci},${ai},1)" ${ai === c.alts.length - 1 ? 'disabled' : ''}>${ICONS.down}下移</button>
+                          <button class="btn-xs btn-danger" onclick="App.removeAlt(${ti},${ci},${ai})">${ICONS.trash}删除</button>
                         </div>
                       </div>
                       <div class="item-row">
-                        <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_${ai}_img')" title="点击上传/更换图片" alt="" />
+                        <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_${ai}_img')" alt="" />
                         <input type="text" value="${esc(a.name)}" oninput="App.setAltName(${ti},${ci},${ai},this.value)" style="flex:1;" />
                         <input type="file" id="t_${ti}_${ci}_${ai}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].alts[${ai}].img = v; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                       </div>
@@ -2286,7 +1883,6 @@ function renderTeamEditor() {
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂未添加配队</div>';
 }
-
 function renderEditorsByKey() {
   renderColorPicker();
   renderWeaponEditor();
@@ -2294,21 +1890,18 @@ function renderEditorsByKey() {
   renderConstellationEditor();
   renderTeamEditor();
 }
-
 function updateThumb(thumbId, labelId, src, labelText) {
   const thumb = document.getElementById(thumbId);
   if (thumb) thumb.src = src;
   const label = document.getElementById(labelId);
   if (label) label.textContent = labelText;
 }
-
 function resetThumb(thumbId, labelId, labelText) {
   const thumb = document.getElementById(thumbId);
   if (thumb) thumb.removeAttribute('src');
   const label = document.getElementById(labelId);
   if (label) label.textContent = labelText;
 }
-
 function initThumbnails() {
   const d = State.data;
   if (d.charImg) updateThumb('thumbCharImg', 'labelCharImg', d.charImg, '已载入立绘（点击更换）');
@@ -2323,7 +1916,6 @@ function initThumbnails() {
   if (fontLabel) fontLabel.textContent = d.fontData ? '已载入自定义字体（仅卡片生效）' : '默认标准字体';
   updateImgXHint();
 }
-
 function clearImage(stateKey, thumbId, labelId) {
   State.data[stateKey] = '';
   if (stateKey === 'charImg') State.data.charImgMeta = null;
@@ -2337,9 +1929,7 @@ function clearImage(stateKey, thumbId, labelId) {
  * 【JS 模块 10】图片与字体上传
  * ========================================================================= */
 const IMAGE_WARN_SIZE = 15 * 1024 * 1024;
-
 function triggerUpload(id) { document.getElementById(id)?.click(); }
-
 function uploadImageHandler(input, setter) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
@@ -2352,7 +1942,6 @@ function uploadImageHandler(input, setter) {
     doUpload(input, setter);
   }
 }
-
 function doUpload(input, setter) {
   const reader = new FileReader();
   reader.onload = e => {
@@ -2367,7 +1956,6 @@ function doUpload(input, setter) {
   reader.readAsDataURL(input.files[0]);
   input.value = '';
 }
-
 async function uploadFontHandler(input) {
   if (!input.files || !input.files[0]) return;
   const reader = new FileReader();
@@ -2382,15 +1970,11 @@ async function uploadFontHandler(input) {
   reader.readAsDataURL(input.files[0]);
   input.value = '';
 }
-
 let loadedFontFace = null;
 async function installPreviewFont() {
   if (!State.data.fontData || !window.FontFace) return;
   try {
-    if (loadedFontFace) {
-      try { document.fonts.delete(loadedFontFace); } catch (e) {}
-      loadedFontFace = null;
-    }
+    if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
     const ff = new FontFace('CardCustomFont', `url("${State.data.fontData}")`);
     const loaded = await ff.load();
     document.fonts.add(loaded);
@@ -2398,7 +1982,6 @@ async function installPreviewFont() {
     await document.fonts.ready;
   } catch (e) {}
 }
-
 function updateImgXHint() {
   const el = document.getElementById('imgXHint');
   if (!el) return;
@@ -2406,13 +1989,66 @@ function updateImgXHint() {
 }
 
 /* =========================================================================
+ * 【JS 模块 10.5】图标库匹配
+ * ========================================================================= */
+async function matchWeaponIcon(type, i, name) {
+  if (!name || !name.trim()) return;
+  if (!window.ICON_LIB) return;
+  try {
+    const r = await ICON_LIB.fromName('weapons', name.trim());
+    if (r && r.dataURL) {
+      State.data.weaponData[type][i].img = r.dataURL;
+      renderWeaponEditor();
+      mountPreview();
+      debouncedSave();
+    }
+  } catch (e) {}
+}
+async function matchArtifactIcon(i, name) {
+  if (!name || !name.trim()) return;
+  if (!window.ICON_LIB) return;
+  try {
+    const r = await ICON_LIB.fromName('artifacts', name.trim());
+    if (r && r.dataURL) {
+      State.data.artifactData[i].img = r.dataURL;
+      renderArtifactEditor();
+      mountPreview();
+      debouncedSave();
+    }
+  } catch (e) {}
+}
+async function matchTeamCharIcon(ti, ci, name) {
+  if (!name || !name.trim()) return;
+  if (!window.ICON_LIB) return;
+  try {
+    const r = await ICON_LIB.fromName('characters', name.trim());
+    if (r && r.dataURL) {
+      State.data.teamData[ti].chars[ci].img = r.dataURL;
+      renderTeamEditor();
+      mountPreview();
+      debouncedSave();
+    }
+  } catch (e) {}
+}
+async function matchCharAvatar(name) {
+  if (!name || !name.trim()) return;
+  if (!window.ICON_LIB) return;
+  try {
+    const r = await ICON_LIB.fromName('characters', name.trim());
+    if (r && r.dataURL) {
+      State.data.teamCoreImg = r.dataURL;
+      updateThumb('thumbTeamCore', 'labelTeamCore', r.dataURL, '已载入1号位头像（点击更换）');
+      mountPreview();
+      debouncedSave();
+    }
+  } catch (e) {}
+}
+
+/* =========================================================================
  * 【JS 模块 11】数据归一化
  * ========================================================================= */
 function normalizeWeaponList(list) {
-  return Array.isArray(list) ? list.map(w => ({
-    name: String(w?.name ?? ''),
-    img: String(w?.img ?? '')
-  })) : [];
+  return Array.isArray(list) ? list.map(w => ({ name: String(w?.name ?? ''), img: String(w?.img ?? '') })) : [];
 }
 function normalizeArtifactList(list) {
   return Array.isArray(list) ? list.map(a => a?.type === 'double'
@@ -2421,17 +2057,13 @@ function normalizeArtifactList(list) {
   ) : [];
 }
 function normalizeAlts(list) {
-  return Array.isArray(list) ? list.map(a => ({
-    name: String(a?.name ?? ''),
-    img: String(a?.img ?? '')
-  })) : [];
+  return Array.isArray(list) ? list.map(a => ({ name: String(a?.name ?? ''), img: String(a?.img ?? '') })) : [];
 }
 function normalizeTeamChars(chars) {
   return Array.from({ length: 4 }, (_, i) => {
     const c = chars?.[i] || {};
     return {
-      name: String(c.name ?? ''),
-      img: String(c.img ?? ''),
+      name: String(c.name ?? ''), img: String(c.img ?? ''),
       emptyAltText: String(c.emptyAltText ?? '暂无备选'),
       alts: normalizeAlts(c.alts)
     };
@@ -2441,27 +2073,17 @@ function normalizePanel(p) {
   const src = p || {};
   return {
     primaryKey: PANEL_PRIMARY_KEYS.includes(src.primaryKey) ? src.primaryKey : 'hp',
-    primaryValue: String(src.primaryValue ?? ''),
-    cr: String(src.cr ?? ''),
-    cd: String(src.cd ?? ''),
-    em: String(src.em ?? ''),
-    er: String(src.er ?? '')
+    primaryValue: String(src.primaryValue ?? ''), cr: String(src.cr ?? ''),
+    cd: String(src.cd ?? ''), em: String(src.em ?? ''), er: String(src.er ?? '')
   };
 }
-
 function normalizeState(data = {}) {
   return {
-    ...State.data,
-    ...data,
-    charImg: data.charImg || '',
-    charImgMeta: data.charImgMeta || null,
-    bgImg: data.bgImg || '',
-    nameBgImg: data.nameBgImg || '',
-    nameBgImgMeta: data.nameBgImgMeta || null,
-    teamCoreImg: data.teamCoreImg || '',
-    fontData: data.fontData || '',
-    theme: data.theme || '#939393',
-    imgX: Number(data.imgX) || 0,
+    ...State.data, ...data,
+    charImg: data.charImg || '', charImgMeta: data.charImgMeta || null,
+    bgImg: data.bgImg || '', nameBgImg: data.nameBgImg || '', nameBgImgMeta: data.nameBgImgMeta || null,
+    teamCoreImg: data.teamCoreImg || '', fontData: data.fontData || '',
+    theme: data.theme || '#939393', imgX: Number(data.imgX) || 0,
     weaponData: {
       graduate: normalizeWeaponList(data?.weaponData?.graduate),
       optional: normalizeWeaponList(data?.weaponData?.optional),
@@ -2473,10 +2095,7 @@ function normalizeState(data = {}) {
       desc: String(data?.constellationData?.[i]?.desc ?? '')
     })),
     panel: normalizePanel(data.panel),
-    teamData: Array.isArray(data.teamData) ? data.teamData.map(team => ({
-      ...team,
-      chars: normalizeTeamChars(team?.chars)
-    })) : []
+    teamData: Array.isArray(data.teamData) ? data.teamData.map(team => ({ ...team, chars: normalizeTeamChars(team?.chars) })) : []
   };
 }
 
@@ -2490,7 +2109,6 @@ function downloadBlob(blob, filename) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
-
 async function exportPNG() {
   const bd = document.getElementById('exportDesktopBtn');
   const bm = document.getElementById('exportMobileBtn');
@@ -2532,14 +2150,12 @@ async function exportPNG() {
     btns.forEach(b => { b.el.disabled = false; b.el.textContent = b.text; });
   }
 }
-
 function exportConfig() {
   downloadBlob(
     new Blob([JSON.stringify(State.data, null, 2)], { type: 'application/json' }),
     `${State.data.charName || '角色'}_配置.json`
   );
 }
-
 function importConfig(input) {
   if (!input.files || !input.files[0]) return;
   const reader = new FileReader();
@@ -2559,7 +2175,6 @@ function importConfig(input) {
   };
   reader.readAsText(input.files[0]);
 }
-
 async function clearAllData() {
   const ok = await showConfirm('清空全部数据', '确定清空所有角色配置与图片数据吗？此操作不可撤销。');
   if (!ok) return;
@@ -2577,18 +2192,10 @@ async function clearAllData() {
  * 【JS 模块 13】UI 交互
  * ========================================================================= */
 const FIELD_MAP = {
-  charName: 'charName',
-  version: 'version',
-  date: 'date',
-  author: 'author',
-  talentA: 'talent.A',
-  talentE: 'talent.E',
-  talentQ: 'talent.Q',
-  sandMain: 'stat.sandMain',
-  gobMain: 'stat.gobMain',
-  cirMain: 'stat.cirMain'
+  charName: 'charName', version: 'version', date: 'date', author: 'author',
+  talentA: 'talent.A', talentE: 'talent.E', talentQ: 'talent.Q',
+  sandMain: 'stat.sandMain', gobMain: 'stat.gobMain', cirMain: 'stat.cirMain'
 };
-
 function setField(key, value) {
   if (key === 'imgX' && value !== '') value = Number(value) || 0;
   State.data[key] = value;
@@ -2605,11 +2212,9 @@ function setField(key, value) {
   }
   debouncedSave();
 }
-
 function setPanelPrimaryKey(key) {
   State.data.panel.primaryKey = PANEL_PRIMARY_KEYS.includes(key) ? key : 'hp';
-  mountPreview();
-  debouncedSave();
+  mountPreview(); debouncedSave();
 }
 function setPanelField(key, value) {
   if (!State.data.panel) State.data.panel = normalizePanel(null);
@@ -2617,7 +2222,6 @@ function setPanelField(key, value) {
   updatePreviewField(`panel.${key}`);
   debouncedSave();
 }
-
 function canMoveWeapon(type, i, dir) {
   const list = State.data.weaponData[type];
   if (!list) return false;
@@ -2629,15 +2233,13 @@ function canMoveWeapon(type, i, dir) {
   const adjList = State.data.weaponData[WEAPON_ORDER[adjTi]];
   return adjList.length < WEAPON_MAX;
 }
-
 function moveWeapon(type, i, dir) {
   const list = State.data.weaponData[type];
   if (!list || i < 0 || i >= list.length) return;
   const target = i + dir;
   if (target >= 0 && target < list.length) {
     [list[i], list[target]] = [list[target], list[i]];
-    renderWeaponEditor(); mountPreview(); debouncedSave();
-    return;
+    renderWeaponEditor(); mountPreview(); debouncedSave(); return;
   }
   const ti = WEAPON_ORDER.indexOf(type);
   const adjTi = ti + dir;
@@ -2648,11 +2250,9 @@ function moveWeapon(type, i, dir) {
     return showToast(`「${WEAPON_LABELS[adjType]}」区已满 ${WEAPON_MAX} 个`, 'error');
   }
   const [item] = list.splice(i, 1);
-  if (dir === 1) adjList.unshift(item);
-  else adjList.push(item);
+  if (dir === 1) adjList.unshift(item); else adjList.push(item);
   renderWeaponEditor(); mountPreview(); debouncedSave();
 }
-
 function addWeapon(type) {
   const list = State.data.weaponData[type];
   if (list.length >= WEAPON_MAX) return showToast(`「${WEAPON_LABELS[type]}」区最多 ${WEAPON_MAX} 个`, 'error');
@@ -2660,16 +2260,8 @@ function addWeapon(type) {
   collapseState[`weapon_${type}`] = false;
   renderWeaponEditor(); mountPreview(); debouncedSave();
 }
-function removeWeapon(type, i) {
-  State.data.weaponData[type].splice(i, 1);
-  renderWeaponEditor(); mountPreview(); debouncedSave();
-}
-function setWeaponName(type, i, v) {
-  State.data.weaponData[type][i].name = v;
-  updatePreviewField(`weapon.${type}.${i}.name`);
-  debouncedSave();
-}
-
+function removeWeapon(type, i) { State.data.weaponData[type].splice(i, 1); renderWeaponEditor(); mountPreview(); debouncedSave(); }
+function setWeaponName(type, i, v) { State.data.weaponData[type][i].name = v; updatePreviewField(`weapon.${type}.${i}.name`); debouncedSave(); }
 function addArtifact(type) {
   State.data.artifactData.push(type === 'double' ? { type, name: '', img1: '', img2: '' } : { type, name: '', img: '' });
   collapseState['artifact_section'] = false;
@@ -2677,12 +2269,7 @@ function addArtifact(type) {
 }
 function removeArtifact(i) { State.data.artifactData.splice(i, 1); renderArtifactEditor(); mountPreview(); debouncedSave(); }
 function moveArtifact(i, dir) { if (moveItem(State.data.artifactData, i, dir)) { renderArtifactEditor(); mountPreview(); debouncedSave(); } }
-function setArtifactName(i, v) {
-  State.data.artifactData[i].name = v;
-  updatePreviewField(`artifact.${i}.name`);
-  debouncedSave();
-}
-
+function setArtifactName(i, v) { State.data.artifactData[i].name = v; updatePreviewField(`artifact.${i}.name`); debouncedSave(); }
 function addTeam() {
   if (State.data.teamData.length >= 3) return showToast('最多支持 3 组队伍', 'error');
   State.data.teamData.push({
@@ -2694,11 +2281,7 @@ function addTeam() {
 }
 function removeTeam(ti) { State.data.teamData.splice(ti, 1); renderTeamEditor(); mountPreview(); debouncedSave(); }
 function moveTeam(ti, dir) { if (moveItem(State.data.teamData, ti, dir)) { renderTeamEditor(); mountPreview(); debouncedSave(); } }
-function setTeamName(ti, v) {
-  State.data.teamData[ti].name = v;
-  updatePreviewField(`team.${ti}.name`);
-  debouncedSave();
-}
+function setTeamName(ti, v) { State.data.teamData[ti].name = v; updatePreviewField(`team.${ti}.name`); debouncedSave(); }
 function moveTeamChar(ti, ci, dir) {
   const chars = State.data.teamData[ti]?.chars;
   if (!chars) return;
@@ -2736,50 +2319,51 @@ function setAltName(ti, ci, ai, v) {
 }
 function setEmptyAltText(ti, ci, v) {
   State.data.teamData[ti].chars[ci].emptyAltText = v;
-  mountPreview();
-  debouncedSave();
+  mountPreview(); debouncedSave();
 }
 
 /* =========================================================================
  * 【JS 模块 14】App 接口
  * ========================================================================= */
 const App = {
-  openTabSheet,
-  closeTabSheet,
-  selectTab,
-  switchTab,
-  setField,
-  setTheme,
-  setPanelPrimaryKey,
-  setPanelField,
-  toggleCollapse,
-  toggleConstellation,
-  setConstellationDesc,
+  openTabSheet, closeTabSheet, selectTab, switchTab,
+  setField, setTheme, setPanelPrimaryKey, setPanelField,
+  toggleCollapse, toggleConstellation, setConstellationDesc,
   addWeapon, removeWeapon, moveWeapon, setWeaponName,
   addArtifact, removeArtifact, moveArtifact, setArtifactName,
   addTeam, removeTeam, moveTeam, setTeamName,
   moveTeamChar, setTeamCharName,
   addAlt, removeAlt, moveAlt, setAltName, setEmptyAltText,
   renderWeaponEditor, renderArtifactEditor, renderTeamEditor,
-  mountPreview,
-  debouncedSave,
-  triggerUpload,
-  uploadImageHandler,
-  uploadFontHandler,
-  updateThumb,
-  updateImgXHint,
-  clearImage,
-  exportPNG,
-  exportConfig,
-  importConfig,
-  clearAllData
+  mountPreview, debouncedSave,
+  triggerUpload, uploadImageHandler, uploadFontHandler,
+  updateThumb, updateImgXHint, clearImage,
+  exportPNG, exportConfig, importConfig, clearAllData,
+  matchWeaponIcon, matchArtifactIcon, matchTeamCharIcon, matchCharAvatar
 };
 window.App = App;
 
 /* =========================================================================
  * 【JS 模块 15】初始化
  * ========================================================================= */
+function injectFloatIcons() {
+  const S = window.ICONS || { ui: {} };
+  const ex = document.getElementById('floatExportBtn');
+  const im = document.getElementById('floatImportBtn');
+  const cl = document.getElementById('floatClearBtn');
+  if (ex && S.ui) ex.innerHTML = S.ui.export || '';
+  if (im && S.ui) im.innerHTML = S.ui.import || '';
+  if (cl && S.ui) cl.innerHTML = S.ui.trash || '';
+  const delTargets = ['btnDelCharImg', 'btnDelNameBg', 'btnDelBg', 'btnDelTeamCore'];
+  delTargets.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && S.ui) el.innerHTML = S.ui.trash || '';
+  });
+  const addTeamIcon = document.getElementById('btnAddTeamIcon');
+  if (addTeamIcon && S.ui) addTeamIcon.innerHTML = S.ui.plus || '';
+}
 async function init() {
+  injectFloatIcons();
   tightenAllIconViewBoxes();
   const saved = await loadStateFromIDB();
   State.data = normalizeState(saved || {});
@@ -2790,8 +2374,14 @@ async function init() {
   mountPreview();
   selectTab(currentTab);
 }
-
 window.addEventListener('DOMContentLoaded', init);
+
+/* 主题同步 */
+window.addEventListener('message', function (e) {
+  if (e.data && e.data.type === 'theme') {
+    document.documentElement.setAttribute('data-theme', e.data.theme);
+  }
+});
 </script>
 </body>
 </html>
