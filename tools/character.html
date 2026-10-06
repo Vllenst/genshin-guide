@@ -17,7 +17,6 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 .icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 .icon-flip-y { display: inline-flex; align-items: center; transform: rotate(180deg); }
 
-/* 按钮内 SVG 统一尺寸 */
 button svg,
 .btn svg,
 .btn-sm svg,
@@ -118,35 +117,25 @@ button svg,
 
 .float-toolbar {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  gap: 4px;
+  top: 8px; right: 8px;
+  display: flex; gap: 4px;
   z-index: 15;
 }
 @media (max-width: 1023px) {
   .float-toolbar { top: 6px; right: 6px; }
 }
 .float-btn {
-  height: 30px;
-  min-width: 30px;
-  padding: 0 8px;
+  height: 30px; min-width: 30px; padding: 0 8px;
   border-radius: 8px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   color: var(--text-primary);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
+  font-family: inherit; font-size: 12px; font-weight: 500;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center;
   gap: 4px;
   box-shadow: var(--shadow-btn);
   transition: all .15s;
-  -webkit-appearance: none;
-  appearance: none;
 }
 .float-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
 .float-btn:active { transform: scale(.95); }
@@ -176,7 +165,6 @@ button svg,
 }
 .tab-trigger-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .tab-trigger-caret { width: 16px; height: 16px; color: var(--text-tertiary); flex-shrink: 0; transition: transform .25s cubic-bezier(0.16, 1, 0.3, 1), color .15s; }
-.tab-trigger:hover .tab-trigger-caret { color: var(--text-secondary); }
 .tab-trigger[aria-expanded="true"] .tab-trigger-caret { transform: rotate(180deg); color: var(--accent); }
 
 .tabs-content { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; min-height: 0; }
@@ -472,6 +460,17 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
           </div>
         </div>
         <div>
+          <div class="ios-section-header">样式图（立绘 / 元素 / 名片）</div>
+          <div class="ios-group">
+            <div class="ios-row">
+              <button type="button" class="ios-btn-fill btn-sm" style="flex:1;height:38px;" id="btnMatchStyle" onclick="App.matchStyleImages()">
+                <span class="icon-only" id="btnMatchStyleIcon"></span>
+                一键匹配全部样式图
+              </button>
+            </div>
+          </div>
+        </div>
+        <div>
           <div class="ios-section-header">元素主题色</div>
           <div class="ios-group">
             <div class="color-swatches" id="colorPicker"></div>
@@ -495,15 +494,15 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
           <div class="ios-section-header">图片素材（点击缩略图更换）</div>
           <div class="ios-group">
             <div class="ios-row">
-              <img id="thumbCharImg" class="clickable-thumb" onclick="App.triggerUpload('inputCharImg')" title="点击上传立绘" alt="" />
-              <div style="flex:1;cursor:pointer;" onclick="App.triggerUpload('inputCharImg')">
+              <img id="thumbCharImg" class="clickable-thumb" onclick="App.onThumbClick('inputCharImg', 'charImg')" title="点击上传立绘" alt="" />
+              <div style="flex:1;cursor:pointer;" onclick="App.onThumbClick('inputCharImg', 'charImg')">
                 <div style="font-size:13px;font-weight:500;" id="labelCharImg">点击上传立绘</div>
               </div>
               <button class="btn-xs btn-danger" onclick="App.clearImage('charImg', 'thumbCharImg', 'labelCharImg')" title="删除立绘">
                 <span class="icon-only" id="btnDelCharImg"></span>
                 删除
               </button>
-              <input type="file" id="inputCharImg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.charImg = v; State.data.charImgMeta = { w, h }; App.updateImgXHint(); App.updateThumb('thumbCharImg', 'labelCharImg', v, '已载入立绘（点击更换）'); })" />
+              <input type="file" id="inputCharImg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.charImg = v; State.data.charImgMeta = { w, h }; State.data.charImgDeleted = false; App.updateImgXHint(); App.updateThumb('thumbCharImg', 'labelCharImg', v, '已载入立绘（点击更换）'); })" />
             </div>
             <div class="slider-box" style="padding-top:10px;">
               <span id="imgXHint">立绘偏移（左右移动）</span>
@@ -511,26 +510,26 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
               <input type="number" id="imgX" value="0" oninput="App.setField('imgX', this.value)" />
             </div>
             <div class="ios-row">
-              <img id="thumbNameBg" class="clickable-thumb" onclick="App.triggerUpload('inputNameBg')" title="点击上传元素图" alt="" />
-              <div style="flex:1;cursor:pointer;" onclick="App.triggerUpload('inputNameBg')">
+              <img id="thumbNameBg" class="clickable-thumb" onclick="App.onThumbClick('inputNameBg', 'nameBgImg')" title="点击上传元素图" alt="" />
+              <div style="flex:1;cursor:pointer;" onclick="App.onThumbClick('inputNameBg', 'nameBgImg')">
                 <div style="font-size:13px;font-weight:500;" id="labelNameBg">点击上传元素图</div>
               </div>
               <button class="btn-xs btn-danger" onclick="App.clearImage('nameBgImg', 'thumbNameBg', 'labelNameBg')" title="删除元素图">
                 <span class="icon-only" id="btnDelNameBg"></span>
                 删除
               </button>
-              <input type="file" id="inputNameBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.nameBgImg = v; State.data.nameBgImgMeta = { w, h }; App.updateThumb('thumbNameBg', 'labelNameBg', v, '已载入元素图（点击更换）'); })" />
+              <input type="file" id="inputNameBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.nameBgImg = v; State.data.nameBgImgMeta = { w, h }; State.data.nameBgImgDeleted = false; App.updateThumb('thumbNameBg', 'labelNameBg', v, '已载入元素图（点击更换）'); })" />
             </div>
             <div class="ios-row">
-              <img id="thumbBg" class="clickable-thumb" onclick="App.triggerUpload('inputBg')" title="点击上传大背景" alt="" />
-              <div style="flex:1;cursor:pointer;" onclick="App.triggerUpload('inputBg')">
+              <img id="thumbBg" class="clickable-thumb" onclick="App.onThumbClick('inputBg', 'bgImg')" title="点击上传大背景" alt="" />
+              <div style="flex:1;cursor:pointer;" onclick="App.onThumbClick('inputBg', 'bgImg')">
                 <div style="font-size:13px;font-weight:500;" id="labelBg">默认暗黑原力色</div>
               </div>
               <button class="btn-xs btn-danger" onclick="App.clearImage('bgImg', 'thumbBg', 'labelBg')" title="删除大背景">
                 <span class="icon-only" id="btnDelBg"></span>
                 删除
               </button>
-              <input type="file" id="inputBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.bgImg = v; App.updateThumb('thumbBg', 'labelBg', v, '已载入大背景（点击更换）'); })" />
+              <input type="file" id="inputBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.bgImg = v; State.data.bgImgDeleted = false; App.updateThumb('thumbBg', 'labelBg', v, '已载入大背景（点击更换）'); })" />
             </div>
           </div>
         </div>
@@ -782,6 +781,9 @@ const TAB_DEFS = [
 let currentTab = 'style';
 let tabSheetOpen = false;
 
+/* 角色编号对照表 */
+let CHAR_NAME_TO_ORDER = {};
+
 /* =========================================================================
  * 【JS 模块 3】State 与持久化
  * ========================================================================= */
@@ -789,8 +791,9 @@ const State = {
   data: {
     charName: '', version: '', date: '', author: '烤吃虎鱼LW',
     imgX: 0, theme: '#939393',
-    charImg: '', charImgMeta: null,
-    bgImg: '', nameBgImg: '', nameBgImgMeta: null,
+    charImg: '', charImgMeta: null, charImgDeleted: false,
+    bgImg: '', bgImgDeleted: false,
+    nameBgImg: '', nameBgImgMeta: null, nameBgImgDeleted: false,
     fontData: '', fontName: '', fontFileName: '',
     weaponData: { graduate: [], optional: [], newbie: [] },
     artifactData: [],
@@ -909,6 +912,49 @@ function moveItem(arr, from, dir) {
   if (to < 0 || to >= arr.length) return false;
   [arr[from], arr[to]] = [arr[to], arr[from]];
   return true;
+}
+function padOrder(n) {
+  return String(n).padStart(3, '0');
+}
+function themeToElementName() {
+  var t = (State.data.theme || '').toLowerCase();
+  for (var i = 0; i < elementColors.length; i++) {
+    if (elementColors[i][1].toLowerCase() === t) return elementColors[i][0];
+  }
+  return '';
+}
+function findShortIdByName(name) {
+  var dict = window.ICON_DICT && window.ICON_DICT.characters;
+  if (!dict || !name) return '';
+  for (var key in dict) {
+    var item = dict[key];
+    if (item && item.name === name) {
+      if (item.local) {
+        return key.replace(/^UI_AvatarIcon_/i, '').replace(/\.[^.]+$/, '');
+      }
+      return key;
+    }
+  }
+  return '';
+}
+async function urlExists(url) {
+  try {
+    var res = await fetch(url, { method: 'HEAD' });
+    if (res.ok) return true;
+    if (res.status === 405) {
+      /* 有些服务器不支持 HEAD，回退 GET */
+      var res2 = await fetch(url);
+      return res2.ok;
+    }
+    return false;
+  } catch (e) {
+    try {
+      var res3 = await fetch(url);
+      return res3.ok;
+    } catch (e2) {
+      return false;
+    }
+  }
 }
 
 /* =========================================================================
@@ -1103,14 +1149,14 @@ function doubleArtifact(x, y, size, a, key, field) {
   const labelH = Math.round(h / 5);
   const maxW = w - (radius / 3) * 2;
   const base = labelH * 0.8;
-  const fs = fitSize(a.name, maxW, base, 4);
+  const displayName = a.displayText || [a.name1, a.name2].filter(Boolean).join(' + ');
+  const fs = fitSize(displayName, maxW, base, 4);
   const labelTextY = y + h - labelH / 2 + fs * 0.35;
-  const showLabel = !!(a.name || field);
+  const showLabel = !!displayName;
   let labelEl = '';
   if (showLabel) {
     const opts = { anchor: 'middle', baseline: 'alphabetic' };
-    if (field) { opts.field = field; opts.fit = { maxW, base, min: 4 }; }
-    labelEl = text(x + w / 2, labelTextY, a.name || '', fs, opts);
+    labelEl = text(x + w / 2, labelTextY, displayName, fs, opts);
   }
   const bg = showLabel ? `
     <rect x="${x}" y="${y + h - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cpL})"/>
@@ -1176,7 +1222,7 @@ function buildArtifacts() {
   let x = LAYOUT.layers.artifact.x + LAYOUT.padX;
   State.data.artifactData.forEach((a, i) => {
     if (a.type === 'double') {
-      out += doubleArtifact(x, iconY, size, a, `a_${i}`, `artifact.${i}.name`);
+      out += doubleArtifact(x, iconY, size, a, `a_${i}`);
       x += doubleStep;
     } else {
       out += slot(x, iconY, size, a.img, a.name, `a_${i}`, `artifact.${i}.name`);
@@ -1792,15 +1838,16 @@ function renderArtifactEditor() {
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
             <img src="${a.img1 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img1_${i}')" alt="" />
-            <span style="font-size:12px;color:var(--text-secondary);cursor:pointer;" onclick="App.triggerUpload('a_img1_${i}')">部件1图片</span>
+            <input type="text" value="${esc(a.name1)}" placeholder="圣遗物1" oninput="App.setArtifactName1(${i},this.value)" onblur="App.matchArtifactDoubleIcon(${i},1,this.value)" style="flex:1;min-width:0;" />
             <input type="file" id="a_img1_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img1 = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
             <img src="${a.img2 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img2_${i}')" alt="" />
-            <span style="font-size:12px;color:var(--text-secondary);cursor:pointer;" onclick="App.triggerUpload('a_img2_${i}')">部件2图片</span>
+            <input type="text" value="${esc(a.name2)}" placeholder="圣遗物2" oninput="App.setArtifactName2(${i},this.value)" onblur="App.matchArtifactDoubleIcon(${i},2,this.value)" style="flex:1;min-width:0;" />
             <input type="file" id="a_img2_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img2 = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
         </div>
+        <input type="text" value="${esc(a.displayText)}" placeholder="卡片显示文本（可选，留空显示两个名字）" oninput="App.setArtifactDisplayText(${i},this.value)" />
       </div>`;
     }
     return `<div class="item-card">
@@ -1933,11 +1980,19 @@ function initThumbnails() {
 }
 function clearImage(stateKey, thumbId, labelId) {
   State.data[stateKey] = '';
+  State.data[stateKey + 'Deleted'] = true;
   if (stateKey === 'charImg') State.data.charImgMeta = null;
   if (stateKey === 'nameBgImg') State.data.nameBgImgMeta = null;
   resetThumb(thumbId, labelId, '点击上传图片');
   mountPreview();
   debouncedSave();
+}
+function onThumbClick(inputId, stateKey) {
+  if (State.data[stateKey]) {
+    showToast('已有图片，如需更换请先删除', 'info');
+    return;
+  }
+  triggerUpload(inputId);
 }
 
 /* =========================================================================
@@ -2110,7 +2165,118 @@ async function selectFont(index) {
 }
 
 /* =========================================================================
- * 【JS 模块 10.5】图标库匹配
+ * 【JS 模块 10.4】角色编号 txt 读取
+ * ========================================================================= */
+async function loadCharOrderTxt() {
+  try {
+    const res = await fetch('../icons/characters.txt?t=' + Date.now());
+    if (!res.ok) { console.warn('characters.txt HTTP ' + res.status); return; }
+    const text = await res.text();
+    CHAR_NAME_TO_ORDER = {};
+    text.split(/\r?\n/).forEach(function (line) {
+      line = line.trim();
+      if (!line || line.startsWith('#')) return;
+      const parts = line.split(/[\s,，\t]+/);
+      if (parts.length < 2) return;
+      const order = parseInt(parts[0], 10);
+      const name = parts.slice(1).join(' ').trim();
+      if (!order || !name) return;
+      CHAR_NAME_TO_ORDER[name] = order;
+    });
+    console.log('characters.txt 加载成功，共 ' + Object.keys(CHAR_NAME_TO_ORDER).length + ' 条');
+  } catch (e) {
+    console.warn('characters.txt 加载失败：', e.message);
+  }
+}
+
+/* =========================================================================
+ * 【JS 模块 10.5】样式图匹配（立绘 / 元素图 / 名片图）
+ * ========================================================================= */
+async function matchStyleImages() {
+  const name = (State.data.charName || '').trim();
+  if (!name) {
+    showToast('请先填写角色名', 'error');
+    return;
+  }
+
+  /* 清除删除标记，允许重新匹配 */
+  State.data.charImgDeleted = false;
+  State.data.nameBgImgDeleted = false;
+  State.data.bgImgDeleted = false;
+
+  showToast('正在匹配样式图…', 'info');
+
+  const results = { standing: false, element: false, namecard: false };
+
+  /* ---- 1. 立绘图 ---- */
+  const order = CHAR_NAME_TO_ORDER[name];
+  if (order) {
+    const filename = padOrder(order) + '.' + name + '.png';
+    const url = '../assets/characters/standing/' + filename;
+    const ok = await urlExists(url);
+    if (ok) {
+      State.data.charImg = url;
+      State.data.charImgMeta = null; /* URL 模式不需要尺寸，SVG 自动按高度算 */
+      updateThumb('thumbCharImg', 'labelCharImg', url, '已匹配立绘');
+      results.standing = true;
+    } else {
+      State.data.charImg = '';
+      resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
+    }
+  }
+
+  /* ---- 2. 元素图 ---- */
+  const elementName = themeToElementName();
+  if (elementName) {
+    const url = '../assets/characters/element/' + elementName + '.png';
+    const ok = await urlExists(url);
+    if (ok) {
+      State.data.nameBgImg = url;
+      State.data.nameBgImgMeta = null;
+      updateThumb('thumbNameBg', 'labelNameBg', url, '已匹配元素图：' + elementName);
+      results.element = true;
+    } else {
+      State.data.nameBgImg = '';
+      resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
+    }
+  }
+
+  /* ---- 3. 名片图 ---- */
+  const shortId = findShortIdByName(name);
+  if (shortId) {
+    const url = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_' + shortId + '_P.png';
+    const ok = await urlExists(url);
+    if (ok) {
+      State.data.bgImg = url;
+      updateThumb('thumbBg', 'labelBg', url, '已匹配名片图');
+      results.namecard = true;
+    } else {
+      State.data.bgImg = '';
+      resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
+    }
+  }
+
+  /* ---- 4. 结果提示 ---- */
+  const failed = [];
+  if (order && !results.standing) failed.push('立绘');
+  if (elementName && !results.element) failed.push('元素图');
+  if (shortId && !results.namecard) failed.push('名片图');
+  if (!order) failed.push('立绘（characters.txt 无此角色）');
+  if (!elementName) failed.push('元素图（未选元素色）');
+  if (!shortId) failed.push('名片图（字典无此角色）');
+
+  if (failed.length) {
+    showToast('未找到：' + failed.join('、'), 'error');
+  } else {
+    showToast('全部匹配成功', 'success');
+  }
+
+  mountPreview();
+  debouncedSave();
+}
+
+/* =========================================================================
+ * 【JS 模块 10.6】图标库匹配（武器 / 圣遗物 / 配队头像）
  * ========================================================================= */
 async function matchWeaponIcon(type, i, name) {
   if (!window.ICON_LIB) return;
@@ -2145,6 +2311,36 @@ async function matchArtifactIcon(i, name) {
     State.data.artifactData[i].img = '';
     renderArtifactEditor(); mountPreview(); debouncedSave();
   }
+}
+async function matchArtifactDoubleIcon(i, part, name) {
+  if (!window.ICON_LIB) return;
+  var trimmed = (name || '').trim();
+  var imgKey = part === 1 ? 'img1' : 'img2';
+
+  if (!trimmed) {
+    State.data.artifactData[i][imgKey] = '';
+    renderArtifactEditor(); mountPreview(); debouncedSave();
+    return;
+  }
+  try {
+    const r = await ICON_LIB.fromName('artifacts', trimmed);
+    State.data.artifactData[i][imgKey] = (r && r.dataURL) ? r.dataURL : '';
+  } catch (e) {
+    State.data.artifactData[i][imgKey] = '';
+  }
+  renderArtifactEditor(); mountPreview(); debouncedSave();
+}
+function setArtifactName1(i, v) {
+  State.data.artifactData[i].name1 = v;
+  mountPreview(); debouncedSave();
+}
+function setArtifactName2(i, v) {
+  State.data.artifactData[i].name2 = v;
+  mountPreview(); debouncedSave();
+}
+function setArtifactDisplayText(i, v) {
+  State.data.artifactData[i].displayText = v;
+  mountPreview(); debouncedSave();
 }
 async function matchTeamCharIcon(ti, ci, name) {
   if (!window.ICON_LIB) return;
@@ -2196,10 +2392,19 @@ function normalizeWeaponList(list) {
   return Array.isArray(list) ? list.map(w => ({ name: String(w?.name ?? ''), img: String(w?.img ?? '') })) : [];
 }
 function normalizeArtifactList(list) {
-  return Array.isArray(list) ? list.map(a => a?.type === 'double'
-    ? { type: 'double', name: String(a?.name ?? ''), img1: String(a?.img1 ?? ''), img2: String(a?.img2 ?? '') }
-    : { type: 'single', name: String(a?.name ?? ''), img: String(a?.img ?? '') }
-  ) : [];
+  return Array.isArray(list) ? list.map(a => {
+    if (a?.type === 'double') {
+      return {
+        type: 'double',
+        name1: String(a?.name1 ?? a?.name ?? ''),
+        name2: String(a?.name2 ?? ''),
+        displayText: String(a?.displayText ?? ''),
+        img1: String(a?.img1 ?? ''),
+        img2: String(a?.img2 ?? '')
+      };
+    }
+    return { type: 'single', name: String(a?.name ?? ''), img: String(a?.img ?? '') };
+  }) : [];
 }
 function normalizeAlts(list) {
   return Array.isArray(list) ? list.map(a => ({ name: String(a?.name ?? ''), img: String(a?.img ?? '') })) : [];
@@ -2226,7 +2431,10 @@ function normalizeState(data = {}) {
   return {
     ...State.data, ...data,
     charImg: data.charImg || '', charImgMeta: data.charImgMeta || null,
-    bgImg: data.bgImg || '', nameBgImg: data.nameBgImg || '', nameBgImgMeta: data.nameBgImgMeta || null,
+    charImgDeleted: !!data.charImgDeleted,
+    bgImg: data.bgImg || '', bgImgDeleted: !!data.bgImgDeleted,
+    nameBgImg: data.nameBgImg || '', nameBgImgMeta: data.nameBgImgMeta || null,
+    nameBgImgDeleted: !!data.nameBgImgDeleted,
     teamCoreImg: data.teamCoreImg || '',
     fontData: data.fontData || '',
     fontName: data.fontName || '',
@@ -2411,7 +2619,7 @@ function addWeapon(type) {
 function removeWeapon(type, i) { State.data.weaponData[type].splice(i, 1); renderWeaponEditor(); mountPreview(); debouncedSave(); }
 function setWeaponName(type, i, v) { State.data.weaponData[type][i].name = v; updatePreviewField(`weapon.${type}.${i}.name`); debouncedSave(); }
 function addArtifact(type) {
-  State.data.artifactData.push(type === 'double' ? { type, name: '', img1: '', img2: '' } : { type, name: '', img: '' });
+  State.data.artifactData.push(type === 'double' ? { type, name1: '', name2: '', displayText: '', img1: '', img2: '' } : { type, name: '', img: '' });
   collapseState['artifact_section'] = false;
   renderArtifactEditor(); mountPreview(); debouncedSave();
 }
@@ -2485,9 +2693,12 @@ const App = {
   renderWeaponEditor, renderArtifactEditor, renderTeamEditor,
   mountPreview, debouncedSave,
   triggerUpload, uploadImageHandler, uploadFontHandler,
-  updateThumb, updateImgXHint, clearImage,
+  updateThumb, updateImgXHint, clearImage, onThumbClick,
   exportPNG, exportConfig, importConfig, clearAllData,
-  matchWeaponIcon, matchArtifactIcon, matchTeamCharIcon, matchCharAvatar,
+  matchWeaponIcon, matchArtifactIcon, matchArtifactDoubleIcon,
+  setArtifactName1, setArtifactName2, setArtifactDisplayText,
+  matchTeamCharIcon, matchCharAvatar,
+  matchStyleImages,
   openFontPicker, closeFontPicker, selectFont
 };
 window.App = App;
@@ -2510,12 +2721,15 @@ function injectFloatIcons() {
   });
   const addTeamIcon = document.getElementById('btnAddTeamIcon');
   if (addTeamIcon && S.ui) addTeamIcon.innerHTML = S.ui.plus || '';
+  const matchStyleIcon = document.getElementById('btnMatchStyleIcon');
+  if (matchStyleIcon && S.ui) matchStyleIcon.innerHTML = S.ui.plus || '';
 }
 async function init() {
   injectFloatIcons();
   tightenAllIconViewBoxes();
   const saved = await loadStateFromIDB();
   State.data = normalizeState(saved || {});
+  await loadCharOrderTxt();
   await loadFontList();
   await installPreviewFont();
   initThumbnails();
