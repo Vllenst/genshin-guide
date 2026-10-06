@@ -288,7 +288,6 @@ body {
 </head>
 <body>
 
-<!-- ============ 顶部栏 ============ -->
 <header class="app-navbar">
   <button type="button" class="nav-btn" id="btnMenu" aria-label="打开菜单"></button>
   <div class="nav-title">
@@ -298,7 +297,6 @@ body {
   <button type="button" class="nav-btn" id="btnTheme" aria-label="切换主题"></button>
 </header>
 
-<!-- ============ 侧边抽屉 ============ -->
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <aside class="sidebar-drawer" id="sidebarDrawer">
   <div class="sidebar-header">
@@ -308,7 +306,6 @@ body {
   <nav class="sidebar-menu" id="sidebarMenu"></nav>
 </aside>
 
-<!-- ============ 内容区 ============ -->
 <main class="frame-container" id="frameContainer">
   <div class="loading-mask" id="loadingMask">
     <div class="spinner"></div>
@@ -391,14 +388,19 @@ function applyTheme(theme) {
   try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
 
   frameCache.forEach(record => {
-    if (record.loaded && record.iframe.contentWindow) {
-      try {
-        record.iframe.contentWindow.postMessage({
-          type: 'theme',
-          theme: currentTheme
-        }, '*');
-      } catch (e) {}
-    }
+    if (!record.loaded) return;
+    /* 直接操控 iframe DOM：同源，同步执行，零延迟 */
+    try {
+      if (record.iframe.contentDocument && record.iframe.contentDocument.documentElement) {
+        record.iframe.contentDocument.documentElement.setAttribute('data-theme', currentTheme);
+      }
+    } catch (e) {}
+    /* 同时发 postMessage（兼容子页面内部逻辑） */
+    try {
+      if (record.iframe.contentWindow) {
+        record.iframe.contentWindow.postMessage({ type: 'theme', theme: currentTheme }, '*');
+      }
+    } catch (e) {}
   });
 }
 
@@ -508,11 +510,17 @@ function ensureFrame(tool) {
     if (view.classList.contains('active')) {
       loadingMask.classList.remove('show');
     }
+    /* 立即同步主题（同步操作，零延迟） */
     try {
-      iframe.contentWindow.postMessage({
-        type: 'theme',
-        theme: currentTheme
-      }, '*');
+      if (iframe.contentDocument && iframe.contentDocument.documentElement) {
+        iframe.contentDocument.documentElement.setAttribute('data-theme', currentTheme);
+      }
+    } catch (e) {}
+    /* 同时发 postMessage（兼容子页面内部逻辑） */
+    try {
+      if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'theme', theme: currentTheme }, '*');
+      }
     } catch (e) {}
   });
 
