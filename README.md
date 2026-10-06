@@ -22,36 +22,36 @@
 
 ```
 genshin-guide/
-├── index.html              首页（iframe 切换）
-├── icons.js                共享图标库
-├── shared-theme.css        共享主题变量
-├── map-editor.html         图标字典编辑器
-├── README.md
+├── index.html                    首页（iframe 切换 + 手风琴菜单 + 主题切换）
+├── icons.js                      共享图标库（Solar 图标，全站引用）
+├── shared-theme.css              共享主题变量（浅色 / 深色两套）
+├── map-editor.html               图标字典编辑器（维护 icon-dict.js 用）
+├── README.md                     本文件
 │
-├── tools/                  工具页面
-│   ├── character.html
-│   ├── image-tools.html
-│   ├── video-cover.html
-│   ├── chart.html
-│   └── tier.html
+├── tools/                        工具页面（被 index.html 用 iframe 加载）
+│   ├── character.html            角色一图流
+│   ├── image-tools.html          图片处理
+│   ├── video-cover.html          封面制作
+│   ├── chart.html                图表
+│   └── tier.html                 角色梯队
 │
-├── icons/                  图标系统
-│   ├── icon-dict.js
-│   ├── icon-loader.js
-│   ├── characters.txt
-│   └── UI_AvatarIcon_Traveler.webp
+├── icons/                        图标系统
+│   ├── icon-dict.js              图标映射表（短 ID / URL / 本地三种模式）
+│   ├── icon-loader.js            图标加载器（匹配 + 渐变背景 + 选择器）
+│   ├── characters.txt            角色编号对照表（编号 中文名，双向匹配）
+│   └── UI_AvatarIcon_Traveler.webp   旅行者本地图（唯一的本地角色图）
 │
-├── fonts/                  字体库
-│   ├── fonts.json
-│   └── *.ttf / *.otf
+├── fonts/                        字体库（供角色卡导出时选择嵌入字体）
+│   ├── fonts.json                字体清单（name + file 列表）
+│   └── *.ttf / *.otf             字体文件
 │
-├── save/                   在线存档
-│   └── characters/
+├── save/                         在线存档
+│   └── characters/               编号.角色名.json（导出后手动上传）
 │
-└── assets/                 本地素材
+└── assets/                       本地素材
     └── characters/
-        ├── standing/
-        └── element/
+        ├── standing/             立绘图（编号.角色名.png）
+        └── element/              元素图（元素名.png）
 ```
 
 ---
