@@ -232,7 +232,7 @@ body {
 }
 .entry-key:focus { border-color: var(--accent); background: var(--bg-surface); }
 
-/* 中部：中文名 + 星级 + 删除 同一行 */
+/* 第二行：中文名 + 星级 + 删除 */
 .entry-mid {
   display: flex;
   align-items: center;
@@ -428,7 +428,8 @@ body {
       img.src = tempThumbs[key];
       return;
     }
-    var path = "./icons/" + currentTab + "/" + star + "star/" + key;
+    /* 新路径：不分星级文件夹 */
+    var path = "./icons/" + currentTab + "/" + key;
     var img2 = new Image();
     img2.crossOrigin = "anonymous";
     img2.onload = function () {
@@ -456,7 +457,7 @@ body {
       var card = document.createElement("div");
       card.className = "entry-card";
 
-      /* ---- 第一行：序号 + 缩略图 + 文件名 ---- */
+      /* 第一行：序号 + 缩略图 + 文件名 */
       var top = document.createElement("div");
       top.className = "entry-top";
 
@@ -500,7 +501,7 @@ body {
 
       card.appendChild(top);
 
-      /* ---- 第二行：中文名 + 星级 + 删除 ---- */
+      /* 第二行：中文名 + 星级 + 删除 */
       var mid = document.createElement("div");
       mid.className = "entry-mid";
 
@@ -551,7 +552,7 @@ body {
   function addRow() {
     var list = data[currentTab];
     var maxOrder = list.reduce(function (m, r) { return Math.max(m, r.order || 0); }, 0);
-    list.push({ order: maxOrder + 1, key: "", name: "", en: "", star: 5 });
+    list.push({ order: maxOrder + 1, key: "", name: "", star: 5 });
     saveLocal();
     render();
     setStatus("已添加一行", "ok");
@@ -566,7 +567,7 @@ body {
 
     Array.prototype.forEach.call(files, function (f) {
       maxOrder++;
-      var row = { order: maxOrder, key: f.name, name: "", en: "", star: 5 };
+      var row = { order: maxOrder, key: f.name, name: "", star: 5 };
       list.push(row);
       var reader = new FileReader();
       reader.onload = function (e) {
@@ -616,14 +617,10 @@ body {
           var keys = Object.keys(obj);
           data[type] = keys.map(function (k, i) {
             var item = obj[k] || {};
-            var enStr = "";
-            if (Array.isArray(item.en)) enStr = item.en.join(", ");
-            else if (typeof item.en === "string") enStr = item.en;
             return {
               order: item.order || (i + 1),
               key: k,
               name: item.name || "",
-              en: enStr,
               star: item.star || 5
             };
           });
@@ -696,7 +693,7 @@ body {
   /* ============ 主题 ============ */
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    // 浅色显示太阳（当前白天），深色显示月亮（当前夜晚）
+    /* 浅色显示太阳（当前白天），深色显示月亮（当前夜晚） */
     btnTheme.innerHTML = theme === "dark" ? ICONS.app.moonBold : ICONS.app.sunBold;
     try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
   }
