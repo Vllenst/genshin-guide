@@ -89,7 +89,7 @@ body {
   box-shadow: 0 1px 3px rgba(31,29,26,.08);
 }
 
-/* ============ 操作区（iOS 分组风格） ============ */
+/* ============ 操作区 ============ */
 .actions-group {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -232,13 +232,15 @@ body {
 }
 .entry-key:focus { border-color: var(--accent); background: var(--bg-surface); }
 
+/* 中部：中文名 + 星级 + 删除 同一行 */
 .entry-mid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
-.entry-name,
-.entry-en {
+.entry-name {
+  flex: 1;
+  min-width: 0;
   height: 34px;
   padding: 0 10px;
   border: 1px solid var(--border-default);
@@ -248,18 +250,11 @@ body {
   font-family: inherit;
   font-size: 12.5px;
   outline: none;
-  min-width: 0;
 }
-.entry-name:focus,
-.entry-en:focus { border-color: var(--accent); background: var(--bg-surface); }
+.entry-name:focus { border-color: var(--accent); background: var(--bg-surface); }
 
-.entry-bot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 .star-select {
-  height: 32px;
+  height: 34px;
   padding: 0 8px;
   border: 1px solid var(--border-default);
   border-radius: 8px;
@@ -270,10 +265,11 @@ body {
   outline: none;
   cursor: pointer;
   font-weight: 500;
+  flex-shrink: 0;
 }
+
 .entry-del {
-  margin-left: auto;
-  height: 32px;
+  height: 34px;
   padding: 0 12px;
   border: 1px solid var(--danger-border, rgba(220,76,62,.3));
   background: var(--danger-bg);
@@ -287,6 +283,7 @@ body {
   align-items: center;
   gap: 5px;
   transition: all .15s;
+  flex-shrink: 0;
 }
 .entry-del:hover { background: var(--danger-hover, rgba(220,76,62,.16)); }
 .entry-del:active { transform: scale(.96); }
@@ -331,14 +328,12 @@ body {
 </header>
 
 <div class="main">
-  <!-- Tab -->
   <nav class="tabs">
     <button class="tab active" data-tab="characters">角色</button>
     <button class="tab" data-tab="artifacts">圣遗物</button>
     <button class="tab" data-tab="weapons">武器</button>
   </nav>
 
-  <!-- 操作区 -->
   <div class="actions-group">
     <div class="actions-section-title">导入 / 导出</div>
     <div class="actions-row">
@@ -368,7 +363,6 @@ body {
     </div>
   </div>
 
-  <!-- 条目列表 -->
   <div class="entries" id="entries"></div>
   <div class="empty-tip" id="emptyTip" style="display:none;">
     <span class="big-icon">📭</span>
@@ -385,7 +379,7 @@ body {
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "icon_map_editor_data_v2";
+  var STORAGE_KEY = "icon_map_editor_data_v3";
   var THEME_KEY = "gtt_theme";
 
   var data = { characters: [], artifacts: [], weapons: [] };
@@ -462,7 +456,7 @@ body {
       var card = document.createElement("div");
       card.className = "entry-card";
 
-      /* ---- 顶部：序号 + 缩略图 + 文件名 ---- */
+      /* ---- 第一行：序号 + 缩略图 + 文件名 ---- */
       var top = document.createElement("div");
       top.className = "entry-top";
 
@@ -506,7 +500,7 @@ body {
 
       card.appendChild(top);
 
-      /* ---- 中部：中文名 + 英文名 ---- */
+      /* ---- 第二行：中文名 + 星级 + 删除 ---- */
       var mid = document.createElement("div");
       mid.className = "entry-mid";
 
@@ -517,20 +511,6 @@ body {
       inpName.placeholder = "中文名";
       inpName.addEventListener("input", function () { row.name = inpName.value; saveLocal(); });
       mid.appendChild(inpName);
-
-      var inpEn = document.createElement("input");
-      inpEn.type = "text";
-      inpEn.className = "entry-en";
-      inpEn.value = row.en || "";
-      inpEn.placeholder = "英文名（可选）";
-      inpEn.addEventListener("input", function () { row.en = inpEn.value; saveLocal(); });
-      mid.appendChild(inpEn);
-
-      card.appendChild(mid);
-
-      /* ---- 底部：星级 + 删除 ---- */
-      var bot = document.createElement("div");
-      bot.className = "entry-bot";
 
       var selStar = document.createElement("select");
       selStar.className = "star-select";
@@ -546,7 +526,7 @@ body {
         saveLocal();
         render();
       });
-      bot.appendChild(selStar);
+      mid.appendChild(selStar);
 
       var btnDel = document.createElement("button");
       btnDel.type = "button";
@@ -560,9 +540,9 @@ body {
         render();
         setStatus("已删除", "ok");
       });
-      bot.appendChild(btnDel);
+      mid.appendChild(btnDel);
 
-      card.appendChild(bot);
+      card.appendChild(mid);
       entriesEl.appendChild(card);
     });
   }
@@ -664,7 +644,6 @@ body {
     lines.push(" * 图标映射表");
     lines.push(" * key   = 完整文件名（含扩展名）");
     lines.push(" * name  = 中文全名");
-    lines.push(" * en    = 英文名（可选，字符串或数组）");
     lines.push(" * star  = 星级（1~5）");
     lines.push(" * order = 排序序号（数字越小越前）");
     lines.push(" * ============================================================ */");
@@ -686,11 +665,6 @@ body {
 
       list.forEach(function (item, i) {
         var parts = ['name: "' + esc(item.name) + '"'];
-        if (item.en && item.en.trim()) {
-          var enArr = item.en.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
-          if (enArr.length === 1) parts.push('en: "' + esc(enArr[0]) + '"');
-          else if (enArr.length > 1) parts.push("en: [" + enArr.map(function (e) { return '"' + esc(e) + '"'; }).join(", ") + "]");
-        }
         parts.push("star: " + (item.star || 5));
         parts.push("order: " + (item.order || (i + 1)));
         var line = '    "' + esc(item.key) + '": { ' + parts.join(", ") + " }";
@@ -722,7 +696,8 @@ body {
   /* ============ 主题 ============ */
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    btnTheme.innerHTML = theme === "dark" ? ICONS.app.sunBold : ICONS.app.moonBold;
+    // 浅色显示太阳（当前白天），深色显示月亮（当前夜晚）
+    btnTheme.innerHTML = theme === "dark" ? ICONS.app.moonBold : ICONS.app.sunBold;
     try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
   }
   function toggleTheme() {
