@@ -17,7 +17,6 @@ body {
   display: flex;
   flex-direction: column;
   letter-spacing: -0.2px;
-  transition: background-color .25s ease, color .25s ease;
 }
 
 /* ============================================================
@@ -33,7 +32,6 @@ body {
   align-items: center;
   gap: 8px;
   z-index: 40;
-  transition: background-color .25s ease, border-color .25s ease;
 }
 .nav-btn {
   width: 34px;
@@ -102,7 +100,7 @@ body {
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
-  transition: transform .28s cubic-bezier(.16,1,.3,1), background-color .25s ease;
+  transition: transform .28s cubic-bezier(.16,1,.3,1);
   box-shadow: 12px 0 32px var(--shadow-nav);
 }
 .sidebar-drawer.open { transform: translateX(0); }
@@ -128,7 +126,6 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* --- 主工具行 --- */
 .menu-main {
   width: 100%;
   display: flex;
@@ -192,7 +189,6 @@ body {
 .menu-main-arrow svg { width: 100%; height: 100%; display: block; }
 .menu-main.expanded .menu-main-arrow { transform: rotate(180deg); }
 
-/* --- 子功能列表 --- */
 .menu-sub {
   overflow: hidden;
   max-height: 0;
@@ -325,7 +321,7 @@ body {
 'use strict';
 
 /* ============================================================
- * 工具清单（主工具，硬编码）
+ * 工具清单
  * ============================================================ */
 const TOOLS = [
   { key: 'character',   label: '角色一图流', src: 'tools/character.html',   icon: 'character',   iconBold: 'characterBold' },
@@ -335,7 +331,6 @@ const TOOLS = [
   { key: 'tier',        label: '角色梯队',   src: 'tools/tier.html',        icon: 'tier',        iconBold: 'tierBold' }
 ];
 
-/* 兜底子功能清单（子页面尚未改造完成时使用） */
 const FALLBACK_SUBTOOLS = {
   'character':   [],
   'image-tools': [
@@ -359,13 +354,12 @@ const FALLBACK_SUBTOOLS = {
 };
 
 const SUBTOOLS = JSON.parse(JSON.stringify(FALLBACK_SUBTOOLS));
-
 const DEFAULT_TOOL = 'character';
 const STORAGE_KEY = 'gtt_active_tool';
 const THEME_KEY = 'gtt_theme';
 
 /* ============================================================
- * DOM 引用
+ * DOM
  * ============================================================ */
 const frameContainer = document.getElementById('frameContainer');
 const sidebarDrawer  = document.getElementById('sidebarDrawer');
@@ -378,9 +372,6 @@ const btnMenu        = document.getElementById('btnMenu');
 const btnClose       = document.getElementById('btnClose');
 const btnTheme       = document.getElementById('btnTheme');
 
-/* ============================================================
- * iframe 缓存
- * ============================================================ */
 const frameCache = new Map();
 
 /* ============================================================
@@ -416,7 +407,7 @@ function toggleTheme() {
 }
 
 /* ============================================================
- * 侧边抽屉开关
+ * 侧边抽屉
  * ============================================================ */
 function openSidebar() {
   sidebarDrawer.classList.add('open');
@@ -428,7 +419,7 @@ function closeSidebar() {
 }
 
 /* ============================================================
- * 渲染侧边菜单
+ * 渲染菜单
  * ============================================================ */
 function renderMenu() {
   sidebarMenu.innerHTML = '';
