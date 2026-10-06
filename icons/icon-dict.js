@@ -1,21 +1,26 @@
 window.ICON_DICT = {
   config: {
-    characters: {
-      prefix: "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_",
-      ext: ".webp"
-    },
-    artifacts: {
-      prefix: "https://api.lunaris.moe/data/assets/artifacts/UI_RelicIcon_",
-      ext: ".webp"
-    },
-    weapons: {
-      prefix: "https://api.lunaris.moe/data/assets/weaponicon/UI_EquipIcon_",
-      ext: ".webp"
-    }
+    characters: { prefix: "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_", ext: ".webp" },
+    artifacts: { prefix: "https://api.lunaris.moe/data/assets/artifacts/UI_RelicIcon_", ext: ".webp" },
+    weapons: { prefix: "https://api.lunaris.moe/data/assets/weaponicon/UI_EquipIcon_", ext: ".webp" }
   },
+
+  /* ============ 角色 ============ */
   characters: {
-    "UI_AvatarIcon_Traveler.webp": { name: "旅行者", star: 5, order: 1, local: true }
+    "UI_AvatarIcon_Traveler.webp": { name: "旅行者", star: 5, order: 1, local: true },
+    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_Escoffier.webp": { name: "爱可菲", star: 5, order: 98 },
+    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_SkirkNew.webp": { name: "丝柯克", star: 5, order: 100 },
+    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_Valeriy.webp": { name: "瓦列里", star: 4, order: 121 },
+    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_Mitya.webp": { name: "米提亚", star: 5, order: 122 }
   },
-  artifacts: {},
-  weapons: {}
+
+  /* ============ 圣遗物 ============ */
+  artifacts: {
+    // 暂无条目
+  },
+
+  /* ============ 武器 ============ */
+  weapons: {
+    // 暂无条目
+  }
 };
