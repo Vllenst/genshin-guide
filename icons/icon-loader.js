@@ -96,18 +96,23 @@
       .trim();
   }
 
-  /* ============ 提取英文 ID ============ */
+  /* ============ 提取英文 ID（剥掉 UI_AvatarIcon_ 等前缀） ============ */
   function extractId(type, key) {
     if (!key) return "";
+    var raw = "";
     if (/^https?:\/\//i.test(key)) {
       var last = key.split("/").pop() || "";
-      return stripExt(last);
+      raw = stripExt(last);
+    } else {
+      var dict = window.ICON_DICT;
+      if (dict && dict[type] && dict[type][key] && dict[type][key].local) {
+        raw = stripExt(key);
+      } else {
+        raw = key;
+      }
     }
-    var dict = window.ICON_DICT;
-    if (dict && dict[type] && dict[type][key] && dict[type][key].local) {
-      return stripExt(key);
-    }
-    return key;
+    /* 剥掉 UI_AvatarIcon_ / UI_EquipIcon_ / UI_RelicIcon_ 前缀 */
+    return raw.replace(/^UI_[A-Za-z]+_/i, "");
   }
 
   /* ============ 解析最终 URL ============ */
@@ -116,9 +121,9 @@
     if (!dict || !dict[type] || !dict[type][key]) return "";
     var item = dict[type][key];
 
-    /* 1. 本地 */
+    /* 1. 本地：从 icons/ 根目录加载 */
     if (item.local) return ICON_BASE + key;
-    /* 2. 完整 URL */
+    /* 2. 完整 URL：直接用 */
     if (/^https?:\/\//i.test(key)) return key;
     /* 3. ID + 前缀 */
     var cfg = dict.config && dict.config[type];
@@ -134,6 +139,7 @@
     if (!q) return null;
     var qLower = q.toLowerCase();
     var qNoSuffix = stripSuffix(q).toLowerCase();
+    var qStripped = qNoSuffix.replace(/^ui_[a-z]+_/i, "");
 
     var items = dict[type];
     for (var key in items) {
@@ -141,13 +147,16 @@
       var id = extractId(type, key);
       var idLower = id.toLowerCase();
 
+      /* 中文名匹配 */
       if (q === item.name || qNoSuffix === (item.name || "").toLowerCase()) {
         return { key: key, name: item.name, star: item.star };
       }
-      if (qLower === idLower || qNoSuffix === idLower) {
+      /* 英文 ID 匹配 */
+      if (qLower === idLower || qNoSuffix === idLower || qStripped === idLower) {
         return { key: key, name: item.name, star: item.star };
       }
-      if (qLower === key.toLowerCase()) {
+      /* 完整 key 匹配 */
+      if (qLower === key.toLowerCase() || qStripped === key.toLowerCase()) {
         return { key: key, name: item.name, star: item.star };
       }
     }
