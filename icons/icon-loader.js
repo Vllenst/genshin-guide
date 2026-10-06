@@ -1,5 +1,6 @@
 /* ============================================================
  * 图标加载器 · 全站共享
+ * 路径规则：icons/{type}/{star}star/{文件名}
  * ============================================================ */
 (function () {
   'use strict';
@@ -69,7 +70,7 @@
     });
   }
 
-  /* ============ 生成带背景的 dataURL（无内边距） ============ */
+  /* ============ 生成带背景的 dataURL（径向渐变，无内边距） ============ */
   function applyBackground(img, star, opts) {
     opts = opts || {};
     var size = opts.size || 256;
@@ -127,14 +128,17 @@
         enList = Array.isArray(item.en) ? item.en : [item.en];
       }
 
+      /* 1. 匹配中文名 */
       if (q === item.name || qNoSuffix === item.name.toLowerCase()) {
         return { key: key, name: item.name, star: item.star };
       }
+      /* 2. 匹配英文名 */
       for (var i = 0; i < enList.length; i++) {
         if (qLower === enList[i].toLowerCase() || qNoSuffix === enList[i].toLowerCase()) {
           return { key: key, name: item.name, star: item.star };
         }
       }
+      /* 3. 匹配完整文件名 */
       if (qLower === key.toLowerCase() || qNoExt === keyNoExt) {
         return { key: key, name: item.name, star: item.star };
       }
@@ -145,7 +149,13 @@
   /* ============ 缓存 ============ */
   var cache = {};
   function ck(type, key) { return type + '::' + key; }
-  function getPath(type, key) { return ICON_BASE + type + '/' + key; }
+
+  /* 路径：icons/{type}/{star}star/{key} */
+  function getPath(type, key) {
+    var map = window.ICON_MAP && window.ICON_MAP[type];
+    var star = (map && map[key] && map[key].star) ? map[key].star : 5;
+    return ICON_BASE + type + '/' + star + 'star/' + key;
+  }
 
   /* ============ 加载并合成 ============ */
   async function load(type, key, opts) {
@@ -316,6 +326,7 @@
     fromName: fromName,
     getCached: getCached,
     applyBackground: applyBackground,
+    getPath: getPath,
     openPicker: openPicker,
     applyBackgroundToFile: function (file, star, opts) {
       return new Promise(function (resolve, reject) {
