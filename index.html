@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
@@ -19,184 +19,412 @@
   --accent: #8B7355;
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
-  --shadow-card: 0 1px 2px rgba(31,29,26,.03);
   --std-font: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body, input, button { font-family: var(--std-font); -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; height: 100dvh; }
+html, body, button { font-family: var(--std-font); -webkit-font-smoothing: antialiased; }
 body {
   background: var(--bg-base);
   color: var(--text-primary);
-  font-size: 14px;
-  letter-spacing: -0.2px;
-  min-height: 100vh;
-  padding: 0 16px calc(40px + env(safe-area-inset-bottom));
-}
-
-.header {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 40px 4px 22px;
-  text-align: center;
-}
-.header h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-  margin-bottom: 6px;
-}
-.header p {
-  font-size: 12.5px;
-  color: var(--text-tertiary);
-  letter-spacing: 0.2px;
-}
-
-.tool-list {
-  max-width: 640px;
-  margin: 0 auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  letter-spacing: -0.2px;
 }
 
-.tool-card {
+/* ============ 顶部栏 ============ */
+.app-navbar {
+  flex: none;
+  height: 52px;
+  padding: 0 14px;
+  background: rgba(242,239,234,.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
+  gap: 10px;
+  z-index: 40;
+}
+.btn-toggle {
+  width: 34px;
+  height: 34px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  text-decoration: none;
-  color: inherit;
-  box-shadow: var(--shadow-card);
-  transition: transform .15s cubic-bezier(.16,1,.3,1), background .15s;
-}
-.tool-card:active {
-  transform: scale(.98);
-  background: var(--bg-hover);
-}
-
-.tool-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  display: flex;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  transition: all .15s;
+  padding: 0;
   flex-shrink: 0;
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-subtle);
-  line-height: 1;
 }
-
-.tool-text { flex: 1; min-width: 0; }
-.tool-title {
+.btn-toggle:hover { background: var(--bg-hover); }
+.btn-toggle:active { transform: scale(.94); }
+.btn-toggle svg { width: 18px; height: 18px; display: block; }
+.nav-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
-  margin-bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
-.tool-desc {
-  font-size: 12px;
-  color: var(--text-tertiary);
+.nav-title .emoji { font-size: 17px; line-height: 1; }
+.nav-title .label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tool-arrow {
-  width: 16px;
-  height: 16px;
-  color: var(--text-tertiary);
+/* ============ 侧边抽屉 ============ */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(31,29,26,.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s cubic-bezier(.16,1,.3,1);
+}
+.sidebar-backdrop.active { opacity: 1; pointer-events: auto; }
+.sidebar-drawer {
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  width: 270px;
+  max-width: 85vw;
+  background: rgba(242,239,234,.97);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-right: 1px solid var(--border-subtle);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform .28s cubic-bezier(.16,1,.3,1);
+  box-shadow: 12px 0 32px rgba(31,29,26,.12);
+}
+.sidebar-drawer.open { transform: translateX(0); }
+.sidebar-header {
+  padding: 16px 14px 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
-  opacity: 0.55;
+}
+.sidebar-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.sidebar-menu {
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background .15s, color .15s, border-color .15s;
+  position: relative;
+}
+.sidebar-item .item-emoji {
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.sidebar-item .item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sidebar-item.active {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(31,29,26,.03);
+}
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
-.footer {
-  max-width: 640px;
-  margin: 30px auto 0;
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-tertiary);
-  letter-spacing: 0.3px;
-  line-height: 1.8;
+/* ============ 内容区 ============ */
+.frame-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-base);
 }
+.frame-view {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+.frame-view.active { display: block; }
+.frame-view iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: var(--bg-base);
+}
+
+/* 首次进入的加载遮罩 */
+.loading-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(242,239,234,.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  font-size: 13px;
+  pointer-events: none;
+}
+.loading-mask.show { display: flex; }
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--border-subtle);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>原神攻略工具集</h1>
-  <p>一站式生成 · 高清导出</p>
-</div>
+<header class="app-navbar">
+  <button type="button" class="btn-toggle" id="btnMenu" aria-label="打开菜单">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="4" y1="7" x2="20" y2="7"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="17" x2="20" y2="17"/>
+    </svg>
+  </button>
+  <div class="nav-title">
+    <span class="emoji" id="navEmoji">🎴</span>
+    <span class="label" id="navLabel">角色一图流</span>
+  </div>
+</header>
 
-<nav class="tool-list">
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-  <a class="tool-card" href="character.html">
-    <div class="tool-icon">🎴</div>
-    <div class="tool-text">
-      <div class="tool-title">角色一图流</div>
-      <div class="tool-desc">武器 · 圣遗物 · 天赋 · 命座 · 配队总览</div>
-    </div>
-    <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-  </a>
+<aside class="sidebar-drawer" id="sidebarDrawer">
+  <div class="sidebar-header">
+    <h3>工具导航</h3>
+    <button class="btn-toggle" id="btnClose" aria-label="关闭菜单">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="6" y1="6" x2="18" y2="18"/>
+        <line x1="18" y1="6" x2="6" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <nav class="sidebar-menu" id="sidebarMenu"></nav>
+</aside>
 
-  <a class="tool-card" href="image-tools.html">
-    <div class="tool-icon">🖼️</div>
-    <div class="tool-text">
-      <div class="tool-title">图片处理整合</div>
-      <div class="tool-desc">背景修改 · 双图羽化 · 对位裁切 · 图层拼接</div>
-    </div>
-    <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-  </a>
+<main class="frame-container" id="frameContainer">
+  <div class="loading-mask" id="loadingMask">
+    <div class="spinner"></div>
+    <span>正在载入工具…</span>
+  </div>
+</main>
 
-  <a class="tool-card" href="video-cover.html">
-    <div class="tool-icon">🎬</div>
-    <div class="tool-text">
-      <div class="tool-title">视频封面制作</div>
-      <div class="tool-desc">视频封面 · 合集封面 · 4K 高清导出</div>
-    </div>
-    <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-  </a>
+<script>
+'use strict';
 
-  <a class="tool-card" href="chart.html">
-    <div class="tool-icon">📊</div>
-    <div class="tool-text">
-      <div class="tool-title">图表生成器</div>
-      <div class="tool-desc">雷达图 · 柱状图 · Excel / TXT 导入</div>
-    </div>
-    <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-  </a>
+/* ========== 工具清单：新增工具时在这里加一行即可 ========== */
+const TOOLS = [
+  { key: 'character',   label: '角色一图流',      emoji: '🎴', src: 'character.html' },
+  { key: 'image-tools', label: '图片处理整合',    emoji: '🖼️', src: 'image-tools.html' },
+  { key: 'video-cover', label: '视频封面制作',    emoji: '🎬', src: 'video-cover.html' },
+  { key: 'chart',       label: '图表生成器',      emoji: '📊', src: 'chart.html' },
+  { key: 'weapon',      label: '武器卡片生成',    emoji: '⚔️', src: 'weapon.html' },
+  { key: 'tier',        label: '角色梯队排行榜',  emoji: '🏆', src: 'tier.html' }
+];
 
-  <a class="tool-card" href="weapon.html">
-    <div class="tool-icon">⚔️</div>
-    <div class="tool-text">
-      <div class="tool-title">武器卡片生成</div>
-      <div class="tool-desc">武器属性 · 特效 · 故事 · 2K 高清</div>
-    </div>
-    <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-  </a>
+const DEFAULT_KEY = TOOLS[0].key;
+const STORAGE_KEY = 'gtt_active_tool';
 
-  <a class="tool-card" href="tier.html">
-    <div class="tool-icon">🏆</div>
-    <div class="tool-text">
-      <div class="tool-title">角色梯队排行榜</div>
-      <div class="tool-desc">S / A / B 三档 · 全透明 2K PNG</div>
-    </div>
-    <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-  </a>
+/* ========== DOM 引用 ========== */
+const frameContainer = document.getElementById('frameContainer');
+const sidebarDrawer = document.getElementById('sidebarDrawer');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const sidebarMenu = document.getElementById('sidebarMenu');
+const loadingMask = document.getElementById('loadingMask');
+const navEmoji = document.getElementById('navEmoji');
+const navLabel = document.getElementById('navLabel');
 
-</nav>
+/* ========== iframe 缓存：每个工具只创建一次 ========== */
+const frameCache = new Map();   // key -> { view, iframe, loaded }
 
-<div class="footer">
-  点击卡片进入对应工具<br>
-  所有数据仅保存在本地 · 无需登录
-</div>
+/* ========== 侧边菜单打开/关闭 ========== */
+function openSidebar() {
+  sidebarDrawer.classList.add('open');
+  sidebarBackdrop.classList.add('active');
+}
+function closeSidebar() {
+  sidebarDrawer.classList.remove('open');
+  sidebarBackdrop.classList.remove('active');
+}
 
+/* ========== 创建工具 iframe（懒加载，只创建一次） ========== */
+function ensureFrame(tool) {
+  if (frameCache.has(tool.key)) return frameCache.get(tool.key);
+
+  const view = document.createElement('div');
+  view.className = 'frame-view';
+  view.dataset.tool = tool.key;
+
+  const iframe = document.createElement('iframe');
+  iframe.title = tool.label;
+  iframe.setAttribute('loading', 'lazy');
+  iframe.src = tool.src;
+
+  const record = { view, iframe, loaded: false };
+
+  iframe.addEventListener('load', () => {
+    record.loaded = true;
+    // 如果加载完成的正好是当前激活的工具，隐藏遮罩
+    if (view.classList.contains('active')) {
+      loadingMask.classList.remove('show');
+    }
+  });
+
+  view.appendChild(iframe);
+  frameContainer.appendChild(view);
+  frameCache.set(tool.key, record);
+  return record;
+}
+
+/* ========== 切换工具 ========== */
+function selectTool(key, opts) {
+  const silent = opts && opts.silent;
+  const tool = TOOLS.find(t => t.key === key) || TOOLS[0];
+  const targetKey = tool.key;
+
+  // 顶部标题
+  navEmoji.textContent = tool.emoji;
+  navLabel.textContent = tool.label;
+
+  // 侧边菜单高亮
+  sidebarMenu.querySelectorAll('.sidebar-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tool === targetKey);
+  });
+
+  // 内容区切换
+  const record = ensureFrame(tool);
+  frameCache.forEach((r, k) => {
+    r.view.classList.toggle('active', k === targetKey);
+  });
+
+  // 首次未加载完成 → 显示遮罩
+  if (!record.loaded) {
+    loadingMask.classList.add('show');
+  } else {
+    loadingMask.classList.remove('show');
+  }
+
+  // 保存 & 更新 hash
+  try { localStorage.setItem(STORAGE_KEY, targetKey); } catch (e) {}
+  if (!silent) {
+    try { history.replaceState(null, '', '#' + targetKey); } catch (e) {}
+  }
+
+  closeSidebar();
+}
+
+/* ========== 初始化侧边菜单 ========== */
+TOOLS.forEach(tool => {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'sidebar-item';
+  btn.dataset.tool = tool.key;
+  btn.innerHTML =
+    '<span class="item-emoji">' + tool.emoji + '</span>' +
+    '<span class="item-label">' + tool.label + '</span>';
+  btn.addEventListener('click', () => selectTool(tool.key));
+  sidebarMenu.appendChild(btn);
+});
+
+/* ========== 事件绑定 ========== */
+document.getElementById('btnMenu').addEventListener('click', openSidebar);
+document.getElementById('btnClose').addEventListener('click', closeSidebar);
+sidebarBackdrop.addEventListener('click', closeSidebar);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSidebar();
+});
+
+/* 点击背景遮罩以外的抽屉内部不关闭 —— 已由 backdrop 处理，无需额外代码 */
+
+/* ========== 启动：决定初始工具 ========== */
+(function init() {
+  let initialKey = DEFAULT_KEY;
+
+  // 优先 hash
+  const hashKey = (location.hash || '').replace(/^#/, '');
+  if (hashKey && TOOLS.some(t => t.key === hashKey)) {
+    initialKey = hashKey;
+  } else {
+    // 其次 localStorage
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && TOOLS.some(t => t.key === saved)) initialKey = saved;
+    } catch (e) {}
+  }
+
+  selectTool(initialKey, { silent: true });
+})();
+
+/* 监听浏览器前进/后退的 hash 变化 */
+window.addEventListener('hashchange', () => {
+  const key = (location.hash || '').replace(/^#/, '');
+  if (key && TOOLS.some(t => t.key === key)) {
+    selectTool(key, { silent: true });
+  }
+});
+</script>
 </body>
 </html>
