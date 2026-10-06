@@ -17,24 +17,11 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 .icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 .icon-flip-y { display: inline-flex; align-items: center; transform: rotate(180deg); }
 
-button svg,
-.btn svg,
-.btn-sm svg,
-.btn-xs svg,
-.ios-btn-fill svg,
-.file-btn svg,
-.icon-only svg {
-  width: 1em;
-  height: 1em;
-  display: inline-block;
-  vertical-align: middle;
-  flex-shrink: 0;
+button svg, .btn svg, .btn-sm svg, .btn-xs svg,
+.ios-btn-fill svg, .file-btn svg, .icon-only svg {
+  width: 1em; height: 1em; display: inline-block; vertical-align: middle; flex-shrink: 0;
 }
-.icon-only {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+.icon-only { display: inline-flex; align-items: center; justify-content: center; }
 
 .app-container {
   max-width: 1400px; margin: 0 auto; padding: 12px 14px;
@@ -44,13 +31,9 @@ button svg,
 @media (max-width: 1023px) {
   body { overflow: hidden; }
   .app-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    height: 100dvh;
-    padding: 12px 14px 0;
-    padding-bottom: 0;
-    gap: 0;
-    overflow: hidden;
+    grid-template-columns: 1fr; grid-template-rows: auto 1fr;
+    height: 100dvh; padding: 12px 14px 0; padding-bottom: 0;
+    gap: 0; overflow: hidden;
   }
 }
 @media (min-width: 1024px) {
@@ -63,12 +46,9 @@ button svg,
 .preview-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 @media (max-width: 1023px) {
   .preview-pane {
-    position: static;
-    background: var(--bg-base);
-    padding: 0 0 5px 0;
-    margin: 0;
-    border-bottom: 1px solid var(--border-subtle);
-    flex-shrink: 0;
+    position: static; background: var(--bg-base);
+    padding: 0 0 5px 0; margin: 0;
+    border-bottom: 1px solid var(--border-subtle); flex-shrink: 0;
   }
 }
 @media (min-width: 1024px) {
@@ -82,12 +62,9 @@ button svg,
 }
 @media (max-width: 1023px) {
   .preview-card {
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    gap: 0 !important;
+    padding: 0 !important; border: 0 !important;
+    background: transparent !important; box-shadow: none !important;
+    border-radius: 0 !important; gap: 0 !important;
   }
   .preview-header { display: none !important; }
 }
@@ -100,42 +77,30 @@ button svg,
 }
 @media (max-width: 1023px) {
   .preview-frame {
-    aspect-ratio: 16 / 9;
-    max-height: 32vh;
-    width: auto;
-    max-width: 100%;
-    align-self: center;
-    margin: 0 auto;
-    background: transparent;
-    outline: 0;
-    border-radius: var(--radius-md);
-    overflow: hidden;
+    aspect-ratio: 16 / 9; max-height: 32vh; width: auto; max-width: 100%;
+    align-self: center; margin: 0 auto;
+    background: transparent; outline: 0;
+    border-radius: var(--radius-md); overflow: hidden;
   }
 }
 #svgPreviewHost { width: 100%; height: 100%; }
 #svgPreviewHost > svg { width: 100%; height: 100%; display: block; }
 
 .float-toolbar {
-  position: absolute;
-  top: 8px; right: 8px;
-  display: flex; gap: 4px;
-  z-index: 15;
+  position: absolute; top: 8px; right: 8px;
+  display: flex; gap: 4px; z-index: 15;
 }
-@media (max-width: 1023px) {
-  .float-toolbar { top: 6px; right: 6px; }
-}
+@media (max-width: 1023px) { .float-toolbar { top: 6px; right: 6px; } }
 .float-btn {
   height: 30px; min-width: 30px; padding: 0 8px;
   border-radius: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
   color: var(--text-primary);
   font-family: inherit; font-size: 12px; font-weight: 500;
   cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 4px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   box-shadow: var(--shadow-btn);
-  transition: all .15s;
+  -webkit-appearance: none; appearance: none;
 }
 .float-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
 .float-btn:active { transform: scale(.95); }
@@ -155,7 +120,7 @@ button svg,
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md); font-family: inherit; font-size: 14px; font-weight: 600;
   color: var(--text-primary); cursor: pointer; box-shadow: var(--shadow-card); flex-shrink: 0;
-  transition: background .15s, border-color .15s, box-shadow .15s; letter-spacing: -0.2px;
+  letter-spacing: -0.2px;
 }
 .tab-trigger:hover { background: var(--bg-hover); }
 .tab-trigger:active { transform: scale(.99); }
@@ -164,8 +129,8 @@ button svg,
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .tab-trigger-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.tab-trigger-caret { width: 16px; height: 16px; color: var(--text-tertiary); flex-shrink: 0; transition: transform .25s cubic-bezier(0.16, 1, 0.3, 1), color .15s; }
-.tab-trigger[aria-expanded="true"] .tab-trigger-caret { transform: rotate(180deg); color: var(--accent); }
+.tab-trigger-caret { width: 16px; height: 16px; color: var(--text-tertiary); flex-shrink: 0; }
+.tab-trigger[aria-expanded="true"] .tab-trigger-caret { color: var(--accent); }
 
 .tabs-content { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; min-height: 0; }
 @media (max-width: 1023px) {
@@ -214,13 +179,13 @@ button svg,
   background: transparent; border: 0; border-radius: 10px;
   font-family: inherit; font-size: 15px; font-weight: 500;
   color: var(--text-primary); text-align: left; cursor: pointer;
-  transition: background 0.15s, color 0.15s; letter-spacing: -0.2px;
+  letter-spacing: -0.2px;
   -webkit-appearance: none; appearance: none;
 }
 .tab-sheet-item:hover { background: var(--bg-hover); }
 .tab-sheet-item:active { background: var(--bg-sunken); }
 .tab-sheet-item.active { color: var(--accent); font-weight: 600; }
-.tab-sheet-item-check { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+.tab-sheet-item-check { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; opacity: 0; }
 .tab-sheet-item.active .tab-sheet-item-check { opacity: 1; }
 
 .ios-section-header {
@@ -245,7 +210,6 @@ input[type="text"], input[type="number"], select {
   background: var(--bg-sunken); border: 1px solid var(--border-default);
   border-radius: var(--radius-sm); color: var(--text-primary);
   font-size: 13px; padding: 0 12px; outline: none;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 input[type="text"]:focus, input[type="number"]:focus, select:focus {
   background: var(--bg-surface); border-color: var(--accent);
@@ -270,7 +234,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 20px; height: 20px; margin-top: -8px; border-radius: 50%;
   background: #ffffff; border: none;
   box-shadow: 0 1px 3px rgba(31, 29, 26, 0.2), 0 0 0 0.5px rgba(31, 29, 26, 0.08);
-  transition: transform 0.12s ease; cursor: grab;
+  cursor: grab;
 }
 input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.06); cursor: grabbing; }
 input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--bg-sunken); border: none; }
@@ -285,7 +249,6 @@ button, .file-btn {
   font-family: inherit; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
   height: var(--ctl-h); padding: 0 14px; font-size: 13px; font-weight: 500; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap; flex-shrink: 0; background: var(--bg-surface);
   color: var(--text-primary); box-shadow: var(--shadow-btn);
   -webkit-appearance: none; appearance: none; user-select: none;
@@ -309,7 +272,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   width: var(--ctl-h); height: var(--ctl-h); border-radius: var(--radius-sm);
   background: var(--bg-sunken); border: 1px solid var(--border-default);
   object-fit: cover; flex-shrink: 0; cursor: pointer;
-  transition: transform 0.12s, filter 0.12s, border-color 0.12s;
 }
 .clickable-thumb:hover { filter: brightness(0.94); border-color: var(--accent); }
 .clickable-thumb:active { transform: scale(0.92); }
@@ -328,7 +290,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   display: flex; align-items: center; gap: 6px;
   background: var(--bg-surface-2); border-radius: var(--radius-sm); padding: 6px 8px;
   border: 1px solid var(--border-subtle);
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 .cons-item.active {
   border-color: var(--accent);
@@ -341,7 +302,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   font-size: 11px; font-weight: 700;
   background: var(--bg-sunken); border: 1px solid var(--border-default);
   color: var(--text-secondary); cursor: pointer; flex-shrink: 0;
-  transition: all 0.2s;
 }
 .cons-item.active .cons-badge { background: var(--accent); color: #fff; border-color: var(--accent); }
 
@@ -351,7 +311,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   background: var(--bg-surface-2); border-radius: var(--radius-sm);
   height: var(--ctl-h); cursor: pointer; font-size: 12px; font-weight: 500;
   color: var(--text-secondary); border: 1px solid var(--border-subtle);
-  transition: all 0.15s;
 }
 .swatch-btn:hover { background: var(--bg-hover); }
 .swatch-btn.active { border-color: currentColor; box-shadow: 0 0 0 1.5px currentColor; background: var(--bg-surface); }
@@ -916,9 +875,7 @@ function moveItem(arr, from, dir) {
   [arr[from], arr[to]] = [arr[to], arr[from]];
   return true;
 }
-function padOrder(n) {
-  return String(n).padStart(3, '0');
-}
+function padOrder(n) { return String(n).padStart(3, '0'); }
 function themeToElementName() {
   var t = (State.data.theme || '').toLowerCase();
   for (var i = 0; i < elementColors.length; i++) {
@@ -950,12 +907,7 @@ async function urlExists(url) {
     }
     return false;
   } catch (e) {
-    try {
-      var res3 = await fetch(url);
-      return res3.ok;
-    } catch (e2) {
-      return false;
-    }
+    try { var res3 = await fetch(url); return res3.ok; } catch (e2) { return false; }
   }
 }
 
@@ -965,12 +917,8 @@ async function urlExists(url) {
 function tightenSvgToSquareViewBox(svgString) {
   const ns = 'http://www.w3.org/2000/svg';
   const host = document.createElementNS(ns, 'svg');
-  host.style.position = 'absolute';
-  host.style.left = '-9999px';
-  host.style.top = '-9999px';
-  host.style.width = '1px';
-  host.style.height = '1px';
-  host.style.visibility = 'hidden';
+  host.style.position = 'absolute'; host.style.left = '-9999px'; host.style.top = '-9999px';
+  host.style.width = '1px'; host.style.height = '1px'; host.style.visibility = 'hidden';
   host.setAttribute('aria-hidden', 'true');
   document.body.appendChild(host);
   const wrap = document.createElementNS(ns, 'svg');
@@ -1104,14 +1052,9 @@ function wrappedLeftText(x, areaTop, areaW, areaH, content, maxW, base, min, fil
 }
 
 function sectionTitle(x, y, title) {
-  const fs = LAYOUT.title.fs;
-  const dotR = LAYOUT.title.dotR;
-  const dotGap = LAYOUT.title.dotGap;
+  const fs = LAYOUT.title.fs, dotR = LAYOUT.title.dotR, dotGap = LAYOUT.title.dotGap;
   const textX = x + dotR * 2 + dotGap;
-  return `
-    <circle cx="${x + dotR}" cy="${y}" r="${dotR}" fill="${State.data.theme || '#939393'}" filter="url(#glowTheme)"/>
-    ${text(textX, y, title, fs, { weight: 500 })}
-  `;
+  return `<circle cx="${x + dotR}" cy="${y}" r="${dotR}" fill="${State.data.theme || '#939393'}" filter="url(#glowTheme)"/>${text(textX, y, title, fs, { weight: 500 })}`;
 }
 function slot(x, y, size, img, name, key, field) {
   const cp = `clip_${key}`;
@@ -1125,29 +1068,21 @@ function slot(x, y, size, img, name, key, field) {
   let labelEl = '';
   if (showLabel) {
     const opts = { anchor: 'middle', baseline: 'alphabetic' };
-    if (field) {
-      opts.field = field;
-      opts.fit = { maxW, base, min: 3 };
-    }
+    if (field) { opts.field = field; opts.fit = { maxW, base, min: 3 }; }
     labelEl = text(x + size / 2, labelTextY, name || '', labelSize, opts);
   }
-  const bg = showLabel
-    ? `<rect x="${x}" y="${y + size - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cp})"/>`
-    : '';
+  const bg = showLabel ? `<rect x="${x}" y="${y + size - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cp})"/>` : '';
   return `
     <clipPath id="${cp}"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${radius}"/></clipPath>
     ${rect(x, y, size, size, 'rgba(0,0,0,.5)', '', 0, radius)}
     ${image(img || placeholder(''), x, y, size, size, 'xMidYMid slice', `clip-path="url(#${cp})"`)}
-    ${bg}${labelEl}
-  `;
+    ${bg}${labelEl}`;
 }
 function doubleArtifact(x, y, size, a, key) {
   const gap = LAYOUT.doubleGap;
-  const w = size * 2 + gap;
-  const h = size;
+  const w = size * 2 + gap, h = size;
   const radius = Math.round(size * LAYOUT.radius.slotFactor);
-  const cpL = `clip_${key}_l`;
-  const cpR = `clip_${key}_r`;
+  const cpL = `clip_${key}_l`, cpR = `clip_${key}_r`;
   const labelH = Math.round(h / 5);
   const maxW = w - (radius / 3) * 2;
   const base = labelH * 0.8;
@@ -1156,15 +1091,11 @@ function doubleArtifact(x, y, size, a, key) {
   const labelTextY = y + h - labelH / 2 + fs * 0.35;
   const showLabel = !!displayName;
   let labelEl = '';
-  if (showLabel) {
-    const opts = { anchor: 'middle', baseline: 'alphabetic' };
-    labelEl = text(x + w / 2, labelTextY, displayName, fs, opts);
-  }
+  if (showLabel) { labelEl = text(x + w / 2, labelTextY, displayName, fs, { anchor: 'middle', baseline: 'alphabetic' }); }
   const bg = showLabel ? `
     <rect x="${x}" y="${y + h - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cpL})"/>
     <rect x="${x + size}" y="${y + h - labelH}" width="${gap}" height="${labelH}" fill="url(#slotBottomGrad)"/>
-    <rect x="${x + size + gap}" y="${y + h - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cpR})"/>
-  ` : '';
+    <rect x="${x + size + gap}" y="${y + h - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cpR})"/>` : '';
   return `
     <clipPath id="${cpL}"><path d="M${x + radius} ${y}H${x + size}V${y + size}H${x + radius}Q${x} ${y + size} ${x} ${y + size - radius}V${y + radius}Q${x} ${y} ${x + radius} ${y}Z"/></clipPath>
     <clipPath id="${cpR}"><path d="M${x + size + gap} ${y}H${x + size + gap + size - radius}Q${x + size + gap + size} ${y} ${x + size + gap + size} ${y + radius}V${y + size - radius}Q${x + size + gap + size} ${y + size} ${x + size + gap + size - radius} ${y + size}H${x + size + gap}Z"/></clipPath>
@@ -1172,16 +1103,14 @@ function doubleArtifact(x, y, size, a, key) {
     <rect x="${x + size + gap}" y="${y}" width="${size}" height="${size}" fill="rgba(0,0,0,.5)" clip-path="url(#${cpR})"/>
     ${image(a.img1 || placeholder(''), x, y, size, size, 'xMidYMid slice', `clip-path="url(#${cpL})"`)}
     ${image(a.img2 || placeholder(''), x + size + gap, y, size, size, 'xMidYMid slice', `clip-path="url(#${cpR})"`)}
-    ${bg}${labelEl}
-  `;
+    ${bg}${labelEl}`;
 }
 
 /* =========================================================================
  * 【JS 模块 7】SVG 图层
  * ========================================================================= */
 function midSection(layerCfg, title, contentSvg) {
-  const y = LAYOUT.layers.mid.y;
-  const h = LAYOUT.layers.mid.h;
+  const y = LAYOUT.layers.mid.y, h = LAYOUT.layers.mid.h;
   return `
     ${panelRect(layerCfg.x, y, layerCfg.w, h, LAYOUT.radius.panel)}
     ${sectionTitle(layerCfg.x + LAYOUT.title.offX, y + LAYOUT.title.offY, title)}
@@ -1191,17 +1120,13 @@ function buildWeapons() {
   const keys = WEAPON_ORDER.filter(k => State.data.weaponData[k].length);
   if (!keys.length) return '';
   let out = '';
-  const step = LAYOUT.iconSize + LAYOUT.iconGap;
-  const size = LAYOUT.iconSize;
+  const step = LAYOUT.iconSize + LAYOUT.iconGap, size = LAYOUT.iconSize;
   const slotY = LAYOUT.weaponSlotY;
-  const labelFs = LAYOUT.weaponLabelFs;
-  const labelOffsetY = LAYOUT.weaponLabelOffsetY;
+  const labelFs = LAYOUT.weaponLabelFs, labelOffsetY = LAYOUT.weaponLabelOffsetY;
   const sepGap = 20;
   let x = LAYOUT.right.x + LAYOUT.padX;
   keys.forEach((k, groupIndex) => {
-    if (groupIndex > 0) {
-      out += `<rect x="${x - sepGap - 1}" y="${slotY}" width="2" height="${size}" fill="url(#sepGrad)"/>`;
-    }
+    if (groupIndex > 0) out += `<rect x="${x - sepGap - 1}" y="${slotY}" width="2" height="${size}" fill="url(#sepGrad)"/>`;
     const group = State.data.weaponData[k];
     group.slice(0, WEAPON_MAX).forEach((w, i) => {
       out += slot(x + i * step, slotY, size, w.img, w.name, `w_${k}_${i}`, `weapon.${k}.${i}.name`);
@@ -1217,19 +1142,13 @@ function buildWeapons() {
 function buildArtifacts() {
   if (!State.data.artifactData.length) return '';
   let out = '';
-  const step = LAYOUT.iconSize + LAYOUT.iconGap;
-  const size = LAYOUT.iconSize;
+  const step = LAYOUT.iconSize + LAYOUT.iconGap, size = LAYOUT.iconSize;
   const doubleStep = size * 2 + LAYOUT.doubleGap + LAYOUT.iconGap;
   const iconY = LAYOUT.artifactSlotY;
   let x = LAYOUT.layers.artifact.x + LAYOUT.padX;
   State.data.artifactData.forEach((a, i) => {
-    if (a.type === 'double') {
-      out += doubleArtifact(x, iconY, size, a, `a_${i}`);
-      x += doubleStep;
-    } else {
-      out += slot(x, iconY, size, a.img, a.name, `a_${i}`, `artifact.${i}.name`);
-      x += step;
-    }
+    if (a.type === 'double') { out += doubleArtifact(x, iconY, size, a, `a_${i}`); x += doubleStep; }
+    else { out += slot(x, iconY, size, a.img, a.name, `a_${i}`, `artifact.${i}.name`); x += step; }
   });
   return out;
 }
@@ -1237,16 +1156,13 @@ function renderArtifactIcon(iconKey, cx, cy, size) {
   const paths = ARTIFACT_ICON_PATHS[iconKey];
   if (!paths) return '';
   const scale = size / 1024;
-  const iconX = cx - size / 2;
-  const iconY = cy - size / 2;
+  const iconX = cx - size / 2, iconY = cy - size / 2;
   const pathsStr = paths.map(d => `<path d="${d}"/>`).join('');
   return `<g transform="translate(${iconX}, ${iconY}) scale(${scale})" fill="${State.data.theme}" filter="url(#glowThemeSmall)">${pathsStr}</g>`;
 }
 function statBox(x, y, w, h, iconKey, title, value, field) {
-  const boxRx = LAYOUT.radius.inner;
-  const iconSize = LAYOUT.stat.iconSize;
-  const gap = 4;
-  const labelFs = LAYOUT.stat.labelFs;
+  const boxRx = LAYOUT.radius.inner, iconSize = LAYOUT.stat.iconSize;
+  const gap = 4, labelFs = LAYOUT.stat.labelFs;
   const labelW = measureTextWidth(title, labelFs);
   const totalW = iconSize + gap + labelW;
   const startX = x + (w - totalW) / 2;
@@ -1254,8 +1170,7 @@ function statBox(x, y, w, h, iconKey, title, value, field) {
   const iconCx = startX + iconSize / 2;
   const textX = startX + iconSize + gap;
   const iconElem = renderArtifactIcon(iconKey, iconCx, centerY, iconSize);
-  const valueAreaTop = y + 32;
-  const valueAreaH = h - 36;
+  const valueAreaTop = y + 32, valueAreaH = h - 36;
   const valueMidY = valueAreaTop + valueAreaH / 2;
   const maxW = w - boxRx * 2;
   const opts = { fill: '#fff', anchor: 'middle' };
@@ -1264,19 +1179,15 @@ function statBox(x, y, w, h, iconKey, title, value, field) {
     ${rect(x, y, w, h, LAYOUT.innerBoxFill, '', 0, boxRx)}
     ${iconElem}
     ${text(textX, centerY, title, labelFs, { fill: LAYOUT.labelColor, weight: 500 })}
-    ${text(x + w / 2, valueMidY, value || '', fitSize(value, maxW, 12, 6), opts)}
-  `;
+    ${text(x + w / 2, valueMidY, value || '', fitSize(value, maxW, 12, 6), opts)}`;
 }
 function buildStats() {
   const layer = LAYOUT.layers.mid.stat;
   const contentX = layer.x + LAYOUT.padX;
   const contentW = layer.w - LAYOUT.padX * 2;
   const contentY = MID_CONTENT_Y;
-  const boxW = LAYOUT.stat.boxW;
-  const boxH = LAYOUT.stat.boxH;
-  const gap = LAYOUT.stat.gap;
-  const subH = LAYOUT.stat.subH;
-  const subGap = LAYOUT.stat.subGap;
+  const boxW = LAYOUT.stat.boxW, boxH = LAYOUT.stat.boxH, gap = LAYOUT.stat.gap;
+  const subH = LAYOUT.stat.subH, subGap = LAYOUT.stat.subGap;
   const subY = contentY + boxH + subGap;
   const totalW = boxW * 3 + gap * 2;
   const offsetX = contentX + (contentW - totalW) / 2;
@@ -1292,8 +1203,7 @@ function buildStats() {
     ${statBox(offsetX + (boxW + gap) * 2, contentY, boxW, boxH, 'crown', '理之冠', State.data.cirMain, 'stat.cirMain')}
     ${rect(offsetX, subY, totalW, subH, LAYOUT.innerBoxFill, '', 0, LAYOUT.radius.inner)}
     ${text(subLabelX, subY + subH / 2, '副词条：', subLabelFs, { fill: LAYOUT.labelColor, weight: 500 })}
-    ${wrappedLeftText(subTextX, subY, subTextW, subH, State.data.subStats, subTextW, 12, 6, '#fff', 4)}
-  `;
+    ${wrappedLeftText(subTextX, subY, subTextW, subH, State.data.subStats, subTextW, 12, 6, '#fff', 4)}`;
 }
 function buildTalents() {
   const layer = LAYOUT.layers.talent;
@@ -1312,10 +1222,8 @@ function buildTalents() {
   return items.map((it, i) => {
     const x = contentX + i * (colW + colGap);
     const val = it[1] || '—';
-    const labelY = contentY + 17;
-    const valueY = contentY + 44;
-    const maxW = colW - 16;
-    const base = LAYOUT.talent.valueFs;
+    const labelY = contentY + 17, valueY = contentY + 44;
+    const maxW = colW - 16, base = LAYOUT.talent.valueFs;
     return `
       ${rect(x, contentY, colW, contentH, LAYOUT.innerBoxFill, '', 0, r)}
       ${text(x + colW / 2, labelY, it[0], LAYOUT.talent.labelFs, { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500 })}
@@ -1339,8 +1247,7 @@ function buildPanel() {
   ];
   const { cols, cellW, cellH, gapX, gapY, innerPadX, labelFs, valueFs } = P;
   return items.map((it, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
+    const col = i % cols, row = Math.floor(i / cols);
     const cx = contentX + col * (cellW + gapX);
     const cy = baseY + row * (cellH + gapY);
     const midY = cy + cellH / 2;
@@ -1354,28 +1261,22 @@ function buildPanel() {
 function buildConstellations() {
   const layer = LAYOUT.layers.mid.cons;
   const colX = layer.x + LAYOUT.padX;
-  const boxW = LAYOUT.cons.boxW;
-  const boxH = LAYOUT.cons.boxH;
-  const gapX = LAYOUT.cons.gapX;
-  const gapY = LAYOUT.cons.gapY;
+  const boxW = LAYOUT.cons.boxW, boxH = LAYOUT.cons.boxH;
+  const gapX = LAYOUT.cons.gapX, gapY = LAYOUT.cons.gapY;
   const contentY = MID_CONTENT_Y;
   const theme = State.data.theme;
   const list = State.data.constellationData;
   return list.map((c, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
+    const col = i % 2, row = Math.floor(i / 2);
     const x = colX + col * (boxW + gapX);
     const y = contentY + row * (boxH + gapY);
     const active = !!c.active;
     const boxRx = LAYOUT.radius.inner;
-    const badgeCx = x + 15;
-    const badgeCy = y + boxH / 2;
+    const badgeCx = x + 15, badgeCy = y + boxH / 2;
     const descX = x + 30;
     const descRightLimit = x + boxW - 5;
     const descAreaW = descRightLimit - descX;
-    const descText = c.desc
-      ? wrappedLeftText(descX, y + 2, descAreaW, boxH - 4, c.desc, descAreaW, LAYOUT.cons.descFs, 6, '#fff')
-      : '';
+    const descText = c.desc ? wrappedLeftText(descX, y + 2, descAreaW, boxH - 4, c.desc, descAreaW, LAYOUT.cons.descFs, 6, '#fff') : '';
     const badgeFill = active ? theme : 'rgba(0,0,0,.35)';
     if (active) {
       return `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="${boxRx}" fill="${theme}" fill-opacity="0.15" stroke="${theme}" stroke-width="2" stroke-opacity="0.75"/>
@@ -1395,8 +1296,7 @@ function buildTeams() {
   const whiteBoxY = LAYOUT.layers.team.y + LAYOUT.contentOffsetY;
   const whiteBoxH = LAYOUT.layers.team.h - LAYOUT.contentOffsetY - LAYOUT.bottomPad;
   return State.data.teamData.slice(0, 3).map((team, ti) => {
-    const teamW = T.w;
-    const teamGap = T.gap;
+    const teamW = T.w, teamGap = T.gap;
     const x = LAYOUT.right.x + LAYOUT.padX + ti * (teamW + teamGap);
     const teamRx = LAYOUT.radius.inner;
     let out = `<rect x="${x}" y="${whiteBoxY}" width="${teamW}" height="${whiteBoxH}" rx="${teamRx}" fill="${LAYOUT.innerBoxFill}"/>`;
@@ -1405,8 +1305,7 @@ function buildTeams() {
       out += text(x + teamW / 2, nameY, team.name, fitSize(team.name, 240, T.nameFs, 8),
         { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500, field: `team.${ti}.name`, fit: { maxW: 240, base: T.nameFs, min: 8 } });
     }
-    const mainSize = T.mainSize;
-    const mainGap = T.mainGap;
+    const mainSize = T.mainSize, mainGap = T.mainGap;
     const mainStartX = x + (teamW - (mainSize * 4 + mainGap * 3)) / 2;
     const mainY = whiteBoxY + T.mainOffsetY;
     const coreChar = {
@@ -1430,8 +1329,7 @@ function buildTeams() {
     team.chars.slice(1, 4).forEach((c, ci) => {
       const rowY = altStartY + ci * (T.altSize + T.altRowGap);
       const alts = c.alts.filter(a => a.name || a.img).slice(0, 4);
-      const altSize = T.altSize;
-      const altGap = T.altGap;
+      const altSize = T.altSize, altGap = T.altGap;
       const label = `${ci + 2}号位备选`;
       const labelFs = 10;
       const labelW = measureTextWidth(label, labelFs);
@@ -1459,8 +1357,7 @@ function panelRect(x, y, w, h, rx) {
 }
 function buildSVG(scale = 1) {
   const d = State.data;
-  const W = SVG_W * scale;
-  const H = SVG_H * scale;
+  const W = SVG_W * scale, H = SVG_H * scale;
   const fontFace = d.fontData ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}` : '';
   const fontFamily = d.fontData ? FONT_FAMILY_CUSTOM : FONT_FAMILY_DEFAULT;
   const nameFs = fitSize(d.charName, 280, 50, 18);
@@ -1476,8 +1373,7 @@ function buildSVG(scale = 1) {
   const nameElemCenterX = leftX + leftW / 2;
   const nameElemCenterY = leftY + leftH - 100;
   const nbMeta = d.nameBgImgMeta || {};
-  const nbW = Number(nbMeta.w) || 0;
-  const nbH = Number(nbMeta.h) || 0;
+  const nbW = Number(nbMeta.w) || 0, nbH = Number(nbMeta.h) || 0;
   let elemBgW, elemBgH;
   if (nbW > 0 && nbH > 0) {
     if (nbW >= nbH) { elemBgW = leftW / 2; elemBgH = Math.round(elemBgW * nbH / nbW); }
@@ -1499,8 +1395,7 @@ function buildSVG(scale = 1) {
     const iy = infoBottomCenterY - (infoRows.length - 1 - i) * CI.lineGap;
     info += text(ix, iy, `${r[0]} ${r[1]}`, infoFs, { fill: '#ffffff', stroke: '#000000', strokeWidth: 1.2, field: r[2] });
   });
-  const row2Y = LAYOUT.layers.row2.y;
-  const row2H = LAYOUT.layers.row2.h;
+  const row2Y = LAYOUT.layers.row2.y, row2H = LAYOUT.layers.row2.h;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${SVG_W} ${SVG_H}">
     <defs>
       <style>${fontFace} text { font-family: ${fontFamily}; paint-order: stroke fill; }</style>
@@ -1566,8 +1461,7 @@ let renderTimer = null;
 function mountPreview() {
   const host = document.getElementById('svgPreviewHost');
   if (!host) return;
-  const svgString = buildSVG(1);
-  host.innerHTML = svgString;
+  host.innerHTML = buildSVG(1);
   previewSvgEl = host.querySelector('svg');
   previewIndex.clear();
   if (previewSvgEl) {
@@ -1606,20 +1500,11 @@ function getFieldDisplayValue(field) {
     return { text: v || PANEL_EMPTY_TEXT, fill: v ? '#fff' : EMPTY_FILL };
   }
   let m = /^weapon\.(\w+)\.(\d+)\.name$/.exec(field);
-  if (m) {
-    const arr = d.weaponData?.[m[1]];
-    return { text: (arr && arr[+m[2]] && arr[+m[2]].name) || '' };
-  }
+  if (m) { const arr = d.weaponData?.[m[1]]; return { text: (arr && arr[+m[2]] && arr[+m[2]].name) || '' }; }
   m = /^artifact\.(\d+)\.name$/.exec(field);
-  if (m) {
-    const a = d.artifactData?.[+m[1]];
-    return { text: (a && a.name) || '' };
-  }
+  if (m) { const a = d.artifactData?.[+m[1]]; return { text: (a && a.name) || '' }; }
   m = /^team\.(\d+)\.name$/.exec(field);
-  if (m) {
-    const t = d.teamData?.[+m[1]];
-    return { text: (t && t.name) || '' };
-  }
+  if (m) { const t = d.teamData?.[+m[1]]; return { text: (t && t.name) || '' }; }
   m = /^team\.(\d+)\.char\.(\d+)\.name$/.exec(field);
   if (m) {
     const ci = +m[2];
@@ -1644,11 +1529,7 @@ function updatePreviewField(field) {
 }
 function scheduleRender() {
   clearTimeout(renderTimer);
-  renderTimer = setTimeout(() => {
-    syncInputs();
-    mountPreview();
-    debouncedSave();
-  }, 40);
+  renderTimer = setTimeout(() => { syncInputs(); mountPreview(); debouncedSave(); }, 40);
 }
 function syncInputs() {
   const map = ['charName','version','date','author','sandMain','gobMain','cirMain','subStats','talentA','talentE','talentQ'];
@@ -1684,8 +1565,7 @@ function renderTabSheetList() {
     <button type="button" class="tab-sheet-item ${t.key === currentTab ? 'active' : ''}" onclick="App.selectTab('${t.key}')">
       <span>${t.label}</span>
       <svg class="tab-sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-    </button>
-  `).join('');
+    </button>`).join('');
 }
 function openTabSheet() {
   if (tabSheetOpen) return;
@@ -1753,8 +1633,7 @@ function renderConstellationEditor() {
     <div class="cons-item ${c.active ? 'active' : ''}">
       <div class="cons-badge" onclick="App.toggleConstellation(${i})">${i + 1}</div>
       <input type="text" value="${esc(c.desc)}" placeholder="${i + 1}命核心效果描述" oninput="App.setConstellationDesc(${i}, this.value)" />
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 function toggleConstellation(i) {
   if (!State.data.constellationData[i]) return;
@@ -1930,15 +1809,12 @@ function renderTeamEditor() {
                         <input type="text" value="${esc(a.name)}" oninput="App.setAltName(${ti},${ci},${ai},this.value)" style="flex:1;" />
                         <input type="file" id="t_${ti}_${ci}_${ai}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].alts[${ai}].img = v; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                       </div>
-                    </div>
-                  `).join('')}
+                    </div>`).join('')}
                   ${!c.alts.length ? `<input type="text" value="${esc(c.emptyAltText || '暂无备选')}" oninput="App.setEmptyAltText(${ti},${ci},this.value)" />` : ''}
-                </div>
-              `}
+                </div>`}
             </div>`;
           }).join('')}
-        </div>
-      `}
+        </div>`}
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂未添加配队</div>';
 }
@@ -2017,11 +1893,7 @@ function doUpload(input, setter) {
   const reader = new FileReader();
   reader.onload = e => {
     const img = new Image();
-    img.onload = () => {
-      setter(e.target.result, img.width, img.height);
-      mountPreview();
-      debouncedSave();
-    };
+    img.onload = () => { setter(e.target.result, img.width, img.height); mountPreview(); debouncedSave(); };
     img.src = e.target.result;
   };
   reader.readAsDataURL(input.files[0]);
@@ -2078,17 +1950,14 @@ async function loadFontList() {
     console.warn('字体清单加载失败：', e.message);
   }
 }
-
 function renderFontSheetList() {
   const el = document.getElementById('fontSheetList');
   if (!el) return;
-
   const currentFile = State.data.fontFileName || '';
   let html = '<button type="button" class="tab-sheet-item ' + (currentFile === '' ? 'active' : '') + '" onclick="App.selectFont(-1)">' +
     '<span>默认系统字体</span>' +
     '<svg class="tab-sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
   '</button>';
-
   if (!FONT_LIST.length) {
     html += '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:13px;">字体库为空</div>';
   } else {
@@ -2100,10 +1969,8 @@ function renderFontSheetList() {
       '</button>';
     }).join('');
   }
-
   el.innerHTML = html;
 }
-
 function openFontPicker() {
   if (fontSheetOpen) return;
   fontSheetOpen = true;
@@ -2117,30 +1984,22 @@ function closeFontPicker() {
   document.getElementById('fontSheetBackdrop').classList.remove('show');
   document.getElementById('fontSheet').classList.remove('show');
 }
-
 async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelCustomFont');
-
   if (index === -1) {
-    State.data.fontData = '';
-    State.data.fontFileName = '';
-    State.data.fontName = '';
+    State.data.fontData = ''; State.data.fontFileName = ''; State.data.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
     if (labelEl) labelEl.textContent = '默认标准字体';
-    mountPreview();
-    debouncedSave();
+    mountPreview(); debouncedSave();
     return;
   }
-
   const f = FONT_LIST[index];
   if (!f) return;
-
   if (State.data.fontFileName === f.file && State.data.fontData) {
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     return;
   }
-
   if (labelEl) labelEl.textContent = '正在加载 ' + f.name + '…';
   try {
     const res = await fetch('../fonts/' + encodeURIComponent(f.file));
@@ -2158,8 +2017,7 @@ async function selectFont(index) {
     State.data.fontName = f.name;
     await installPreviewFont();
     if (labelEl) labelEl.textContent = '当前：' + f.name;
-    mountPreview();
-    debouncedSave();
+    mountPreview(); debouncedSave();
   } catch (e) {
     if (labelEl) labelEl.textContent = '字体加载失败：' + e.message;
   }
@@ -2195,22 +2053,15 @@ async function loadCharOrderTxt() {
  * ========================================================================= */
 async function matchStyleImages() {
   const name = (State.data.charName || '').trim();
-  if (!name) {
-    showToast('请先填写角色名', 'error');
-    return;
-  }
-
+  if (!name) { showToast('请先填写角色名', 'error'); return; }
   State.data.charImgDeleted = false;
   State.data.nameBgImgDeleted = false;
   State.data.bgImgDeleted = false;
-
   showToast('正在匹配样式图…', 'info');
-
   const results = { standing: false, element: false, namecard: false };
   const order = CHAR_NAME_TO_ORDER[name];
   const shortId = findShortIdByName(name);
 
-  /* ---- 1. 立绘图 ---- */
   let standingUrl = '';
   if (order) {
     const ghUrl = '../assets/characters/standing/' + padOrder(order) + '.' + name + '.png';
@@ -2226,7 +2077,6 @@ async function matchStyleImages() {
     resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
   }
 
-  /* ---- 2. 元素图 ---- */
   const elementName = themeToElementName();
   let elementUrl = '';
   if (elementName) {
@@ -2243,7 +2093,6 @@ async function matchStyleImages() {
     resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
   }
 
-  /* ---- 3. 名片图（Lunaris 外链） ---- */
   let namecardUrl = '';
   if (shortId) {
     const lmUrl = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_' + shortId + '_P.png';
@@ -2258,7 +2107,6 @@ async function matchStyleImages() {
     resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
   }
 
-  /* ---- 4. 结果提示 ---- */
   const failed = [];
   if (order && !results.standing) failed.push('立绘');
   if (elementName && !results.element) failed.push('元素图');
@@ -2266,15 +2114,9 @@ async function matchStyleImages() {
   if (!order) failed.push('立绘（characters.txt 无此角色）');
   if (!elementName) failed.push('元素图（未选元素色）');
   if (!shortId) failed.push('名片图（字典无此角色）');
-
-  if (failed.length) {
-    showToast('未找到：' + failed.join('、'), 'error');
-  } else {
-    showToast('全部匹配成功', 'success');
-  }
-
-  mountPreview();
-  debouncedSave();
+  if (failed.length) showToast('未找到：' + failed.join('、'), 'error');
+  else showToast('全部匹配成功', 'success');
+  mountPreview(); debouncedSave();
 }
 
 async function loadSaveFromRepo() {
@@ -2282,21 +2124,15 @@ async function loadSaveFromRepo() {
   if (!name) { showToast('请先填写角色名', 'error'); return; }
   const order = CHAR_NAME_TO_ORDER[name];
   if (!order) { showToast('characters.txt 中找不到「' + name + '」', 'error'); return; }
-
   const filename = padOrder(order) + '.' + name + '.json';
   const url = '../save/characters/' + filename;
-
   showToast('正在查找存档…', 'info');
   try {
     const res = await fetch(url + '?t=' + Date.now());
-    if (!res.ok) {
-      showToast('未找到存档「' + filename + '」', 'error');
-      return;
-    }
+    if (!res.ok) { showToast('未找到存档「' + filename + '」', 'error'); return; }
     const json = await res.json();
     const ok = await showConfirm('发现存档', '是否载入「' + name + '」的存档？当前编辑内容会被覆盖。');
     if (!ok) return;
-
     State.data = normalizeState(json);
     await installPreviewFont();
     initThumbnails();
@@ -2309,16 +2145,12 @@ async function loadSaveFromRepo() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.6】图标库匹配（武器 / 圣遗物 / 配队头像）
+ * 【JS 模块 10.6】图标库匹配
  * ========================================================================= */
 async function matchWeaponIcon(type, i, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) {
-    State.data.weaponData[type][i].img = '';
-    renderWeaponEditor(); mountPreview(); debouncedSave();
-    return;
-  }
+  if (!trimmed) { State.data.weaponData[type][i].img = ''; renderWeaponEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('weapons', trimmed);
     State.data.weaponData[type][i].img = (r && r.dataURL) ? r.dataURL : '';
@@ -2331,11 +2163,7 @@ async function matchWeaponIcon(type, i, name) {
 async function matchArtifactIcon(i, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) {
-    State.data.artifactData[i].img = '';
-    renderArtifactEditor(); mountPreview(); debouncedSave();
-    return;
-  }
+  if (!trimmed) { State.data.artifactData[i].img = ''; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('artifacts', trimmed);
     State.data.artifactData[i].img = (r && r.dataURL) ? r.dataURL : '';
@@ -2349,17 +2177,11 @@ async function matchArtifactDoubleIcon(i, part, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
   var imgKey = part === 1 ? 'img1' : 'img2';
-  if (!trimmed) {
-    State.data.artifactData[i][imgKey] = '';
-    renderArtifactEditor(); mountPreview(); debouncedSave();
-    return;
-  }
+  if (!trimmed) { State.data.artifactData[i][imgKey] = ''; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('artifacts', trimmed);
     State.data.artifactData[i][imgKey] = (r && r.dataURL) ? r.dataURL : '';
-  } catch (e) {
-    State.data.artifactData[i][imgKey] = '';
-  }
+  } catch (e) { State.data.artifactData[i][imgKey] = ''; }
   renderArtifactEditor(); mountPreview(); debouncedSave();
 }
 function setArtifactName1(i, v) { State.data.artifactData[i].name1 = v; mountPreview(); debouncedSave(); }
@@ -2368,11 +2190,7 @@ function setArtifactDisplayText(i, v) { State.data.artifactData[i].displayText =
 async function matchTeamCharIcon(ti, ci, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) {
-    State.data.teamData[ti].chars[ci].img = '';
-    renderTeamEditor(); mountPreview(); debouncedSave();
-    return;
-  }
+  if (!trimmed) { State.data.teamData[ti].chars[ci].img = ''; renderTeamEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('characters', trimmed);
     State.data.teamData[ti].chars[ci].img = (r && r.dataURL) ? r.dataURL : '';
@@ -2388,8 +2206,7 @@ async function matchCharAvatar(name) {
   if (!trimmed) {
     State.data.teamCoreImg = '';
     resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
-    mountPreview(); debouncedSave();
-    return;
+    mountPreview(); debouncedSave(); return;
   }
   try {
     const r = await ICON_LIB.fromName('characters', trimmed);
@@ -2770,7 +2587,15 @@ window.addEventListener('DOMContentLoaded', init);
 
 window.addEventListener('message', function (e) {
   if (e.data && e.data.type === 'theme') {
-    document.documentElement.setAttribute('data-theme', e.data.theme);
+    var html = document.documentElement;
+    html.classList.add('theme-switching');
+    html.setAttribute('data-theme', e.data.theme);
+    void html.offsetHeight;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        html.classList.remove('theme-switching');
+      });
+    });
   }
 });
 </script>
