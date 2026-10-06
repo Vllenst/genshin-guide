@@ -462,10 +462,14 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
         <div>
           <div class="ios-section-header">样式图（立绘 / 元素 / 名片）</div>
           <div class="ios-group">
-            <div class="ios-row">
+            <div class="ios-row" style="gap:6px;">
               <button type="button" class="ios-btn-fill btn-sm" style="flex:1;height:38px;" id="btnMatchStyle" onclick="App.matchStyleImages()">
                 <span class="icon-only" id="btnMatchStyleIcon"></span>
-                一键匹配全部样式图
+                匹配样式图
+              </button>
+              <button type="button" class="btn-sm" style="flex:1;height:38px;" id="btnLoadSave" onclick="App.loadSaveFromRepo()">
+                <span class="icon-only" id="btnLoadSaveIcon"></span>
+                载入在线存档
               </button>
             </div>
           </div>
@@ -781,7 +785,6 @@ const TAB_DEFS = [
 let currentTab = 'style';
 let tabSheetOpen = false;
 
-/* 角色编号对照表 */
 let CHAR_NAME_TO_ORDER = {};
 
 /* =========================================================================
@@ -942,7 +945,6 @@ async function urlExists(url) {
     var res = await fetch(url, { method: 'HEAD' });
     if (res.ok) return true;
     if (res.status === 405) {
-      /* 有些服务器不支持 HEAD，回退 GET */
       var res2 = await fetch(url);
       return res2.ok;
     }
@@ -1139,7 +1141,7 @@ function slot(x, y, size, img, name, key, field) {
     ${bg}${labelEl}
   `;
 }
-function doubleArtifact(x, y, size, a, key, field) {
+function doubleArtifact(x, y, size, a, key) {
   const gap = LAYOUT.doubleGap;
   const w = size * 2 + gap;
   const h = size;
@@ -1834,7 +1836,7 @@ function renderArtifactEditor() {
             <button class="btn-xs btn-danger" onclick="App.removeArtifact(${i})">${ICONS.trash}删除</button>
           </div>
         </div>
-        <input type="text" value="${esc(a.name)}" oninput="App.setArtifactName(${i},this.value)" onblur="App.matchArtifactIcon(${i},this.value)" />
+        <input type="text" value="${esc(a.displayText)}" placeholder="卡片显示文本（可选，留空显示两个名字）" oninput="App.setArtifactDisplayText(${i},this.value)" />
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
             <img src="${a.img1 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img1_${i}')" alt="" />
@@ -1847,7 +1849,6 @@ function renderArtifactEditor() {
             <input type="file" id="a_img2_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img2 = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
         </div>
-        <input type="text" value="${esc(a.displayText)}" placeholder="卡片显示文本（可选，留空显示两个名字）" oninput="App.setArtifactDisplayText(${i},this.value)" />
       </div>`;
     }
     return `<div class="item-card">
@@ -2190,7 +2191,7 @@ async function loadCharOrderTxt() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.5】样式图匹配（立绘 / 元素图 / 名片图）
+ * 【JS 模块 10.5】样式图匹配 + 在线存档载入
  * ========================================================================= */
 async function matchStyleImages() {
   const name = (State.data.charName || '').trim();
@@ -2199,7 +2200,6 @@ async function matchStyleImages() {
     return;
   }
 
-  /* 清除删除标记，允许重新匹配 */
   State.data.charImgDeleted = false;
   State.data.nameBgImgDeleted = false;
   State.data.bgImgDeleted = false;
@@ -2207,53 +2207,55 @@ async function matchStyleImages() {
   showToast('正在匹配样式图…', 'info');
 
   const results = { standing: false, element: false, namecard: false };
+  const order = CHAR_NAME_TO_ORDER[name];
+  const shortId = findShortIdByName(name);
 
   /* ---- 1. 立绘图 ---- */
-  const order = CHAR_NAME_TO_ORDER[name];
+  let standingUrl = '';
   if (order) {
-    const filename = padOrder(order) + '.' + name + '.png';
-    const url = '../assets/characters/standing/' + filename;
-    const ok = await urlExists(url);
-    if (ok) {
-      State.data.charImg = url;
-      State.data.charImgMeta = null; /* URL 模式不需要尺寸，SVG 自动按高度算 */
-      updateThumb('thumbCharImg', 'labelCharImg', url, '已匹配立绘');
-      results.standing = true;
-    } else {
-      State.data.charImg = '';
-      resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
-    }
+    const ghUrl = '../assets/characters/standing/' + padOrder(order) + '.' + name + '.png';
+    if (await urlExists(ghUrl)) standingUrl = ghUrl;
+  }
+  if (standingUrl) {
+    State.data.charImg = standingUrl;
+    State.data.charImgMeta = null;
+    updateThumb('thumbCharImg', 'labelCharImg', standingUrl, '已匹配立绘');
+    results.standing = true;
+  } else {
+    State.data.charImg = '';
+    resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
   }
 
   /* ---- 2. 元素图 ---- */
   const elementName = themeToElementName();
+  let elementUrl = '';
   if (elementName) {
-    const url = '../assets/characters/element/' + elementName + '.png';
-    const ok = await urlExists(url);
-    if (ok) {
-      State.data.nameBgImg = url;
-      State.data.nameBgImgMeta = null;
-      updateThumb('thumbNameBg', 'labelNameBg', url, '已匹配元素图：' + elementName);
-      results.element = true;
-    } else {
-      State.data.nameBgImg = '';
-      resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
-    }
+    const ghUrl = '../assets/characters/element/' + elementName + '.png';
+    if (await urlExists(ghUrl)) elementUrl = ghUrl;
+  }
+  if (elementUrl) {
+    State.data.nameBgImg = elementUrl;
+    State.data.nameBgImgMeta = null;
+    updateThumb('thumbNameBg', 'labelNameBg', elementUrl, '已匹配元素图：' + elementName);
+    results.element = true;
+  } else {
+    State.data.nameBgImg = '';
+    resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
   }
 
-  /* ---- 3. 名片图 ---- */
-  const shortId = findShortIdByName(name);
+  /* ---- 3. 名片图（Lunaris 外链） ---- */
+  let namecardUrl = '';
   if (shortId) {
-    const url = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_' + shortId + '_P.png';
-    const ok = await urlExists(url);
-    if (ok) {
-      State.data.bgImg = url;
-      updateThumb('thumbBg', 'labelBg', url, '已匹配名片图');
-      results.namecard = true;
-    } else {
-      State.data.bgImg = '';
-      resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
-    }
+    const lmUrl = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_' + shortId + '_P.png';
+    if (await urlExists(lmUrl)) namecardUrl = lmUrl;
+  }
+  if (namecardUrl) {
+    State.data.bgImg = namecardUrl;
+    updateThumb('thumbBg', 'labelBg', namecardUrl, '已匹配名片图');
+    results.namecard = true;
+  } else {
+    State.data.bgImg = '';
+    resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
   }
 
   /* ---- 4. 结果提示 ---- */
@@ -2273,6 +2275,37 @@ async function matchStyleImages() {
 
   mountPreview();
   debouncedSave();
+}
+
+async function loadSaveFromRepo() {
+  const name = (State.data.charName || '').trim();
+  if (!name) { showToast('请先填写角色名', 'error'); return; }
+  const order = CHAR_NAME_TO_ORDER[name];
+  if (!order) { showToast('characters.txt 中找不到「' + name + '」', 'error'); return; }
+
+  const filename = padOrder(order) + '.' + name + '.json';
+  const url = '../save/characters/' + filename;
+
+  showToast('正在查找存档…', 'info');
+  try {
+    const res = await fetch(url + '?t=' + Date.now());
+    if (!res.ok) {
+      showToast('未找到存档「' + filename + '」', 'error');
+      return;
+    }
+    const json = await res.json();
+    const ok = await showConfirm('发现存档', '是否载入「' + name + '」的存档？当前编辑内容会被覆盖。');
+    if (!ok) return;
+
+    State.data = normalizeState(json);
+    await installPreviewFont();
+    initThumbnails();
+    renderEditorsByKey();
+    scheduleRender();
+    showToast('存档载入成功', 'success');
+  } catch (e) {
+    showToast('存档读取失败：' + e.message, 'error');
+  }
 }
 
 /* =========================================================================
@@ -2316,7 +2349,6 @@ async function matchArtifactDoubleIcon(i, part, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
   var imgKey = part === 1 ? 'img1' : 'img2';
-
   if (!trimmed) {
     State.data.artifactData[i][imgKey] = '';
     renderArtifactEditor(); mountPreview(); debouncedSave();
@@ -2330,18 +2362,9 @@ async function matchArtifactDoubleIcon(i, part, name) {
   }
   renderArtifactEditor(); mountPreview(); debouncedSave();
 }
-function setArtifactName1(i, v) {
-  State.data.artifactData[i].name1 = v;
-  mountPreview(); debouncedSave();
-}
-function setArtifactName2(i, v) {
-  State.data.artifactData[i].name2 = v;
-  mountPreview(); debouncedSave();
-}
-function setArtifactDisplayText(i, v) {
-  State.data.artifactData[i].displayText = v;
-  mountPreview(); debouncedSave();
-}
+function setArtifactName1(i, v) { State.data.artifactData[i].name1 = v; mountPreview(); debouncedSave(); }
+function setArtifactName2(i, v) { State.data.artifactData[i].name2 = v; mountPreview(); debouncedSave(); }
+function setArtifactDisplayText(i, v) { State.data.artifactData[i].displayText = v; mountPreview(); debouncedSave(); }
 async function matchTeamCharIcon(ti, ci, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
@@ -2507,9 +2530,12 @@ async function exportPNG() {
   }
 }
 function exportConfig() {
+  var name = State.data.charName || '角色';
+  var order = CHAR_NAME_TO_ORDER[name];
+  var filename = order ? (padOrder(order) + '.' + name + '.json') : (name + '.json');
   downloadBlob(
     new Blob([JSON.stringify(State.data, null, 2)], { type: 'application/json' }),
-    `${State.data.charName || '角色'}_配置.json`
+    filename
   );
 }
 function importConfig(input) {
@@ -2698,7 +2724,7 @@ const App = {
   matchWeaponIcon, matchArtifactIcon, matchArtifactDoubleIcon,
   setArtifactName1, setArtifactName2, setArtifactDisplayText,
   matchTeamCharIcon, matchCharAvatar,
-  matchStyleImages,
+  matchStyleImages, loadSaveFromRepo,
   openFontPicker, closeFontPicker, selectFont
 };
 window.App = App;
@@ -2723,6 +2749,8 @@ function injectFloatIcons() {
   if (addTeamIcon && S.ui) addTeamIcon.innerHTML = S.ui.plus || '';
   const matchStyleIcon = document.getElementById('btnMatchStyleIcon');
   if (matchStyleIcon && S.ui) matchStyleIcon.innerHTML = S.ui.plus || '';
+  const loadSaveIcon = document.getElementById('btnLoadSaveIcon');
+  if (loadSaveIcon && S.ui) loadSaveIcon.innerHTML = S.ui.import || '';
 }
 async function init() {
   injectFloatIcons();
