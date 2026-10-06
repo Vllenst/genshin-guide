@@ -104,3 +104,14 @@
 
   color-scheme: dark;
 }
+
+/* ============================================================
+ * 主题切换瞬间禁用所有过渡
+ * JS 切换主题时给 <html> 加 .theme-switching，
+ * 两帧后自动移除，恢复正常交互反馈
+ * ============================================================ */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
