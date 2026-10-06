@@ -41,7 +41,6 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
   }
 }
 
-/* 预览区 */
 .preview-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 @media (max-width: 1023px) {
   .preview-pane {
@@ -97,7 +96,6 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 #svgPreviewHost { width: 100%; height: 100%; }
 #svgPreviewHost > svg { width: 100%; height: 100%; display: block; }
 
-/* 浮动工具条 */
 .float-toolbar {
   position: absolute;
   top: 8px;
@@ -136,14 +134,12 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 .float-btn-danger { color: var(--danger); border-color: var(--danger-border); }
 .float-btn-danger:hover { background: var(--danger-bg); }
 
-/* 检查器面板 */
 .inspector-pane { display: flex; flex-direction: column; gap: 12px; overflow: hidden; min-width: 0; }
 @media (min-width: 1024px) { .inspector-pane { height: 100%; } }
 @media (max-width: 1023px) {
   .inspector-pane { overflow: hidden; padding-top: 5px; gap: 5px; min-height: 0; }
 }
 
-/* Tab 触发按钮 */
 .tab-trigger {
   display: flex; align-items: center; justify-content: space-between;
   width: 100%; height: 44px; padding: 0 14px 0 16px;
@@ -170,7 +166,6 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 .tab-panel { display: none; flex-direction: column; gap: 12px; }
 .tab-panel.active { display: flex; }
 
-/* Bottom Sheet */
 .tab-sheet-backdrop {
   position: fixed; inset: 0; z-index: 200;
   background: var(--mask);
@@ -220,7 +215,6 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 .tab-sheet-item-check { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
 .tab-sheet-item.active .tab-sheet-item-check { opacity: 1; }
 
-/* iOS 分组 */
 .ios-section-header {
   font-size: 12px; font-weight: 600; color: var(--text-tertiary);
   text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px 6px 8px;
@@ -238,7 +232,6 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 @media (max-width: 640px) { .field-grid, .field-grid.three { grid-template-columns: 1fr; } }
 label.ios-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-secondary); font-weight: 500; }
 
-/* 输入框 */
 input[type="text"], input[type="number"], select {
   width: 100%; height: var(--ctl-h);
   background: var(--bg-sunken); border: 1px solid var(--border-default);
@@ -257,7 +250,6 @@ select {
   background-size: 11px 7px; padding-right: 34px;
 }
 
-/* 滑块 */
 .slider-box { display: flex; align-items: center; gap: 10px; padding: 0 10px 10px 10px; }
 .slider-box > span:first-child { font-size: 11px; color: var(--text-secondary); flex: 1; }
 input[type="range"] {
@@ -281,7 +273,6 @@ input[type="range"]::-moz-range-thumb {
 }
 .slider-box input[type="number"] { width: 68px; height: 32px; text-align: center; padding: 0 6px; font-size: 12px; border-radius: 8px; }
 
-/* 按钮 */
 button, .file-btn {
   font-family: inherit; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
   height: var(--ctl-h); padding: 0 14px; font-size: 13px; font-weight: 500; cursor: pointer;
@@ -306,7 +297,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .ios-btn-fill:active:not(:disabled) { background: var(--accent); transform: scale(0.97); }
 .file-btn input[type="file"] { display: none !important; }
 
-/* 缩略图 */
 .clickable-thumb {
   width: var(--ctl-h); height: var(--ctl-h); border-radius: var(--radius-sm);
   background: var(--bg-sunken); border: 1px solid var(--border-default);
@@ -359,7 +349,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .swatch-btn.active { border-color: currentColor; box-shadow: 0 0 0 1.5px currentColor; background: var(--bg-surface); }
 .swatch-icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 
-/* 底部工具条 */
 .bottom-dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
   background: var(--bg-base);
@@ -380,7 +369,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 .export-btn-main:active:not(:disabled) { background: var(--accent-dark); }
 
-/* Toast + Modal */
 .toast-container {
   position: fixed; top: 64px; right: 16px; z-index: 9999;
   display: flex; flex-direction: column; gap: 8px; pointer-events: none;
@@ -473,13 +461,10 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
           <div class="ios-section-header">卡片嵌入字体（仅作用于图片导出，不影响网页）</div>
           <div class="ios-group">
             <div class="ios-row">
-              <div style="flex:1;">
-                <div style="font-size:13px;" id="labelCustomFont">默认标准字体</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="labelCustomFont">默认标准字体</div>
               </div>
-              <label class="file-btn ios-btn-fill">
-                载入字体
-                <input type="file" id="inputFont" accept=".ttf,.otf,.woff,.woff2" style="display:none" onchange="App.uploadFontHandler(this)" />
-              </label>
+              <button type="button" class="ios-btn-fill btn-sm" onclick="App.openFontPicker()">选择字体</button>
             </div>
           </div>
         </div>
@@ -671,12 +656,19 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   <div class="tab-sheet-list" id="tabSheetList"></div>
 </div>
 
+<div class="tab-sheet-backdrop" id="fontSheetBackdrop" onclick="App.closeFontPicker()"></div>
+<div class="tab-sheet" id="fontSheet" role="dialog" aria-modal="true">
+  <div class="tab-sheet-handle" aria-hidden="true"></div>
+  <div class="tab-sheet-header">选择导出字体</div>
+  <div class="tab-sheet-list" id="fontSheetList"></div>
+</div>
+
 <script src="../icons.js"></script>
 <script src="../icons/icon-loader.js"></script>
 <script src="../icons/icon-dict.js"></script>
 <script>
 /* =========================================================================
- * 【JS 模块 1】图标：全部来自共享 icons.js
+ * 【JS 模块 1】图标
  * ========================================================================= */
 const SHARED = window.ICONS || { ui: {}, element: {}, artifact: {}, nav: {}, app: {} };
 
@@ -705,7 +697,6 @@ const SVG_H = 720;
 const EXPORT_SCALE = 3;
 const IDB_KEY = 'genshin_card_db_v5';
 const STORE_NAME = 'card_store';
-
 const WEAPON_ORDER = ['graduate', 'optional', 'newbie'];
 const WEAPON_MAX = 4;
 
@@ -780,7 +771,7 @@ const State = {
     imgX: 0, theme: '#939393',
     charImg: '', charImgMeta: null,
     bgImg: '', nameBgImg: '', nameBgImgMeta: null,
-    fontData: '',
+    fontData: '', fontName: '', fontFileName: '',
     weaponData: { graduate: [], optional: [], newbie: [] },
     artifactData: [],
     constellationData: Array.from({ length: 6 }, () => ({ active: false, desc: '' })),
@@ -1913,7 +1904,11 @@ function initThumbnails() {
   if (d.teamCoreImg) updateThumb('thumbTeamCore', 'labelTeamCore', d.teamCoreImg, '已载入1号位头像（点击更换）');
   else resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
   const fontLabel = document.getElementById('labelCustomFont');
-  if (fontLabel) fontLabel.textContent = d.fontData ? '已载入自定义字体（仅卡片生效）' : '默认标准字体';
+  if (fontLabel) {
+    if (d.fontName) fontLabel.textContent = '当前：' + d.fontName;
+    else if (d.fontData) fontLabel.textContent = '已载入自定义字体';
+    else fontLabel.textContent = '默认标准字体';
+  }
   updateImgXHint();
 }
 function clearImage(stateKey, thumbId, labelId) {
@@ -1961,9 +1956,11 @@ async function uploadFontHandler(input) {
   const reader = new FileReader();
   reader.onload = async e => {
     State.data.fontData = e.target.result;
+    State.data.fontName = '';
+    State.data.fontFileName = 'custom';
     await installPreviewFont();
     const el = document.getElementById('labelCustomFont');
-    if (el) el.textContent = '已载入自定义字体（仅卡片生效）';
+    if (el) el.textContent = '已载入自定义字体';
     mountPreview();
     debouncedSave();
   };
@@ -1989,59 +1986,187 @@ function updateImgXHint() {
 }
 
 /* =========================================================================
+ * 【JS 模块 10.3】字体库
+ * ========================================================================= */
+let FONT_LIST = [];
+let fontSheetOpen = false;
+
+async function loadFontList() {
+  try {
+    const res = await fetch('../fonts/fonts.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    FONT_LIST = Array.isArray(json.fonts) ? json.fonts : [];
+  } catch (e) {
+    FONT_LIST = [];
+    console.warn('字体清单加载失败：', e.message);
+  }
+}
+
+function renderFontSheetList() {
+  const el = document.getElementById('fontSheetList');
+  if (!el) return;
+
+  const currentFile = State.data.fontFileName || '';
+  let html = '<button type="button" class="tab-sheet-item ' + (currentFile === '' ? 'active' : '') + '" onclick="App.selectFont(-1)">' +
+    '<span>默认系统字体</span>' +
+    '<svg class="tab-sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+  '</button>';
+
+  if (!FONT_LIST.length) {
+    html += '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:13px;">字体库为空</div>';
+  } else {
+    html += FONT_LIST.map((f, i) => {
+      const isActive = currentFile === f.file;
+      return '<button type="button" class="tab-sheet-item ' + (isActive ? 'active' : '') + '" onclick="App.selectFont(' + i + ')">' +
+        '<span>' + esc(f.name) + '</span>' +
+        '<svg class="tab-sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+      '</button>';
+    }).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+function openFontPicker() {
+  if (fontSheetOpen) return;
+  fontSheetOpen = true;
+  renderFontSheetList();
+  document.getElementById('fontSheetBackdrop').classList.add('show');
+  document.getElementById('fontSheet').classList.add('show');
+}
+function closeFontPicker() {
+  if (!fontSheetOpen) return;
+  fontSheetOpen = false;
+  document.getElementById('fontSheetBackdrop').classList.remove('show');
+  document.getElementById('fontSheet').classList.remove('show');
+}
+
+async function selectFont(index) {
+  closeFontPicker();
+  const labelEl = document.getElementById('labelCustomFont');
+
+  if (index === -1) {
+    State.data.fontData = '';
+    State.data.fontFileName = '';
+    State.data.fontName = '';
+    if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
+    if (labelEl) labelEl.textContent = '默认标准字体';
+    mountPreview();
+    debouncedSave();
+    return;
+  }
+
+  const f = FONT_LIST[index];
+  if (!f) return;
+
+  if (State.data.fontFileName === f.file && State.data.fontData) {
+    if (labelEl) labelEl.textContent = '当前：' + f.name;
+    return;
+  }
+
+  if (labelEl) labelEl.textContent = '正在加载 ' + f.name + '…';
+  try {
+    const res = await fetch('../fonts/' + encodeURIComponent(f.file));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = await res.arrayBuffer();
+    const blob = new Blob([buf]);
+    const dataURL = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    State.data.fontData = dataURL;
+    State.data.fontFileName = f.file;
+    State.data.fontName = f.name;
+    await installPreviewFont();
+    if (labelEl) labelEl.textContent = '当前：' + f.name;
+    mountPreview();
+    debouncedSave();
+  } catch (e) {
+    if (labelEl) labelEl.textContent = '字体加载失败：' + e.message;
+  }
+}
+
+/* =========================================================================
  * 【JS 模块 10.5】图标库匹配
  * ========================================================================= */
 async function matchWeaponIcon(type, i, name) {
-  if (!name || !name.trim()) return;
   if (!window.ICON_LIB) return;
+  var trimmed = (name || '').trim();
+  if (!trimmed) {
+    State.data.weaponData[type][i].img = '';
+    renderWeaponEditor(); mountPreview(); debouncedSave();
+    return;
+  }
   try {
-    const r = await ICON_LIB.fromName('weapons', name.trim());
-    if (r && r.dataURL) {
-      State.data.weaponData[type][i].img = r.dataURL;
-      renderWeaponEditor();
-      mountPreview();
-      debouncedSave();
-    }
-  } catch (e) {}
+    const r = await ICON_LIB.fromName('weapons', trimmed);
+    State.data.weaponData[type][i].img = (r && r.dataURL) ? r.dataURL : '';
+    renderWeaponEditor(); mountPreview(); debouncedSave();
+  } catch (e) {
+    State.data.weaponData[type][i].img = '';
+    renderWeaponEditor(); mountPreview(); debouncedSave();
+  }
 }
 async function matchArtifactIcon(i, name) {
-  if (!name || !name.trim()) return;
   if (!window.ICON_LIB) return;
+  var trimmed = (name || '').trim();
+  if (!trimmed) {
+    State.data.artifactData[i].img = '';
+    renderArtifactEditor(); mountPreview(); debouncedSave();
+    return;
+  }
   try {
-    const r = await ICON_LIB.fromName('artifacts', name.trim());
-    if (r && r.dataURL) {
-      State.data.artifactData[i].img = r.dataURL;
-      renderArtifactEditor();
-      mountPreview();
-      debouncedSave();
-    }
-  } catch (e) {}
+    const r = await ICON_LIB.fromName('artifacts', trimmed);
+    State.data.artifactData[i].img = (r && r.dataURL) ? r.dataURL : '';
+    renderArtifactEditor(); mountPreview(); debouncedSave();
+  } catch (e) {
+    State.data.artifactData[i].img = '';
+    renderArtifactEditor(); mountPreview(); debouncedSave();
+  }
 }
 async function matchTeamCharIcon(ti, ci, name) {
-  if (!name || !name.trim()) return;
   if (!window.ICON_LIB) return;
+  var trimmed = (name || '').trim();
+  if (!trimmed) {
+    State.data.teamData[ti].chars[ci].img = '';
+    renderTeamEditor(); mountPreview(); debouncedSave();
+    return;
+  }
   try {
-    const r = await ICON_LIB.fromName('characters', name.trim());
-    if (r && r.dataURL) {
-      State.data.teamData[ti].chars[ci].img = r.dataURL;
-      renderTeamEditor();
-      mountPreview();
-      debouncedSave();
-    }
-  } catch (e) {}
+    const r = await ICON_LIB.fromName('characters', trimmed);
+    State.data.teamData[ti].chars[ci].img = (r && r.dataURL) ? r.dataURL : '';
+    renderTeamEditor(); mountPreview(); debouncedSave();
+  } catch (e) {
+    State.data.teamData[ti].chars[ci].img = '';
+    renderTeamEditor(); mountPreview(); debouncedSave();
+  }
 }
 async function matchCharAvatar(name) {
-  if (!name || !name.trim()) return;
   if (!window.ICON_LIB) return;
+  var trimmed = (name || '').trim();
+  if (!trimmed) {
+    State.data.teamCoreImg = '';
+    resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
+    mountPreview(); debouncedSave();
+    return;
+  }
   try {
-    const r = await ICON_LIB.fromName('characters', name.trim());
+    const r = await ICON_LIB.fromName('characters', trimmed);
     if (r && r.dataURL) {
       State.data.teamCoreImg = r.dataURL;
       updateThumb('thumbTeamCore', 'labelTeamCore', r.dataURL, '已载入1号位头像（点击更换）');
-      mountPreview();
-      debouncedSave();
+    } else {
+      State.data.teamCoreImg = '';
+      resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
     }
-  } catch (e) {}
+    mountPreview(); debouncedSave();
+  } catch (e) {
+    State.data.teamCoreImg = '';
+    resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
+    mountPreview(); debouncedSave();
+  }
 }
 
 /* =========================================================================
@@ -2082,7 +2207,10 @@ function normalizeState(data = {}) {
     ...State.data, ...data,
     charImg: data.charImg || '', charImgMeta: data.charImgMeta || null,
     bgImg: data.bgImg || '', nameBgImg: data.nameBgImg || '', nameBgImgMeta: data.nameBgImgMeta || null,
-    teamCoreImg: data.teamCoreImg || '', fontData: data.fontData || '',
+    teamCoreImg: data.teamCoreImg || '',
+    fontData: data.fontData || '',
+    fontName: data.fontName || '',
+    fontFileName: data.fontFileName || '',
     theme: data.theme || '#939393', imgX: Number(data.imgX) || 0,
     weaponData: {
       graduate: normalizeWeaponList(data?.weaponData?.graduate),
@@ -2339,7 +2467,8 @@ const App = {
   triggerUpload, uploadImageHandler, uploadFontHandler,
   updateThumb, updateImgXHint, clearImage,
   exportPNG, exportConfig, importConfig, clearAllData,
-  matchWeaponIcon, matchArtifactIcon, matchTeamCharIcon, matchCharAvatar
+  matchWeaponIcon, matchArtifactIcon, matchTeamCharIcon, matchCharAvatar,
+  openFontPicker, closeFontPicker, selectFont
 };
 window.App = App;
 
@@ -2367,6 +2496,7 @@ async function init() {
   tightenAllIconViewBoxes();
   const saved = await loadStateFromIDB();
   State.data = normalizeState(saved || {});
+  await loadFontList();
   await installPreviewFont();
   initThumbnails();
   syncInputs();
@@ -2376,7 +2506,6 @@ async function init() {
 }
 window.addEventListener('DOMContentLoaded', init);
 
-/* 主题同步 */
 window.addEventListener('message', function (e) {
   if (e.data && e.data.type === 'theme') {
     document.documentElement.setAttribute('data-theme', e.data.theme);
