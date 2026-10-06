@@ -146,7 +146,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
   var currentTab = "characters";
   var tempThumbs = {};
 
-  /* ============ Project Amber 数据 ============ */
+  /* ============ Project Amber 数据源 ============ */
   var AMBER_ENDPOINTS = {
     characters: "https://gi.yatta.moe/api/v2/CHS/avatar",
     weapons:    "https://gi.yatta.moe/api/v2/CHS/weapon",
@@ -155,7 +155,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
   var amberCache = { characters: null, weapons: null, artifacts: null };
   var amberLoading = {};
 
-  /* Amber icon 前缀 → 剥离后得到英文 ID */
   function stripAmberPrefix(icon) {
     if (!icon) return "";
     return String(icon)
@@ -174,17 +173,24 @@ body { padding: 0 0 60px; min-height: 100vh; }
       var res = await fetch(url);
       if (!res.ok) throw new Error("HTTP " + res.status);
       var json = await res.json();
-      var items = (json && json.data && json.data.items) || json.items || {};
+
+      /* 兼容多种结构：
+         A. { data: { items: {...} } }
+         B. { data: { "10000114": {...}, "10000115": {...} } } ← Amber 实际结构
+         C. { items: {...} }
+      */
+      var raw = (json && json.data) || json || {};
+      var items = raw.items || raw;
+
       var map = {};
       Object.keys(items).forEach(function (k) {
-        var item = items[k] || {};
+        var item = items[k];
+        if (!item || typeof item !== "object") return;
         var name = item.name || "";
         if (!name) return;
-        /* 从 icon 字段提取英文 ID */
         var icon = item.icon || "";
         var id = stripAmberPrefix(icon);
         if (id) map[id] = name;
-        /* 也尝试用数字 ID 作为备选键 */
         if (item.id != null) map[String(item.id)] = name;
       });
       amberCache[type] = map;
@@ -374,7 +380,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
     var urls = lines.map(function (l) { return l.trim(); }).filter(function (l) { return /^https?:\/\//i.test(l); });
     if (!urls.length) { setStatus("未识别到有效链接", "err"); return; }
 
-    /* 预加载 Amber 数据（一次请求） */
     setStatus("正在加载 Amber 数据…");
     var amberReady = false;
     try {
@@ -387,7 +392,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
     var list = data[currentTab];
     var maxOrder = list.reduce(function (m, r) { return Math.max(m, r.order || 0); }, 0);
 
-    /* 先添加所有条目 */
     var newRows = [];
     urls.forEach(function (url) {
       maxOrder++;
@@ -401,7 +405,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
     render();
     setStatus("已添加 " + urls.length + " 条，正在查询中文名…");
 
-    /* 逐个查询 Amber */
     for (var i = 0; i < newRows.length; i++) {
       var item = newRows[i];
       if (!amberReady) break;
@@ -414,7 +417,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
       render();
     }
 
-    /* 清理 _fetching 标记 */
     list.forEach(function (r) { delete r._fetching; });
 
     if (!amberReady) {
