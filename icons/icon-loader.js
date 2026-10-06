@@ -1,17 +1,15 @@
 /* ============================================================
  * 图标加载器 · 全站共享
- * 路径规则：icons/{type}/{文件名}
- * 星级由映射表决定，仅影响背景色
+ * 三种模式：
+ *   - 本地：key 是文件名，条目带 local: true，从 icons/ 根目录加载
+ *   - URL ：key 以 http 开头，直接用
+ *   - ID  ：key 只是 ID，靠 config[type].prefix 拼 URL
  * ============================================================ */
 (function () {
   "use strict";
 
-  /* ============ 星级配色 ============ */
-  var STAR_COLORS = {
-    1: "#85949C", 2: "#649C74", 3: "#54A4B4", 4: "#9174A9", 5: "#DCA454"
-  };
+  var STAR_COLORS = { 1: "#85949C", 2: "#649C74", 3: "#54A4B4", 4: "#9174A9", 5: "#DCA454" };
 
-  /* ============ 颜色工具 ============ */
   function hexToHsl(hex) {
     var num = parseInt(hex.replace("#", ""), 16);
     var r = ((num >> 16) & 0xFF) / 255, g = ((num >> 8) & 0xFF) / 255, b = (num & 0xFF) / 255;
@@ -48,19 +46,15 @@
     return hslToHex(hsl[0], hsl[1], Math.max(0, hsl[2] * (1 - percent)));
   }
 
-  /* ============ 自动探测图标根路径 ============ */
   var ICON_BASE = (function () {
     var scripts = document.getElementsByTagName("script");
     for (var i = 0; i < scripts.length; i++) {
       var src = scripts[i].src || "";
-      if (src.indexOf("icon-loader.js") >= 0) {
-        return src.replace(/icon-loader\.js.*$/, "");
-      }
+      if (src.indexOf("icon-loader.js") >= 0) return src.replace(/icon-loader\.js.*$/, "");
     }
     return "icons/";
   })();
 
-  /* ============ 加载图片 ============ */
   function loadImage(src) {
     return new Promise(function (resolve, reject) {
       var img = new Image();
@@ -71,7 +65,6 @@
     });
   }
 
-  /* ============ 生成带背景的 dataURL（径向渐变，无内边距） ============ */
   function applyBackground(img, star, opts) {
     opts = opts || {};
     var size = opts.size || 256;
@@ -80,87 +73,99 @@
     var edgeColor = darken(color, 0.5);
 
     var canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = size; canvas.height = size;
     var ctx = canvas.getContext("2d");
-
     var r = size * 0.707;
     var grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, r);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, edgeColor);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
+    grad.addColorStop(0, color); grad.addColorStop(1, edgeColor);
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, size, size);
 
     var inner = size * (1 - padding * 2);
     var ratio = Math.min(inner / img.width, inner / img.height);
-    var w = img.width * ratio;
-    var h = img.height * ratio;
+    var w = img.width * ratio, h = img.height * ratio;
     ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-
     return canvas.toDataURL("image/png");
   }
 
-  /* ============ 匹配 ============ */
-  function stripExt(str) { return String(str || "").replace(/\.[^.]+$/, ""); }
-
-  function stripSuffix(str) {
-    return String(str || "")
+  function stripExt(s) { return String(s || "").replace(/\.[^.]+$/, ""); }
+  function stripSuffix(s) {
+    return String(s || "")
       .replace(/[（(][^）)]*[）)]/g, "")
       .replace(/[·•・].*$/, "")
       .replace(/[—–\-].*$/, "")
       .trim();
   }
 
+  /* ============ 提取英文 ID ============ */
+  function extractId(type, key) {
+    if (!key) return "";
+    if (/^https?:\/\//i.test(key)) {
+      var last = key.split("/").pop() || "";
+      return stripExt(last);
+    }
+    var dict = window.ICON_DICT;
+    if (dict && dict[type] && dict[type][key] && dict[type][key].local) {
+      return stripExt(key);
+    }
+    return key;
+  }
+
+  /* ============ 解析最终 URL ============ */
+  function getPath(type, key) {
+    var dict = window.ICON_DICT;
+    if (!dict || !dict[type] || !dict[type][key]) return "";
+    var item = dict[type][key];
+
+    /* 1. 本地 */
+    if (item.local) return ICON_BASE + key;
+    /* 2. 完整 URL */
+    if (/^https?:\/\//i.test(key)) return key;
+    /* 3. ID + 前缀 */
+    var cfg = dict.config && dict.config[type];
+    if (cfg && cfg.prefix) return cfg.prefix + key + (cfg.ext || "");
+    return "";
+  }
+
+  /* ============ 匹配 ============ */
   function match(type, query) {
-    var map = window.ICON_MAP && window.ICON_MAP[type];
-    if (!map) return null;
+    var dict = window.ICON_DICT;
+    if (!dict || !dict[type]) return null;
     var q = String(query || "").trim();
     if (!q) return null;
-
     var qLower = q.toLowerCase();
     var qNoSuffix = stripSuffix(q).toLowerCase();
-    var qNoExt = stripExt(q).toLowerCase();
 
-    for (var key in map) {
-      var item = map[key];
-      var keyNoExt = stripExt(key).toLowerCase();
-      var enList = [];
-      if (item.en) {
-        enList = Array.isArray(item.en) ? item.en : [item.en];
-      }
+    var items = dict[type];
+    for (var key in items) {
+      var item = items[key] || {};
+      var id = extractId(type, key);
+      var idLower = id.toLowerCase();
 
-      if (q === item.name || qNoSuffix === item.name.toLowerCase()) {
+      if (q === item.name || qNoSuffix === (item.name || "").toLowerCase()) {
         return { key: key, name: item.name, star: item.star };
       }
-      for (var i = 0; i < enList.length; i++) {
-        if (qLower === enList[i].toLowerCase() || qNoSuffix === enList[i].toLowerCase()) {
-          return { key: key, name: item.name, star: item.star };
-        }
+      if (qLower === idLower || qNoSuffix === idLower) {
+        return { key: key, name: item.name, star: item.star };
       }
-      if (qLower === key.toLowerCase() || qNoExt === keyNoExt) {
+      if (qLower === key.toLowerCase()) {
         return { key: key, name: item.name, star: item.star };
       }
     }
     return null;
   }
 
-  /* ============ 缓存 ============ */
   var cache = {};
   function ck(type, key) { return type + "::" + key; }
 
-  /* 路径：icons/{type}/{key} （不再有星级子文件夹） */
-  function getPath(type, key) {
-    return ICON_BASE + type + "/" + key;
-  }
-
-  /* ============ 加载并合成 ============ */
   async function load(type, key, opts) {
-    var map = window.ICON_MAP && window.ICON_MAP[type];
-    if (!map || !map[key]) throw new Error("未知图标：" + type + "/" + key);
+    var dict = window.ICON_DICT;
+    if (!dict || !dict[type] || !dict[type][key]) throw new Error("未知图标：" + type + "/" + key);
     var c = ck(type, key);
     if (cache[c]) return cache[c];
-    var img = await loadImage(getPath(type, key));
-    var dataURL = applyBackground(img, map[key].star, opts);
+    var path = getPath(type, key);
+    if (!path) throw new Error("无法解析路径：" + type + "/" + key);
+    var img = await loadImage(path);
+    var dataURL = applyBackground(img, dict[type][key].star, opts);
     cache[c] = dataURL;
     return dataURL;
   }
@@ -174,7 +179,7 @@
 
   function getCached(type, key) { return cache[ck(type, key)] || null; }
 
-  /* ============ 图标选择器 ============ */
+  /* ============ 选择器 ============ */
   var pickerCSS = [
     ".icon-picker-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9000;opacity:0;pointer-events:none;transition:opacity .22s}",
     ".icon-picker-backdrop.show{opacity:1;pointer-events:auto}",
@@ -185,13 +190,8 @@
     ".icon-picker-close{width:30px;height:30px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#222;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;padding:0}",
     ".icon-picker-search{padding:10px 16px;flex-shrink:0}",
     ".icon-picker-search input{width:100%;height:38px;padding:0 12px;border-radius:10px;border:1px solid #ddd;background:#f5f5f5;color:#222;font-size:14px;outline:none}",
-    ".icon-picker-search input:focus{border-color:#8B7355;background:#fff}",
-    ".icon-picker-tabs{display:flex;gap:6px;padding:0 16px 10px;flex-shrink:0;overflow-x:auto}",
-    ".icon-picker-tab{padding:6px 12px;border-radius:8px;border:1px solid #eee;background:transparent;color:#666;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;height:auto}",
-    ".icon-picker-tab.active{background:#fff;color:#222;border-color:#ddd;font-weight:600}",
     ".icon-picker-grid{flex:1;overflow-y:auto;padding:8px 16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}",
-    ".icon-picker-item{aspect-ratio:1;border-radius:10px;border:1px solid #eee;background:#fff;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;transition:transform .12s,border-color .15s}",
-    ".icon-picker-item:hover{border-color:#8B7355}",
+    ".icon-picker-item{aspect-ratio:1;border-radius:10px;border:1px solid #eee;background:#fff;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;transition:transform .12s}",
     ".icon-picker-item:active{transform:scale(.94)}",
     ".icon-picker-item img{width:100%;height:100%;object-fit:contain;border-radius:6px;display:block}",
     ".icon-picker-item-name{font-size:10px;color:#999;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;text-align:center}",
@@ -210,110 +210,66 @@
   function openPicker(type, onSelect, opts) {
     opts = opts || {};
     ensureStyles();
+    var dict = window.ICON_DICT;
+    if (!dict || !dict[type]) return;
 
-    var map = window.ICON_MAP && window.ICON_MAP[type];
-    if (!map) return;
-
-    var allItems = Object.keys(map).map(function (k) {
-      return { key: k, name: map[k].name, star: map[k].star };
+    var allItems = Object.keys(dict[type]).map(function (k) {
+      return { key: k, name: dict[type][k].name, star: dict[type][k].star };
     });
 
     var backdrop = document.createElement("div");
     backdrop.className = "icon-picker-backdrop";
-
     var picker = document.createElement("div");
     picker.className = "icon-picker";
     picker.innerHTML =
-      '<div class="icon-picker-header">' +
-        '<div class="icon-picker-title">' + (opts.title || "选择图标") + '</div>' +
-        '<button type="button" class="icon-picker-close">×</button>' +
-      '</div>' +
+      '<div class="icon-picker-header"><div class="icon-picker-title">' + (opts.title || "选择图标") + '</div><button type="button" class="icon-picker-close">×</button></div>' +
       '<div class="icon-picker-search"><input type="text" placeholder="搜索名称..." /></div>' +
-      '<div class="icon-picker-tabs">' +
-        '<button type="button" class="icon-picker-tab active" data-star="all">全部</button>' +
-        '<button type="button" class="icon-picker-tab" data-star="5">5★</button>' +
-        '<button type="button" class="icon-picker-tab" data-star="4">4★</button>' +
-        '<button type="button" class="icon-picker-tab" data-star="3">3★</button>' +
-      '</div>' +
       '<div class="icon-picker-grid"></div>';
-
     document.body.appendChild(backdrop);
     document.body.appendChild(picker);
 
     var searchInput = picker.querySelector(".icon-picker-search input");
     var gridEl = picker.querySelector(".icon-picker-grid");
-    var tabsEl = picker.querySelector(".icon-picker-tabs");
-    var filterStar = "all";
-    var filterText = "";
 
     function renderGrid() {
+      var q = searchInput.value.toLowerCase();
       var list = allItems.filter(function (it) {
-        if (filterStar !== "all" && String(it.star) !== filterStar) return false;
-        if (filterText) {
-          var q = filterText.toLowerCase();
-          var hit = it.name.toLowerCase().indexOf(q) >= 0
-                 || it.key.toLowerCase().indexOf(q) >= 0;
-          if (!hit) return false;
-        }
-        return true;
+        if (!q) return true;
+        return (it.name || "").toLowerCase().indexOf(q) >= 0 || it.key.toLowerCase().indexOf(q) >= 0;
       });
-
-      if (!list.length) {
-        gridEl.innerHTML = '<div class="icon-picker-empty">没有匹配的图标</div>';
-        return;
-      }
-
+      if (!list.length) { gridEl.innerHTML = '<div class="icon-picker-empty">没有匹配</div>'; return; }
       gridEl.innerHTML = list.map(function (it) {
-        return '<div class="icon-picker-item" data-key="' + it.key + '">' +
-          '<img src="' + getPath(type, it.key) + '" alt="" loading="lazy" onerror="this.style.opacity=.2" />' +
-          '<div class="icon-picker-item-name">' + it.name + '</div>' +
-        '</div>';
+        return '<div class="icon-picker-item" data-key="' + it.key.replace(/"/g, "&quot;") + '">' +
+          '<img src="' + getPath(type, it.key) + '" loading="lazy" onerror="this.style.opacity=.2" />' +
+          '<div class="icon-picker-item-name">' + (it.name || "") + '</div></div>';
       }).join("");
-
       gridEl.querySelectorAll(".icon-picker-item").forEach(function (el) {
         el.addEventListener("click", async function () {
           var key = el.dataset.key;
-          var dataURL = await load(type, key, opts.renderOpts);
-          onSelect({ key: key, name: map[key].name, star: map[key].star, dataURL: dataURL });
+          try {
+            var dataURL = await load(type, key, opts.renderOpts);
+            onSelect({ key: key, name: dict[type][key].name, star: dict[type][key].star, dataURL: dataURL });
+          } catch (e) {}
           close();
         });
       });
     }
 
     function close() {
-      backdrop.classList.remove("show");
-      picker.classList.remove("show");
+      backdrop.classList.remove("show"); picker.classList.remove("show");
       setTimeout(function () {
         if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
         if (picker.parentNode) picker.parentNode.removeChild(picker);
       }, 300);
     }
 
-    tabsEl.querySelectorAll(".icon-picker-tab").forEach(function (tab) {
-      tab.addEventListener("click", function () {
-        filterStar = tab.dataset.star;
-        tabsEl.querySelectorAll(".icon-picker-tab").forEach(function (t) { t.classList.remove("active"); });
-        tab.classList.add("active");
-        renderGrid();
-      });
-    });
-
-    searchInput.addEventListener("input", function () {
-      filterText = searchInput.value;
-      renderGrid();
-    });
-
+    searchInput.addEventListener("input", renderGrid);
     picker.querySelector(".icon-picker-close").addEventListener("click", close);
     backdrop.addEventListener("click", close);
-
     renderGrid();
-    requestAnimationFrame(function () {
-      backdrop.classList.add("show");
-      picker.classList.add("show");
-    });
+    requestAnimationFrame(function () { backdrop.classList.add("show"); picker.classList.add("show"); });
   }
 
-  /* ============ 暴露接口 ============ */
   window.ICON_LIB = {
     base: ICON_BASE,
     starColors: STAR_COLORS,
@@ -323,6 +279,7 @@
     getCached: getCached,
     applyBackground: applyBackground,
     getPath: getPath,
+    extractId: extractId,
     openPicker: openPicker,
     applyBackgroundToFile: function (file, star, opts) {
       return new Promise(function (resolve, reject) {
