@@ -1,0 +1,106 @@
+/* ============================================================
+ * 原神攻略工具集 · 共享主题变量
+ * 所有页面统一引用
+ * ============================================================ */
+
+/* ---------- 浅色模式 ---------- */
+:root {
+  /* 背景层 */
+  --bg-base: #F2EFEA;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #FAF8F5;
+  --bg-sunken: #EBE7E0;
+  --bg-hover: #F5F2ED;
+  --bg-seg-track: #EFEAE3;
+
+  /* 边框 */
+  --border-subtle: #EBE6DF;
+  --border-default: #DDD6CC;
+  --border-strong: #C6BEB2;
+
+  /* 文字 */
+  --text-primary: #1F1D1A;
+  --text-secondary: #6B655C;
+  --text-tertiary: #9C958A;
+
+  /* 强调色 */
+  --accent: #8B7355;
+  --accent-dark: #75604A;
+  --accent-hover: #75604A;
+  --accent-soft: rgba(139,115,85,.10);
+
+  /* 功能色 */
+  --ios-blue: #0A84FF;
+  --danger: #DC4C3E;
+  --danger-bg: #FCEAE8;
+  --danger-hover: #F8DCD8;
+  --danger-border: rgba(220,76,62,.22);
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* 尺寸 */
+  --ctl-h: 38px;
+
+  /* 阴影 */
+  --shadow-btn: 0 1px 2px rgba(31,29,26,.04);
+  --shadow-btn-hover: 0 2px 6px rgba(31,29,26,.08);
+  --shadow-card: 0 1px 2px rgba(31,29,26,.03);
+  --shadow-nav: rgba(31,29,26,.06);
+
+  /* 遮罩 */
+  --mask: rgba(31,29,26,.35);
+
+  /* 字体 */
+  --std-font: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  color-scheme: light;
+}
+
+/* ---------- 深色模式 ---------- */
+[data-theme="dark"] {
+  /* 背景层 */
+  --bg-base: #121212;
+  --bg-surface: #1E1C1A;
+  --bg-surface-2: #242220;
+  --bg-sunken: #0A0A0A;
+  --bg-hover: #2A2725;
+  --bg-seg-track: #1A1816;
+
+  /* 边框 */
+  --border-subtle: #2A2725;
+  --border-default: #3D3835;
+  --border-strong: #4D4744;
+
+  /* 文字 */
+  --text-primary: #F0EBE3;
+  --text-secondary: #B8B0A6;
+  --text-tertiary: #8A8279;
+
+  /* 强调色 */
+  --accent: #A47864;
+  --accent-dark: #8B654F;
+  --accent-hover: #B88A76;
+  --accent-soft: rgba(164,120,100,.16);
+
+  /* 功能色 */
+  --ios-blue: #409CFF;
+  --danger: #FF6B5C;
+  --danger-bg: rgba(255,107,92,.14);
+  --danger-hover: rgba(255,107,92,.22);
+  --danger-border: rgba(255,107,92,.30);
+
+  /* 阴影 */
+  --shadow-btn: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-btn-hover: 0 2px 6px rgba(0,0,0,.5);
+  --shadow-card: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-nav: rgba(0,0,0,.35);
+
+  /* 遮罩 */
+  --mask: rgba(0,0,0,.55);
+
+  color-scheme: dark;
+}
