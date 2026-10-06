@@ -15,38 +15,21 @@ body {
   overflow-x: hidden;
 }
 button svg, .btn svg, .btn-sm svg, .btn-xs svg,
-.ios-btn-fill svg, .file-btn svg, .icon-only svg {
+.ios-btn-fill svg, .file-btn svg, .icon-only svg, .icon-slot svg {
   width: 1em; height: 1em; display: inline-block; vertical-align: middle; flex-shrink: 0;
 }
-
-/* ========== 顶部栏 ========== */
-.app-header {
-  position: sticky; top: 0; z-index: 50;
-  height: 52px; padding: 0 14px;
-  background: var(--bg-base);
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex; align-items: center; justify-content: center;
-}
-.seg-control {
-  display: flex; background: var(--bg-sunken); padding: 3px;
-  border-radius: 12px; border: 1px solid var(--border-subtle); gap: 2px;
-}
-.seg-btn {
-  min-width: 96px; height: 32px;
-  background: transparent; border: 0; border-radius: 9px;
-  color: var(--text-secondary); font-family: inherit;
-  font-size: 13px; font-weight: 500; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 0 10px;
-}
-.seg-btn.active {
-  background: var(--bg-surface); color: var(--text-primary);
-  font-weight: 600; box-shadow: 0 1px 3px rgba(31,29,26,.08);
+.icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
 }
 
 /* ========== 预览区 ========== */
 .preview-sticky {
-  position: sticky; top: 52px; z-index: 35;
+  position: sticky; top: 0; z-index: 35;
   background: var(--bg-base);
   padding: 10px 14px; border-bottom: 1px solid var(--border-subtle);
 }
@@ -200,6 +183,24 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
   cursor: pointer; font-family: inherit;
 }
 
+/* 分段控件（供攻略模式用） */
+.seg-control {
+  display: flex; background: var(--bg-sunken); padding: 3px;
+  border-radius: 12px; border: 1px solid var(--border-subtle); gap: 2px;
+}
+.seg-btn {
+  min-width: 96px; height: 32px;
+  background: transparent; border: 0; border-radius: 9px;
+  color: var(--text-secondary); font-family: inherit;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 10px;
+}
+.seg-btn.active {
+  background: var(--bg-surface); color: var(--text-primary);
+  font-weight: 600; box-shadow: 0 1px 3px rgba(31,29,26,.08);
+}
+
 /* 弹层 */
 .sheet-backdrop {
   position: fixed; inset: 0; z-index: 200;
@@ -242,24 +243,10 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
 .sheet-item.active { color: var(--accent); font-weight: 600; }
 .sheet-item-check { width: 16px; height: 16px; opacity: 0; color: var(--accent); }
 .sheet-item.active .sheet-item-check { opacity: 1; }
-
-.status-bar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  background: var(--bg-base); border-top: 1px solid var(--border-subtle);
-  padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
-  font-size: 12px; color: var(--text-secondary); text-align: center;
-}
 </style>
 </head>
 
 <body>
-
-<header class="app-header">
-  <div class="seg-control" id="coverTypeSeg">
-    <button type="button" class="seg-btn active" data-type="video">视频封面</button>
-    <button type="button" class="seg-btn" data-type="collection">合集封面</button>
-  </div>
-</header>
 
 <!-- ==================== 视频封面模式 ==================== -->
 <div id="videoMode">
@@ -267,13 +254,10 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
     <div class="preview-frame">
       <div id="svgPreviewHost"></div>
       <div class="float-toolbar">
-        <button type="button" class="float-btn" id="btnGuides" title="参考线">参考线</button>
-        <button type="button" class="float-btn" id="btnExportVideo" title="导出配置">导出</button>
-        <label class="float-btn" title="导入配置" style="cursor:pointer;">
-          导入
-          <input type="file" id="importVideoInput" accept=".json" style="display:none">
-        </label>
-        <button type="button" class="float-btn float-btn-danger" id="btnClearVideo" title="清空">清空</button>
+        <button type="button" class="float-btn" id="btnGuides" title="参考线"><span class="icon-slot" data-icon="guides"></span></button>
+        <button type="button" class="float-btn" id="btnExportVideo" title="导出配置"><span class="icon-slot" data-icon="export"></span></button>
+        <label class="float-btn" title="导入配置" style="cursor:pointer;"><span class="icon-slot" data-icon="import"></span><input type="file" id="importVideoInput" accept=".json" style="display:none"></label>
+        <button type="button" class="float-btn float-btn-danger" id="btnClearVideo" title="清空"><span class="icon-slot" data-icon="trash"></span></button>
       </div>
     </div>
   </div>
@@ -285,7 +269,7 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
       <div class="ios-group">
         <div style="display:flex; align-items:center; gap:8px;">
           <div style="flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="labelVideoFont">默认系统字体</div>
-          <button type="button" class="btn btn-sm" onclick="App.openFontPicker('video')">选择字体</button>
+          <button type="button" class="btn btn-sm" onclick="App.openFontPicker('video')"><span class="icon-slot" data-icon="font"></span>选择字体</button>
         </div>
       </div>
     </section>
@@ -297,20 +281,6 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
         <div style="display:flex; align-items:center; gap:8px;">
           <img id="logoThumb" class="clickable-thumb" alt="">
           <select id="logoSelect" style="flex:1;"></select>
-        </div>
-        <div class="control-item">
-          <div class="control-header"><span>Logo 尺寸</span></div>
-          <div class="slider-row">
-            <input type="range" id="capLogoSize" min="50" max="400" value="200" oninput="App.syncVal('capLogoSize', this.value)">
-            <div class="num-box"><input type="number" id="capLogoSizeInput" min="50" max="400" value="200" oninput="App.syncVal('capLogoSize', this.value)"><span class="unit-tag">px</span></div>
-          </div>
-        </div>
-        <div class="control-item">
-          <div class="control-header"><span>Logo 圆角</span></div>
-          <div class="slider-row">
-            <input type="range" id="capLogoRounded" min="0" max="100" value="50" oninput="App.syncVal('capLogoRounded', this.value)">
-            <div class="num-box"><input type="number" id="capLogoRoundedInput" min="0" max="100" value="50" oninput="App.syncVal('capLogoRounded', this.value)"><span class="unit-tag">%</span></div>
-          </div>
         </div>
       </div>
     </section>
@@ -379,7 +349,7 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
         <div id="customPanel" style="display:none;">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
             <span style="font-size:12px; color:var(--text-secondary);">浮动素材</span>
-            <button type="button" class="btn btn-xs" onclick="App.addFloat()">+ 添加素材</button>
+            <button type="button" class="btn btn-xs" onclick="App.addFloat()"><span class="icon-slot" data-icon="plus"></span>添加素材</button>
           </div>
           <div id="floatList" style="display:flex; flex-direction:column; gap:8px;"></div>
         </div>
@@ -423,8 +393,8 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
           </label>
           <label class="ios-field">字号
             <select id="sub1Select" onchange="App.setSubSize(1, this.value)">
-              <option value="200" selected>小字号 (200)</option>
-              <option value="250">大字号 (250)</option>
+              <option value="200" selected>小字号</option>
+              <option value="250">大字号</option>
             </select>
           </label>
         </div>
@@ -434,8 +404,8 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
           </label>
           <label class="ios-field">字号
             <select id="sub2Select" onchange="App.setSubSize(2, this.value)">
-              <option value="200">小字号 (200)</option>
-              <option value="250" selected>大字号 (250)</option>
+              <option value="200">小字号</option>
+              <option value="250" selected>大字号</option>
             </select>
           </label>
         </div>
@@ -454,7 +424,7 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
     <div class="preview-frame">
       <div id="collectionPreview" style="width:100%; aspect-ratio:16/9; background:#1c1c22; border-radius:6px; overflow:hidden; display:flex; align-items:center; justify-content:center;"></div>
       <div class="float-toolbar">
-        <button type="button" class="float-btn" id="btnClearCollection" title="清空">清空</button>
+        <button type="button" class="float-btn" id="btnClearCollection" title="清空"><span class="icon-slot" data-icon="trash"></span></button>
       </div>
     </div>
   </div>
@@ -487,7 +457,7 @@ textarea { height: 64px; padding: 8px 12px; resize: vertical; line-height: 1.4; 
       <div class="ios-group">
         <div style="display:flex; align-items:center; gap:8px;">
           <div style="flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="labelCollectionFont">默认系统字体</div>
-          <button type="button" class="btn btn-sm" onclick="App.openFontPicker('collection')">选择字体</button>
+          <button type="button" class="btn btn-sm" onclick="App.openFontPicker('collection')"><span class="icon-slot" data-icon="font"></span>选择字体</button>
         </div>
       </div>
     </section>
@@ -535,6 +505,10 @@ const BOSS_BASE_URL = '../assets/video-cover/boss-base.png';
 const LOGO_BASE_URL = '../assets/video-cover/';
 const DEFAULT_LOGO_FILE = 'gi-logo.png';
 
+/* Logo 固定参数（用户不可改） */
+const LOGO_SIZE_FIXED = 200;
+const LOGO_ROUNDED_FIXED = 50;
+
 const DEFAULT_MAIN_TEXTS = {
   boss: '世界Boss\n&地方传奇',
   character: '角色培养\n攻略图鉴',
@@ -551,7 +525,6 @@ const state = {
   midBrightness: -50,
   midBlur: 50,
   capX: 550, capY: 150, capH: 250,
-  capLogoSize: 200, capLogoRounded: 50,
   capFontSize: 180, capText: '', capTextBrightness: 100,
   capLogo: '',
   capEdgeInset: 2 / 3, capLogoGap: 40,
@@ -561,14 +534,13 @@ const state = {
   sub1: '', sub2: '', subColor: '#ffffff', subLineGap: 250,
   sigX: 550, sigY: 1980, sigSize: 100, sigStarBoost: 15, sigColor: '#ffffff',
   fontData: '', fontName: '', fontFileName: '',
-  // 攻略模式
   guideType: 'boss',
   bossNameInput: '',
-  bossAvatar: null,   // { url, w, h }
+  bossAvatar: null,
   characterNameInput: '',
-  characterArt: null, // { url, w, h }
+  characterArt: null,
   characterX: 2650,
-  floatImg: []        // 自定义模式用
+  floatImg: []
 };
 
 const collectionState = {
@@ -580,12 +552,15 @@ const collectionState = {
 };
 
 /* =========================================================================
- * 匹配数据（txt 和 icon-dict）
+ * 匹配数据
  * ========================================================================= */
-let MONSTERS_DICT = {};   // 中文名 -> 短 ID
-let CHARACTER_ART_DICT = {}; // 角色名 -> 完整 URL
-let CHAR_SHORTID = {};    // 角色名 -> 短 ID（从 icon-dict.js 反查）
-let LOGO_LIST = [];       // [{ name, file }]
+let MONSTERS_DICT = {};
+let CHARACTER_ART_DICT = {};
+let CHAR_SHORTID = {};
+let LOGO_LIST = [];
+let FONT_LIST = [];
+let loadedFontFace = null;
+let loadedCollectionFontFace = null;
 
 async function loadDataFiles() {
   // monsters.txt
@@ -597,9 +572,7 @@ async function loadDataFiles() {
         line = line.trim();
         if (!line || line.startsWith('#')) return;
         const parts = line.split(/\s+/);
-        if (parts.length >= 2) {
-          MONSTERS_DICT[parts[0]] = parts[1];
-        }
+        if (parts.length >= 2) MONSTERS_DICT[parts[0]] = parts[1];
       });
     }
   } catch (e) { console.warn('monsters.txt 加载失败', e); }
@@ -622,7 +595,7 @@ async function loadDataFiles() {
     }
   } catch (e) { console.warn('character-art.txt 加载失败', e); }
 
-  // icon-dict.js 里的角色短 ID
+  // icon-dict.js 角色短 ID
   const dict = window.ICON_DICT && window.ICON_DICT.characters;
   if (dict) {
     for (const key in dict) {
@@ -637,7 +610,7 @@ async function loadDataFiles() {
     }
   }
 
-  // data/logos.txt（可选）
+  // logos.txt
   try {
     const res = await fetch('../data/logos.txt?t=' + Date.now());
     if (res.ok) {
@@ -646,9 +619,7 @@ async function loadDataFiles() {
         line = line.trim();
         if (!line || line.startsWith('#')) return;
         const parts = line.split(/\s+/);
-        if (parts.length >= 2) {
-          LOGO_LIST.push({ name: parts[0], file: parts[1] });
-        }
+        if (parts.length >= 2) LOGO_LIST.push({ name: parts[0], file: parts[1] });
       });
     }
   } catch (e) {}
@@ -658,14 +629,13 @@ async function loadDataFiles() {
 }
 
 /* =========================================================================
- * 工具函数
+ * 工具
  * ========================================================================= */
 function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
-function num(v) { return (v === '' || v == null || isNaN(Number(v))) ? 0 : Number(v); }
 function getFormattedDateStr() {
   const now = new Date();
   return `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
@@ -686,12 +656,26 @@ function downloadBlob(blob, filename) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
-function showToast(msg, type) {
-  // 简化版提示：用 status bar 或 alert
-  console.log('[' + (type || 'info') + '] ' + msg);
-  const bar = document.getElementById('hiddenStatus') || document.createElement('div');
-  // 用简单的 alert 兜底
-  if (type === 'error') alert(msg);
+
+/* =========================================================================
+ * 图标注入
+ * ========================================================================= */
+function injectIcons() {
+  const upIcon = ICONS.ui.arrowUp || '';
+  const iconMap = {
+    export: ICONS.ui.export || '',
+    import: ICONS.ui.import || '',
+    trash: ICONS.ui.trash || '',
+    plus: ICONS.ui.plus || '',
+    up: upIcon,
+    down: '<span style="display:inline-flex; transform:rotate(180deg);">' + upIcon + '</span>',
+    font: ICONS.ui.import || '',
+    guides: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="4" x2="8" y2="20"/><line x1="16" y1="4" x2="16" y2="20"/></svg>'
+  };
+  document.querySelectorAll('[data-icon]').forEach(el => {
+    const key = el.dataset.icon;
+    if (iconMap[key]) el.innerHTML = iconMap[key];
+  });
 }
 
 /* =========================================================================
@@ -713,7 +697,7 @@ function getCapsuleGeometry() {
   const s = state;
   const R = s.capH / 2;
   const inset = (s.capEdgeInset == null ? 2 / 3 : s.capEdgeInset) * R;
-  const logoW = s.capLogo ? s.capLogoSize : 0;
+  const logoW = s.capLogo ? LOGO_SIZE_FIXED : 0;
   const textW = measureTextWidth(s.capText, s.capFontSize, getFontFamily());
   const logoGap = logoW ? (s.capLogoGap == null ? 40 : s.capLogoGap) : 0;
   const contentW = logoW + logoGap + textW;
@@ -721,7 +705,7 @@ function getCapsuleGeometry() {
   return {
     R, inset, logoW, logoGap, textW, capW,
     logoX: s.capX + inset,
-    logoY: s.capY + (s.capH - s.capLogoSize) / 2,
+    logoY: s.capY + (s.capH - LOGO_SIZE_FIXED) / 2,
     textRightX: s.capX + capW - inset,
     textBaseline: s.capY + s.capH / 2 + s.capFontSize * 0.35,
     capPath: capsulePath(s.capX, s.capY, capW, s.capH)
@@ -755,7 +739,6 @@ function buildSVG(showGuides) {
   const sigStarCX = s.sigX + wL + gapW + wS / 2;
   const sigBaseline = s.sigY;
 
-  // 收集浮动素材
   const allFloats = collectFloats();
   const lowerFloats = allFloats.filter(o => o.underMiddle);
   const upperFloats = allFloats.filter(o => !o.underMiddle);
@@ -774,7 +757,6 @@ function buildSVG(showGuides) {
     }).join('');
   }
 
-  // 参考线
   const cropW = SVG_H * 4 / 3;
   const guideContent = s.showGuides ? (
     [s.safeBoundX, s.safeBoundX + cropW / 2, s.safeBoundX + cropW * 3 / 4, s.safeBoundX + cropW]
@@ -811,7 +793,7 @@ function buildSVG(showGuides) {
     <stop offset="60%" stop-color="#000"/><stop offset="100%" stop-color="#000"/>
   </linearGradient>
   <mask id="midMaskUse"><rect x="0" y="0" width="${SVG_W}" height="${SVG_H}" fill="url(#midMask)"/></mask>
-  ${s.capLogo ? `<clipPath id="logoClip"><rect x="${logoX}" y="${logoY}" width="${s.capLogoSize}" height="${s.capLogoSize}" rx="${s.capLogoRounded}" ry="${s.capLogoRounded}"/></clipPath>` : ''}
+  ${s.capLogo ? `<clipPath id="logoClip"><rect x="${logoX}" y="${logoY}" width="${LOGO_SIZE_FIXED}" height="${LOGO_SIZE_FIXED}" rx="${LOGO_ROUNDED_FIXED}" ry="${LOGO_ROUNDED_FIXED}"/></clipPath>` : ''}
   ${capShadowFilter}${midFilter}
   <filter id="capTextBrightnessFilter" x="-20%" y="-20%" width="140%" height="140%">
     <feComponentTransfer id="capTextBrightnessFe">
@@ -830,7 +812,7 @@ ${s.bg ? `<g mask="url(#midMaskUse)" filter="url(#midFilter)"><image id="midBlur
 ${floatImages(upperFloats)}
 <g filter="url(#capShadow)">
   <path id="capCapsulePath" d="${capPath}" fill="#ffffff"/>
-  ${s.capLogo ? `<image href="${s.capLogo}" x="${logoX}" y="${logoY}" width="${s.capLogoSize}" height="${s.capLogoSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#logoClip)"/>` : ''}
+  ${s.capLogo ? `<image href="${s.capLogo}" x="${logoX}" y="${logoY}" width="${LOGO_SIZE_FIXED}" height="${LOGO_SIZE_FIXED}" preserveAspectRatio="xMidYMid slice" clip-path="url(#logoClip)"/>` : ''}
   <text data-field="capText" filter="url(#capTextBrightnessFilter)" x="${textRightX}" y="${textBaseline}" font-size="${s.capFontSize}" fill="#ffffff" text-anchor="end">${esc(s.capText)}</text>
 </g>
 ${adaptLayer}
@@ -868,17 +850,15 @@ ${adaptLayer}
 function collectFloats() {
   if (state.guideType === 'boss') {
     const arr = [];
-    // 底图（固定参数）
     arr.push({
       id: 'boss-base',
       url: BOSS_BASE_URL,
-      w: 1000, h: 1000,   // 占位，加载后更新
+      w: 1000, h: 1000,
       x: 2650,
       scale: 0.7,
       rounded: 0,
       underMiddle: true
     });
-    // 头像
     if (state.bossAvatar && state.bossAvatar.url) {
       arr.push({
         id: 'boss-avatar',
@@ -908,7 +888,6 @@ function collectFloats() {
     }
     return [];
   }
-  // custom
   return state.floatImg;
 }
 
@@ -916,20 +895,6 @@ function collectFloats() {
  * 预览挂载
  * ========================================================================= */
 let previewSvgEl = null;
-let rafJobs = new Map();
-let rafScheduled = false;
-function scheduleRaf(key, job) {
-  rafJobs.set(key, job);
-  if (rafScheduled) return;
-  rafScheduled = true;
-  requestAnimationFrame(() => {
-    rafScheduled = false;
-    const jobs = Array.from(rafJobs.values());
-    rafJobs.clear();
-    jobs.forEach(fn => { try { fn(); } catch (e) {} });
-  });
-}
-
 function mountPreview() {
   const host = document.getElementById('svgPreviewHost');
   if (!host) return;
@@ -938,10 +903,9 @@ function mountPreview() {
 }
 
 /* =========================================================================
- * 应用接口
+ * App 接口
  * ========================================================================= */
 const App = {
-  // === 通用 ===
   set(key, value) {
     if (state[key] === value) return;
     state[key] = value;
@@ -964,7 +928,6 @@ const App = {
     persist();
   },
 
-  // === 攻略模式 ===
   setGuideType(type) {
     const oldType = state.guideType;
     const oldDefault = DEFAULT_MAIN_TEXTS[oldType] || '';
@@ -974,14 +937,12 @@ const App = {
       if (mainInput) mainInput.value = state.mainText;
     }
     state.guideType = type;
-
     document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.type === type);
     });
     document.getElementById('bossPanel').style.display = type === 'boss' ? 'block' : 'none';
     document.getElementById('characterPanel').style.display = type === 'character' ? 'block' : 'none';
     document.getElementById('customPanel').style.display = type === 'custom' ? 'block' : 'none';
-
     mountPreview();
     persist();
   },
@@ -1011,11 +972,7 @@ const App = {
   onCharacterNameInput(val) { state.characterNameInput = val; },
   async matchCharacterName(name) {
     name = (name || '').trim();
-    if (!name) {
-      state.characterArt = null;
-      mountPreview();
-      return;
-    }
+    if (!name) { state.characterArt = null; mountPreview(); return; }
     const artUrl = CHARACTER_ART_DICT[name];
     const shortId = CHAR_SHORTID[name];
 
@@ -1025,7 +982,6 @@ const App = {
       mountPreview();
       return;
     }
-
     try {
       const img = await loadImage(artUrl);
       state.characterArt = { url: artUrl, w: img.width, h: img.height };
@@ -1033,8 +989,6 @@ const App = {
       alert('立绘加载失败：' + artUrl);
       state.characterArt = null;
     }
-
-    // 名片图作为背景
     if (shortId) {
       const namecardUrl = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_' + shortId + '_P.png';
       try {
@@ -1044,12 +998,10 @@ const App = {
         if (bgNameEl) bgNameEl.textContent = '已自动加载名片图';
       } catch (e) {}
     }
-
     mountPreview();
     persist();
   },
 
-  // === 浮动素材（自定义模式）===
   addFloat() {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*';
@@ -1120,14 +1072,12 @@ const App = {
     input.value = '';
   },
 
-  // === 参考线 ===
   toggleGuides() {
     state.showGuides = !state.showGuides;
     mountPreview();
     persist();
   },
 
-  // === 字体 ===
   openFontPicker(target) {
     App._fontTarget = target;
     const listEl = document.getElementById('fontSheetList');
@@ -1192,7 +1142,6 @@ const App = {
     }
   },
 
-  // === 导出/导入/清空 ===
   exportConfig() {
     downloadBlob(
       new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }),
@@ -1206,7 +1155,6 @@ const App = {
     reader.onload = async e => {
       try {
         Object.assign(state, JSON.parse(e.target.result));
-        // 恢复 UI
         syncInputsFromState();
         if (state.fontData) await installFont('');
         renderFloatList();
@@ -1219,53 +1167,9 @@ const App = {
   },
   async clearAll() {
     if (!confirm('确定清空视频封面所有配置吗？')) return;
-    Object.keys(state).forEach(k => {
-      if (k === 'guideType') state[k] = 'boss';
-      else if (k === 'safeBoundX') state[k] = 480;
-      else if (k === 'capH') state[k] = 250;
-      else if (k === 'capX') state[k] = 550;
-      else if (k === 'capY') state[k] = 150;
-      else if (k === 'capFontSize') state[k] = 180;
-      else if (k === 'capLogoSize') state[k] = 200;
-      else if (k === 'capLogoRounded') state[k] = 50;
-      else if (k === 'capEdgeInset') state[k] = 2/3;
-      else if (k === 'capLogoGap') state[k] = 40;
-      else if (k === 'capTextBrightness') state[k] = 100;
-      else if (k === 'mainX') state[k] = 550;
-      else if (k === 'mainY') state[k] = 760;
-      else if (k === 'mainSize') state[k] = 340;
-      else if (k === 'mainLineGap') state[k] = 350;
-      else if (k === 'mainColor') state[k] = '#ffffff';
-      else if (k === 'subX') state[k] = 550;
-      else if (k === 'subY') state[k] = 1500;
-      else if (k === 'sub1Size') state[k] = 200;
-      else if (k === 'sub2Size') state[k] = 250;
-      else if (k === 'subColor') state[k] = '#ffffff';
-      else if (k === 'subLineGap') state[k] = 250;
-      else if (k === 'sigX') state[k] = 550;
-      else if (k === 'sigY') state[k] = 1980;
-      else if (k === 'sigSize') state[k] = 100;
-      else if (k === 'sigStarBoost') state[k] = 15;
-      else if (k === 'sigColor') state[k] = '#ffffff';
-      else if (k === 'midBrightness') state[k] = -50;
-      else if (k === 'midBlur') state[k] = 50;
-      else if (k === 'characterX') state[k] = 2650;
-      else if (k === 'showGuides') state[k] = true;
-      else if (Array.isArray(state[k])) state[k] = [];
-      else if (typeof state[k] === 'string') state[k] = '';
-      else if (typeof state[k] === 'number') state[k] = 0;
-      else state[k] = null;
-    });
-    // 加载 logo
-    state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
-    syncInputsFromState();
-    renderFloatList();
-    mountPreview();
-    persist();
     location.reload();
   },
 
-  // === 导出 PNG ===
   async exportPNG() {
     try {
       if (document.fonts) await document.fonts.ready;
@@ -1293,7 +1197,6 @@ const App = {
     }
   },
 
-  // === 合集封面 ===
   setCollection(key, value) {
     collectionState[key] = value;
     if (key === 'sizePreset') {
@@ -1327,6 +1230,16 @@ const App = {
     if (l) l.textContent = '默认系统字体';
     renderCollection();
     persist();
+  },
+
+  /* 父页面切换子功能：视频封面 / 合集封面 */
+  switchCoverMode(mode) {
+    const videoEl = document.getElementById('videoMode');
+    const collEl = document.getElementById('collectionMode');
+    if (!videoEl || !collEl) return;
+    videoEl.style.display = mode === 'collection' ? 'none' : 'block';
+    collEl.style.display = mode === 'collection' ? 'block' : 'none';
+    if (mode === 'collection') renderCollection();
   }
 };
 window.App = App;
@@ -1339,6 +1252,7 @@ function renderFloatList() {
   if (!el) return;
   if (!state.floatImg.length) {
     el.innerHTML = '<div style="font-size:12px; color:var(--text-tertiary); padding:4px 0;">暂无素材</div>';
+    injectIcons();
     return;
   }
   el.innerHTML = state.floatImg.map(o => `
@@ -1349,10 +1263,10 @@ function renderFloatList() {
           <span style="font-size:11px; color:var(--text-secondary);">${o.w}×${o.h}</span>
         </div>
         <div style="display:flex; gap:3px;">
-          <button class="btn btn-xs" onclick="App.moveFloat('${o.id}',-1)">↑</button>
-          <button class="btn btn-xs" onclick="App.moveFloat('${o.id}',1)">↓</button>
-          <label class="btn btn-xs" style="cursor:pointer;">换图<input type="file" accept="image/*" style="display:none;" onchange="App.replaceFloat('${o.id}', this)"></label>
-          <button class="btn btn-xs btn-danger" onclick="App.removeFloat('${o.id}')">删</button>
+          <button class="btn btn-xs" onclick="App.moveFloat('${o.id}',-1)"><span class="icon-slot" data-icon="up"></span></button>
+          <button class="btn btn-xs" onclick="App.moveFloat('${o.id}',1)"><span class="icon-slot" data-icon="down"></span></button>
+          <label class="btn btn-xs" style="cursor:pointer;"><span class="icon-slot" data-icon="import"></span><input type="file" accept="image/*" style="display:none;" onchange="App.replaceFloat('${o.id}', this)"></label>
+          <button class="btn btn-xs btn-danger" onclick="App.removeFloat('${o.id}')"><span class="icon-slot" data-icon="trash"></span></button>
         </div>
       </div>
       <div class="control-item">
@@ -1382,15 +1296,12 @@ function renderFloatList() {
       </label>
     </div>
   `).join('');
+  injectIcons();
 }
 
 /* =========================================================================
- * 字体加载
+ * 字体
  * ========================================================================= */
-let FONT_LIST = [];
-let loadedFontFace = null;
-let loadedCollectionFontFace = null;
-
 async function loadFontList() {
   try {
     const res = await fetch('../fonts/fonts.json?t=' + Date.now());
@@ -1424,7 +1335,7 @@ async function installFont(target) {
 }
 
 /* =========================================================================
- * 合集封面 Canvas 绘制
+ * 合集封面 Canvas
  * ========================================================================= */
 function collectionSizeValue(preset) {
   if (preset === '1920') return [1920, 1080];
@@ -1438,11 +1349,7 @@ function updateFileNameDisplay(input) {
   const nameEl = picker.querySelector('.file-picker-name');
   if (!nameEl) return;
   const file = input.files && input.files[0];
-  if (file) {
-    nameEl.textContent = file.name;
-  } else {
-    nameEl.textContent = '未选择文件';
-  }
+  nameEl.textContent = file ? file.name : '未选择文件';
 }
 
 async function drawCollectionCanvas(canvas) {
@@ -1547,7 +1454,7 @@ async function renderCollection() {
 }
 
 /* =========================================================================
- * 数据持久化（IndexedDB）
+ * IndexedDB 持久化
  * ========================================================================= */
 const IDB_NAME = 'video_cover_db';
 const IDB_STORE = 'state';
@@ -1569,7 +1476,6 @@ function persist() {
       const db = await openIDB();
       const tx = db.transaction(IDB_STORE, 'readwrite');
       const store = tx.objectStore(IDB_STORE);
-      // 序列化：剔除不可序列化的
       const stateSave = { ...state };
       const collectionSave = { ...collectionState };
       delete collectionSave.bgLoadedImg;
@@ -1636,42 +1542,36 @@ function syncInputsFromState() {
   if (s1) s1.value = String(state.sub1Size);
   if (s2) s2.value = String(state.sub2Size);
 
-  // 字体标签
   const lv = document.getElementById('labelVideoFont');
   if (lv) lv.textContent = state.fontName ? '当前：' + state.fontName : '默认系统字体';
   const lc = document.getElementById('labelCollectionFont');
   if (lc) lc.textContent = collectionState.fontName ? '当前：' + collectionState.fontName : '默认系统字体';
 
-  // 攻略模式
   document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.type === state.guideType);
   });
   document.getElementById('bossPanel').style.display = state.guideType === 'boss' ? 'block' : 'none';
   document.getElementById('characterPanel').style.display = state.guideType === 'character' ? 'block' : 'none';
   document.getElementById('customPanel').style.display = state.guideType === 'custom' ? 'block' : 'none';
+
+  // Logo 下拉框当前值
+  const logoSelect = document.getElementById('logoSelect');
+  if (logoSelect && state.capLogo) {
+    const file = state.capLogo.replace(LOGO_BASE_URL, '');
+    logoSelect.value = file;
+  }
+  const t = document.getElementById('logoThumb');
+  if (t && state.capLogo) t.src = state.capLogo;
 }
 
 /* =========================================================================
  * 事件绑定
  * ========================================================================= */
 function bindEvents() {
-  // 顶部：视频封面/合集封面切换
-  document.querySelectorAll('#coverTypeSeg .seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const type = btn.dataset.type;
-      document.querySelectorAll('#coverTypeSeg .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
-      document.getElementById('videoMode').style.display = type === 'video' ? 'block' : 'none';
-      document.getElementById('collectionMode').style.display = type === 'collection' ? 'block' : 'none';
-      if (type === 'collection') renderCollection();
-    });
-  });
-
-  // 攻略模式切换
   document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => App.setGuideType(btn.dataset.type));
   });
 
-  // 背景上传
   document.getElementById('bgFile').addEventListener('change', async e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -1686,7 +1586,6 @@ function bindEvents() {
     e.target.value = '';
   });
 
-  // 合集封面背景
   document.getElementById('collectionBgFile').addEventListener('change', async e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -1702,10 +1601,7 @@ function bindEvents() {
     e.target.value = '';
   });
 
-  // 参考线
   document.getElementById('btnGuides').addEventListener('click', () => App.toggleGuides());
-
-  // 导出/导入/清空
   document.getElementById('btnExportVideo').addEventListener('click', () => App.exportConfig());
   document.getElementById('importVideoInput').addEventListener('change', e => App.importConfig(e.target));
   document.getElementById('btnClearVideo').addEventListener('click', () => App.clearAll());
@@ -1727,28 +1623,28 @@ window.addEventListener('message', function (e) {
       });
     });
   }
+  if (e.data && e.data.type === 'navigate' && e.data.subtool) {
+    App.switchCoverMode(e.data.subtool);
+  }
 });
 
 /* =========================================================================
  * 初始化
  * ========================================================================= */
 (async function init() {
-  // 加载数据
+  injectIcons();
   await loadDataFiles();
   await loadFontList();
   await loadPersist();
 
-  // 恢复字体
   if (state.fontData) await installFont('');
   if (collectionState.fontData) await installFont('collection');
 
-  // 初始化 Logo 下拉
   const logoSelect = document.getElementById('logoSelect');
   if (logoSelect) {
-    logoSelect.innerHTML = LOGO_LIST.map((l, i) =>
+    logoSelect.innerHTML = LOGO_LIST.map((l) =>
       '<option value="' + esc(l.file) + '">' + esc(l.name) + '</option>'
     ).join('');
-    // 默认选中第一个
     if (!state.capLogo) state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
     logoSelect.value = LOGO_LIST[0].file;
     logoSelect.addEventListener('change', function () {
@@ -1766,8 +1662,22 @@ window.addEventListener('message', function (e) {
   renderFloatList();
   bindEvents();
   mountPreview();
-})();
+  injectIcons();
 
+  // 上报子功能给父页面
+  if (window.parent && window.parent !== window) {
+    try {
+      window.parent.postMessage({
+        type: 'subtools',
+        toolKey: 'video-cover',
+        list: [
+          { key: 'video', label: '视频封面' },
+          { key: 'collection', label: '合集封面' }
+        ]
+      }, '*');
+    } catch (e) {}
+  }
+})();
 </script>
 </body>
 </html>
