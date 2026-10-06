@@ -1,29 +1,55 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2EFEA">
 <title>原神攻略工具集</title>
 <style>
+/* ============================================================
+ * 设计令牌 · 浅色
+ * ============================================================ */
 :root {
   --bg-base: #F2EFEA;
   --bg-surface: #FFFFFF;
   --bg-surface-2: #FAF8F5;
+  --bg-sunken: #EBE7E0;
   --bg-hover: #F5F2ED;
-  --border-subtle: #EBE6DF;
-  --border-default: #DDD6CC;
   --text-primary: #1F1D1A;
   --text-secondary: #6B655C;
   --text-tertiary: #9C958A;
   --accent: #8B7355;
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  --accent-soft: rgba(139,115,85,.10);
+  --border-subtle: #EBE6DF;
+  --border-default: #DDD6CC;
+  --shadow-nav: rgba(31,29,26,.06);
+  --mask: rgba(31,29,26,.35);
   --std-font: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
+
+/* ============================================================
+ * 设计令牌 · 深色
+ * ============================================================ */
+[data-theme="dark"] {
+  --bg-base: #121212;
+  --bg-surface: #1E1C1A;
+  --bg-surface-2: #242220;
+  --bg-sunken: #0A0A0A;
+  --bg-hover: #2A2725;
+  --text-primary: #F0EBE3;
+  --text-secondary: #B8B0A6;
+  --text-tertiary: #8A8279;
+  --accent: #A47864;
+  --accent-soft: rgba(164,120,100,.16);
+  --border-subtle: #2A2725;
+  --border-default: #3D3835;
+  --shadow-nav: rgba(0,0,0,.35);
+  --mask: rgba(0,0,0,.55);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; height: 100dvh; }
-html, body, button { font-family: var(--std-font); -webkit-font-smoothing: antialiased; }
+html, body, button { font-family: var(--std-font); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body {
   background: var(--bg-base);
   color: var(--text-primary);
@@ -31,88 +57,98 @@ body {
   display: flex;
   flex-direction: column;
   letter-spacing: -0.2px;
+  transition: background-color .25s ease, color .25s ease;
 }
 
-/* ============ 顶部栏 ============ */
+/* ============================================================
+ * 顶部栏
+ * ============================================================ */
 .app-navbar {
   flex: none;
   height: 52px;
-  padding: 0 14px;
-  background: rgba(242,239,234,.88);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  padding: 0 12px;
+  background: var(--bg-base);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   z-index: 40;
+  transition: background-color .25s ease, border-color .25s ease;
 }
-.btn-toggle {
+.nav-btn {
   width: 34px;
   height: 34px;
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   color: var(--text-primary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all .15s;
+  transition: background .15s, transform .12s, border-color .15s;
   padding: 0;
   flex-shrink: 0;
 }
-.btn-toggle:hover { background: var(--bg-hover); }
-.btn-toggle:active { transform: scale(.94); }
-.btn-toggle svg { width: 18px; height: 18px; display: block; }
+.nav-btn:hover { background: var(--bg-hover); }
+.nav-btn:active { transform: scale(.94); }
+.nav-btn svg { width: 18px; height: 18px; display: block; }
+
 .nav-title {
+  flex: 1;
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 7px;
-  min-width: 0;
+  padding: 0 4px;
 }
-.nav-title .emoji { font-size: 17px; line-height: 1; }
-.nav-title .label {
+.nav-title-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--accent); }
+.nav-title-icon svg { width: 100%; height: 100%; display: block; }
+.nav-title-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.nav-title-sep {
+  color: var(--text-tertiary);
+  font-weight: 400;
+  margin: 0 1px;
+}
 
-/* ============ 侧边抽屉 ============ */
+/* ============================================================
+ * 侧边抽屉
+ * ============================================================ */
 .sidebar-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(31,29,26,.35);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  position: fixed; inset: 0;
+  background: var(--mask);
   z-index: 90;
   opacity: 0;
   pointer-events: none;
   transition: opacity .25s cubic-bezier(.16,1,.3,1);
 }
 .sidebar-backdrop.active { opacity: 1; pointer-events: auto; }
+
 .sidebar-drawer {
   position: fixed;
   top: 0; bottom: 0; left: 0;
   width: 270px;
   max-width: 85vw;
-  background: rgba(242,239,234,.97);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--bg-base);
   border-right: 1px solid var(--border-subtle);
   z-index: 100;
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
-  transition: transform .28s cubic-bezier(.16,1,.3,1);
-  box-shadow: 12px 0 32px rgba(31,29,26,.12);
+  transition: transform .28s cubic-bezier(.16,1,.3,1), background-color .25s ease;
+  box-shadow: 12px 0 32px var(--shadow-nav);
 }
 .sidebar-drawer.open { transform: translateX(0); }
+
 .sidebar-header {
-  padding: 16px 14px 12px 16px;
+  padding: 14px 14px 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -124,67 +160,131 @@ body {
   font-weight: 600;
   color: var(--text-primary);
 }
+
 .sidebar-menu {
-  padding: 12px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  padding: 10px 8px 20px;
   overflow-y: auto;
   flex: 1;
   -webkit-overflow-scrolling: touch;
 }
-.sidebar-item {
+
+/* --- 主工具行 --- */
+.menu-main {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
-  border-radius: var(--radius-md);
+  padding: 10px 10px;
+  border-radius: 12px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  width: 100%;
   text-align: left;
   transition: background .15s, color .15s, border-color .15s;
   position: relative;
+  margin-top: 4px;
 }
-.sidebar-item .item-emoji {
-  font-size: 18px;
-  width: 22px;
-  text-align: center;
+.menu-main:first-child { margin-top: 0; }
+.menu-main:hover { background: var(--bg-hover); color: var(--text-primary); }
+.menu-main.active {
+  color: var(--text-primary);
+  font-weight: 600;
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+.menu-main.active::before {
+  content: '';
+  position: absolute;
+  left: 3px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 20px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.menu-main-icon {
+  width: 22px; height: 22px;
   flex-shrink: 0;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.sidebar-item .item-label {
+.menu-main-icon svg { width: 20px; height: 20px; display: block; }
+.menu-main.active .menu-main-icon { color: var(--accent); }
+.menu-main-label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sidebar-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-.sidebar-item.active {
-  background: var(--bg-surface);
-  border-color: var(--border-subtle);
-  color: var(--text-primary);
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(31,29,26,.03);
+.menu-main-arrow {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .25s cubic-bezier(.16,1,.3,1);
 }
-.sidebar-item.active::before {
-  content: '';
+.menu-main-arrow svg { width: 100%; height: 100%; display: block; }
+.menu-main.expanded .menu-main-arrow { transform: rotate(180deg); }
+
+/* --- 子功能列表 --- */
+.menu-sub {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .3s cubic-bezier(.16,1,.3,1);
+}
+.menu-sub.open { max-height: 600px; }
+.menu-sub-inner {
+  padding: 4px 0 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menu-sub-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 9px 10px 9px 42px;
+  border-radius: 10px;
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s, color .15s;
+  position: relative;
+}
+.menu-sub-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.menu-sub-item.active {
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--accent-soft);
+}
+.menu-sub-item .dot {
   position: absolute;
-  left: 4px;
+  left: 24px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  border-radius: 2px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--border-default);
+  transition: background .15s, transform .15s;
+}
+.menu-sub-item.active .dot {
   background: var(--accent);
+  transform: translateY(-50%) scale(1.35);
 }
 
-/* ============ 内容区 ============ */
+/* ============================================================
+ * 内容区
+ * ============================================================ */
 .frame-container {
   flex: 1;
   position: relative;
@@ -205,7 +305,6 @@ body {
   background: var(--bg-base);
 }
 
-/* 首次进入的加载遮罩 */
 .loading-mask {
   position: absolute;
   inset: 0;
@@ -215,17 +314,14 @@ body {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: rgba(242,239,234,.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--bg-base);
   color: var(--text-secondary);
   font-size: 13px;
   pointer-events: none;
 }
 .loading-mask.show { display: flex; }
 .spinner {
-  width: 24px;
-  height: 24px;
+  width: 24px; height: 24px;
   border: 2.5px solid var(--border-subtle);
   border-top-color: var(--accent);
   border-radius: 50%;
@@ -236,35 +332,27 @@ body {
 </head>
 <body>
 
+<!-- ============ 顶部栏 ============ -->
 <header class="app-navbar">
-  <button type="button" class="btn-toggle" id="btnMenu" aria-label="打开菜单">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="4" y1="7" x2="20" y2="7"/>
-      <line x1="4" y1="12" x2="20" y2="12"/>
-      <line x1="4" y1="17" x2="20" y2="17"/>
-    </svg>
-  </button>
+  <button type="button" class="nav-btn" id="btnMenu" aria-label="打开菜单"></button>
   <div class="nav-title">
-    <span class="emoji" id="navEmoji">🎴</span>
-    <span class="label" id="navLabel">角色一图流</span>
+    <span class="nav-title-icon" id="navIcon"></span>
+    <span class="nav-title-text" id="navText">原神攻略工具集</span>
   </div>
+  <button type="button" class="nav-btn" id="btnTheme" aria-label="切换主题"></button>
 </header>
 
+<!-- ============ 侧边抽屉 ============ -->
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
 <aside class="sidebar-drawer" id="sidebarDrawer">
   <div class="sidebar-header">
     <h3>工具导航</h3>
-    <button class="btn-toggle" id="btnClose" aria-label="关闭菜单">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="6" y1="6" x2="18" y2="18"/>
-        <line x1="18" y1="6" x2="6" y2="18"/>
-      </svg>
-    </button>
+    <button type="button" class="nav-btn" id="btnClose" aria-label="关闭菜单"></button>
   </div>
   <nav class="sidebar-menu" id="sidebarMenu"></nav>
 </aside>
 
+<!-- ============ 内容区 ============ -->
 <main class="frame-container" id="frameContainer">
   <div class="loading-mask" id="loadingMask">
     <div class="spinner"></div>
@@ -272,35 +360,142 @@ body {
   </div>
 </main>
 
+<script src="icons.js"></script>
 <script>
 'use strict';
 
-/* ========== 工具清单：新增工具时在这里加一行即可 ========== */
+/* ============================================================
+ * 工具清单（主工具，硬编码）
+ * ============================================================ */
 const TOOLS = [
-  { key: 'character',   label: '角色一图流',      emoji: '🎴', src: 'character.html' },
-  { key: 'image-tools', label: '图片处理整合',    emoji: '🖼️', src: 'image-tools.html' },
-  { key: 'video-cover', label: '视频封面制作',    emoji: '🎬', src: 'video-cover.html' },
-  { key: 'chart',       label: '图表生成器',      emoji: '📊', src: 'chart.html' },
-  { key: 'weapon',      label: '武器卡片生成',    emoji: '⚔️', src: 'weapon.html' },
-  { key: 'tier',        label: '角色梯队排行榜',  emoji: '🏆', src: 'tier.html' }
+  { key: 'character',   label: '角色一图流', src: 'character.html',   icon: 'character',   iconBold: 'characterBold' },
+  { key: 'image-tools', label: '图片处理',   src: 'image-tools.html', icon: 'imageTools',  iconBold: 'imageToolsBold' },
+  { key: 'video-cover', label: '封面制作',   src: 'video-cover.html', icon: 'videoCover',  iconBold: 'videoCoverBold' },
+  { key: 'chart',       label: '图表',       src: 'chart.html',       icon: 'chart',       iconBold: 'chartBold' },
+  { key: 'tier',        label: '角色梯队',   src: 'tier.html',        icon: 'tier',        iconBold: 'tierBold' }
 ];
 
-const DEFAULT_KEY = TOOLS[0].key;
+/* 兜底子功能清单（子页面尚未改造完成时使用） */
+const FALLBACK_SUBTOOLS = {
+  'character':   [],
+  'image-tools': [
+    { key: 'background',  label: '背景修改' },
+    { key: 'blend',       label: '双图羽化' },
+    { key: 'overlay',     label: '对位裁切' },
+    { key: 'collage',     label: '图层拼接' },
+    { key: 'weapon-icon', label: '武器图标' },
+    { key: 'weapon-card', label: '武器卡片' },
+    { key: 'achievement', label: '成就制作' }
+  ],
+  'video-cover': [
+    { key: 'video',      label: '视频封面' },
+    { key: 'collection', label: '合集封面' }
+  ],
+  'chart': [
+    { key: 'radar', label: '雷达图' },
+    { key: 'bar',   label: '柱状图' }
+  ],
+  'tier': []
+};
+
+/* 运行时的子功能清单（子页面可上报覆盖） */
+const SUBTOOLS = JSON.parse(JSON.stringify(FALLBACK_SUBTOOLS));
+
+const DEFAULT_TOOL = 'character';
 const STORAGE_KEY = 'gtt_active_tool';
+const THEME_KEY = 'gtt_theme';
 
-/* ========== DOM 引用 ========== */
+/* ============================================================
+ * DOM 引用
+ * ============================================================ */
 const frameContainer = document.getElementById('frameContainer');
-const sidebarDrawer = document.getElementById('sidebarDrawer');
-const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-const sidebarMenu = document.getElementById('sidebarMenu');
-const loadingMask = document.getElementById('loadingMask');
-const navEmoji = document.getElementById('navEmoji');
-const navLabel = document.getElementById('navLabel');
+const sidebarDrawer  = document.getElementById('sidebarDrawer');
+const sidebarBackdrop= document.getElementById('sidebarBackdrop');
+const sidebarMenu    = document.getElementById('sidebarMenu');
+const loadingMask    = document.getElementById('loadingMask');
+const navIcon        = document.getElementById('navIcon');
+const navText        = document.getElementById('navText');
+const btnMenu        = document.getElementById('btnMenu');
+const btnClose       = document.getElementById('btnClose');
+const btnTheme       = document.getElementById('btnTheme');
 
-/* ========== iframe 缓存：每个工具只创建一次 ========== */
-const frameCache = new Map();   // key -> { view, iframe, loaded }
+/* ============================================================
+ * iframe 缓存
+ * ============================================================ */
+const frameCache = new Map(); // key -> { view, iframe, loaded }
 
-/* ========== 侧边菜单打开/关闭 ========== */
+/* ============================================================
+ * 主题
+ * ============================================================ */
+const THEME_TOKENS = {
+  light: {
+    '--bg-base': '#F2EFEA',
+    '--bg-surface': '#FFFFFF',
+    '--bg-surface-2': '#FAF8F5',
+    '--bg-sunken': '#EBE7E0',
+    '--bg-hover': '#F5F2ED',
+    '--text-primary': '#1F1D1A',
+    '--text-secondary': '#6B655C',
+    '--text-tertiary': '#9C958A',
+    '--accent': '#8B7355',
+    '--accent-soft': 'rgba(139,115,85,.10)',
+    '--border-subtle': '#EBE6DF',
+    '--border-default': '#DDD6CC'
+  },
+  dark: {
+    '--bg-base': '#121212',
+    '--bg-surface': '#1E1C1A',
+    '--bg-surface-2': '#242220',
+    '--bg-sunken': '#0A0A0A',
+    '--bg-hover': '#2A2725',
+    '--text-primary': '#F0EBE3',
+    '--text-secondary': '#B8B0A6',
+    '--text-tertiary': '#8A8279',
+    '--accent': '#A47864',
+    '--accent-soft': 'rgba(164,120,100,.16)',
+    '--border-subtle': '#2A2725',
+    '--border-default': '#3D3835'
+  }
+};
+
+let currentTheme = 'light';
+
+function applyTheme(theme) {
+  currentTheme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+
+  // 主题色 meta
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', currentTheme === 'dark' ? '#121212' : '#F2EFEA');
+
+  // 顶部按钮图标：浅色显示太阳，深色显示月亮
+  btnTheme.innerHTML = currentTheme === 'dark' ? ICONS.app.moonBold : ICONS.app.sunBold;
+
+  // 持久化
+  try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
+
+  // 广播给所有已加载的 iframe
+  const tokens = THEME_TOKENS[currentTheme];
+  frameCache.forEach(record => {
+    if (record.loaded && record.iframe.contentWindow) {
+      try {
+        record.iframe.contentWindow.postMessage({
+          type: 'theme',
+          theme: currentTheme,
+          tokens: tokens
+        }, '*');
+      } catch (e) {}
+    }
+  });
+}
+
+function toggleTheme() {
+  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+}
+
+/* ============================================================
+ * 侧边抽屉开关
+ * ============================================================ */
 function openSidebar() {
   sidebarDrawer.classList.add('open');
   sidebarBackdrop.classList.add('active');
@@ -310,7 +505,82 @@ function closeSidebar() {
   sidebarBackdrop.classList.remove('active');
 }
 
-/* ========== 创建工具 iframe（懒加载，只创建一次） ========== */
+/* ============================================================
+ * 渲染侧边菜单
+ * ============================================================ */
+function renderMenu() {
+  sidebarMenu.innerHTML = '';
+
+  TOOLS.forEach(tool => {
+    const subs = SUBTOOLS[tool.key] || [];
+    const isActive = tool.key === activeTool;
+    const isExpanded = isActive; // 仅当前工具展开
+
+    // 主工具行
+    const mainBtn = document.createElement('button');
+    mainBtn.type = 'button';
+    mainBtn.className = 'menu-main' + (isActive ? ' active' : '') + (isExpanded && subs.length ? ' expanded' : '');
+    mainBtn.dataset.tool = tool.key;
+
+    const iconKey = isActive ? tool.iconBold : tool.icon;
+    const iconSvg = (ICONS.nav && ICONS.nav[iconKey]) || '';
+
+    mainBtn.innerHTML =
+      '<span class="menu-main-icon">' + iconSvg + '</span>' +
+      '<span class="menu-main-label">' + tool.label + '</span>' +
+      (subs.length ? '<span class="menu-main-arrow">' + ICONS.ui.chevronDown + '</span>' : '');
+
+    mainBtn.addEventListener('click', () => {
+      if (subs.length) {
+        // 有子功能：切换到该工具（默认第一个子功能），已激活则只切换展开状态
+        if (tool.key === activeTool) {
+          // 展开/收起切换
+          const subWrap = sidebarMenu.querySelector('.menu-sub[data-tool="' + tool.key + '"]');
+          if (subWrap) {
+            const willOpen = !subWrap.classList.contains('open');
+            subWrap.classList.toggle('open', willOpen);
+            mainBtn.classList.toggle('expanded', willOpen);
+          }
+        } else {
+          selectSubtool(tool.key, subs[0].key);
+        }
+      } else {
+        // 无子功能：直接切换工具
+        selectTool(tool.key);
+      }
+    });
+
+    sidebarMenu.appendChild(mainBtn);
+
+    // 子功能列表
+    if (subs.length) {
+      const subWrap = document.createElement('div');
+      subWrap.className = 'menu-sub' + (isExpanded ? ' open' : '');
+      subWrap.dataset.tool = tool.key;
+
+      const inner = document.createElement('div');
+      inner.className = 'menu-sub-inner';
+
+      subs.forEach(sub => {
+        const subBtn = document.createElement('button');
+        subBtn.type = 'button';
+        subBtn.className = 'menu-sub-item' + (isActive && sub.key === activeSubtool ? ' active' : '');
+        subBtn.dataset.tool = tool.key;
+        subBtn.dataset.sub = sub.key;
+        subBtn.innerHTML = '<span class="dot"></span><span>' + sub.label + '</span>';
+        subBtn.addEventListener('click', () => selectSubtool(tool.key, sub.key));
+        inner.appendChild(subBtn);
+      });
+
+      subWrap.appendChild(inner);
+      sidebarMenu.appendChild(subWrap);
+    }
+  });
+}
+
+/* ============================================================
+ * iframe 懒加载
+ * ============================================================ */
 function ensureFrame(tool) {
   if (frameCache.has(tool.key)) return frameCache.get(tool.key);
 
@@ -323,14 +593,21 @@ function ensureFrame(tool) {
   iframe.setAttribute('loading', 'lazy');
   iframe.src = tool.src;
 
-  const record = { view, iframe, loaded: false };
+  const record = { view, iframe, loaded: false, tool: tool };
 
   iframe.addEventListener('load', () => {
     record.loaded = true;
-    // 如果加载完成的正好是当前激活的工具，隐藏遮罩
     if (view.classList.contains('active')) {
       loadingMask.classList.remove('show');
     }
+    // 加载完成后，立即同步当前主题给子页面
+    try {
+      iframe.contentWindow.postMessage({
+        type: 'theme',
+        theme: currentTheme,
+        tokens: THEME_TOKENS[currentTheme]
+      }, '*');
+    } catch (e) {}
   });
 
   view.appendChild(iframe);
@@ -339,76 +616,168 @@ function ensureFrame(tool) {
   return record;
 }
 
-/* ========== 切换工具 ========== */
-function selectTool(key, opts) {
+/* ============================================================
+ * 切换工具 / 子功能
+ * ============================================================ */
+let activeTool = DEFAULT_TOOL;
+let activeSubtool = '';
+
+function selectTool(toolKey, opts) {
   const silent = opts && opts.silent;
-  const tool = TOOLS.find(t => t.key === key) || TOOLS[0];
-  const targetKey = tool.key;
+  const tool = TOOLS.find(t => t.key === toolKey) || TOOLS[0];
+  const subs = SUBTOOLS[tool.key] || [];
+
+  activeTool = tool.key;
+  // 有子功能时，激活第一个子功能
+  activeSubtool = subs.length ? (activeSubtool && subs.some(s => s.key === activeSubtool) ? activeSubtool : subs[0].key) : '';
 
   // 顶部标题
-  navEmoji.textContent = tool.emoji;
-  navLabel.textContent = tool.label;
+  updateNavTitle();
 
-  // 侧边菜单高亮
-  sidebarMenu.querySelectorAll('.sidebar-item').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tool === targetKey);
-  });
+  // 菜单重新渲染
+  renderMenu();
 
   // 内容区切换
   const record = ensureFrame(tool);
   frameCache.forEach((r, k) => {
-    r.view.classList.toggle('active', k === targetKey);
+    r.view.classList.toggle('active', k === tool.key);
   });
 
-  // 首次未加载完成 → 显示遮罩
   if (!record.loaded) {
     loadingMask.classList.add('show');
   } else {
     loadingMask.classList.remove('show');
   }
 
-  // 保存 & 更新 hash
-  try { localStorage.setItem(STORAGE_KEY, targetKey); } catch (e) {}
+  // 保存 & hash
+  try { localStorage.setItem(STORAGE_KEY, tool.key); } catch (e) {}
   if (!silent) {
-    try { history.replaceState(null, '', '#' + targetKey); } catch (e) {}
+    try { history.replaceState(null, '', '#' + tool.key); } catch (e) {}
   }
 
   closeSidebar();
 }
 
-/* ========== 初始化侧边菜单 ========== */
-TOOLS.forEach(tool => {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'sidebar-item';
-  btn.dataset.tool = tool.key;
-  btn.innerHTML =
-    '<span class="item-emoji">' + tool.emoji + '</span>' +
-    '<span class="item-label">' + tool.label + '</span>';
-  btn.addEventListener('click', () => selectTool(tool.key));
-  sidebarMenu.appendChild(btn);
+function selectSubtool(toolKey, subKey, opts) {
+  const silent = opts && opts.silent;
+  const tool = TOOLS.find(t => t.key === toolKey);
+  if (!tool) return;
+  const subs = SUBTOOLS[toolKey] || [];
+  if (!subs.some(s => s.key === subKey)) return;
+
+  const toolChanged = activeTool !== toolKey;
+  activeTool = toolKey;
+  activeSubtool = subKey;
+
+  updateNavTitle();
+  renderMenu();
+
+  const record = ensureFrame(tool);
+  frameCache.forEach((r, k) => {
+    r.view.classList.toggle('active', k === toolKey);
+  });
+
+  if (!record.loaded) {
+    loadingMask.classList.add('show');
+  } else {
+    loadingMask.classList.remove('show');
+  }
+
+  // 通知子页面切换
+  if (record.loaded && record.iframe.contentWindow) {
+    try {
+      record.iframe.contentWindow.postMessage({
+        type: 'navigate',
+        subtool: subKey
+      }, '*');
+    } catch (e) {}
+  }
+
+  try { localStorage.setItem(STORAGE_KEY, toolKey); } catch (e) {}
+  if (!silent) {
+    try { history.replaceState(null, '', '#' + toolKey); } catch (e) {}
+  }
+
+  closeSidebar();
+}
+
+function updateNavTitle() {
+  const tool = TOOLS.find(t => t.key === activeTool);
+  if (!tool) return;
+
+  const iconKey = tool.iconBold;
+  const iconSvg = (ICONS.nav && ICONS.nav[iconKey]) || '';
+  navIcon.innerHTML = iconSvg;
+
+  const subs = SUBTOOLS[tool.key] || [];
+  const sub = subs.find(s => s.key === activeSubtool);
+  if (sub) {
+    navText.innerHTML = tool.label + '<span class="nav-title-sep"> · </span>' + sub.label;
+  } else {
+    navText.textContent = tool.label;
+  }
+}
+
+/* ============================================================
+ * 接收子页面消息
+ * ============================================================ */
+window.addEventListener('message', (e) => {
+  const data = e.data;
+  if (!data || typeof data !== 'object') return;
+
+  // 子页面加载后上报子功能清单
+  if (data.type === 'subtools' && data.toolKey && Array.isArray(data.list)) {
+    SUBTOOLS[data.toolKey] = data.list;
+    // 重新渲染菜单（保持当前激活状态）
+    renderMenu();
+    updateNavTitle();
+    // 如果是当前激活工具，切到上报的第一个子功能
+    if (data.toolKey === activeTool && data.list.length && !activeSubtool) {
+      selectSubtool(data.toolKey, data.list[0].key, { silent: true });
+    }
+  }
+
+  // 子页面内部切换了子功能，同步给父页面
+  if (data.type === 'active-subtool' && data.toolKey && data.subtoolKey) {
+    if (data.toolKey === activeTool && data.subtoolKey !== activeSubtool) {
+      activeSubtool = data.subtoolKey;
+      renderMenu();
+      updateNavTitle();
+    }
+  }
 });
 
-/* ========== 事件绑定 ========== */
-document.getElementById('btnMenu').addEventListener('click', openSidebar);
-document.getElementById('btnClose').addEventListener('click', closeSidebar);
+/* ============================================================
+ * 事件绑定
+ * ============================================================ */
+btnMenu.addEventListener('click', openSidebar);
+btnClose.addEventListener('click', closeSidebar);
 sidebarBackdrop.addEventListener('click', closeSidebar);
+btnTheme.addEventListener('click', toggleTheme);
+
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSidebar();
 });
 
-/* 点击背景遮罩以外的抽屉内部不关闭 —— 已由 backdrop 处理，无需额外代码 */
-
-/* ========== 启动：决定初始工具 ========== */
+/* ============================================================
+ * 初始化
+ * ============================================================ */
 (function init() {
-  let initialKey = DEFAULT_KEY;
+  // 顶部按钮图标
+  btnMenu.innerHTML = ICONS.app.hamburger;
+  btnClose.innerHTML = ICONS.app.close;
 
-  // 优先 hash
+  // 恢复主题
+  let savedTheme = 'light';
+  try { savedTheme = localStorage.getItem(THEME_KEY) || 'light'; } catch (e) {}
+  applyTheme(savedTheme);
+
+  // 决定初始工具
+  let initialKey = DEFAULT_TOOL;
   const hashKey = (location.hash || '').replace(/^#/, '');
   if (hashKey && TOOLS.some(t => t.key === hashKey)) {
     initialKey = hashKey;
   } else {
-    // 其次 localStorage
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved && TOOLS.some(t => t.key === saved)) initialKey = saved;
@@ -418,10 +787,10 @@ document.addEventListener('keydown', e => {
   selectTool(initialKey, { silent: true });
 })();
 
-/* 监听浏览器前进/后退的 hash 变化 */
+/* hash 变化时同步 */
 window.addEventListener('hashchange', () => {
   const key = (location.hash || '').replace(/^#/, '');
-  if (key && TOOLS.some(t => t.key === key)) {
+  if (key && TOOLS.some(t => t.key === key) && key !== activeTool) {
     selectTool(key, { silent: true });
   }
 });
