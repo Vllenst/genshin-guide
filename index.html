@@ -19,9 +19,6 @@ body {
   letter-spacing: -0.2px;
 }
 
-/* ============================================================
- * 顶部栏
- * ============================================================ */
 .app-navbar {
   flex: none;
   height: 52px;
@@ -44,7 +41,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background .15s, transform .12s, border-color .15s;
+  transition: transform .12s;
   padding: 0;
   flex-shrink: 0;
 }
@@ -76,9 +73,6 @@ body {
   margin: 0 1px;
 }
 
-/* ============================================================
- * 侧边抽屉
- * ============================================================ */
 .sidebar-backdrop {
   position: fixed; inset: 0;
   background: var(--mask);
@@ -140,12 +134,12 @@ body {
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: background .15s, color .15s, border-color .15s;
+  transition: color .15s, border-color .15s;
   position: relative;
   margin-top: 4px;
 }
 .menu-main:first-child { margin-top: 0; }
-.menu-main:hover { background: var(--bg-hover); color: var(--text-primary); }
+.menu-main:hover { color: var(--text-primary); }
 .menu-main.active {
   color: var(--text-primary);
   font-weight: 600;
@@ -214,10 +208,10 @@ body {
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: background .15s, color .15s;
+  transition: color .15s;
   position: relative;
 }
-.menu-sub-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.menu-sub-item:hover { color: var(--text-primary); }
 .menu-sub-item.active {
   color: var(--accent);
   font-weight: 600;
@@ -238,9 +232,6 @@ body {
   transform: translateY(-50%) scale(1.35);
 }
 
-/* ============================================================
- * 内容区
- * ============================================================ */
 .frame-container {
   flex: 1;
   position: relative;
@@ -317,9 +308,6 @@ body {
 <script>
 'use strict';
 
-/* ============================================================
- * 工具清单
- * ============================================================ */
 const TOOLS = [
   { key: 'character',   label: '角色一图流', src: 'tools/character.html',   icon: 'character',   iconBold: 'characterBold' },
   { key: 'image-tools', label: '图片处理',   src: 'tools/image-tools.html', icon: 'imageTools',  iconBold: 'imageToolsBold' },
@@ -355,9 +343,6 @@ const DEFAULT_TOOL = 'character';
 const STORAGE_KEY = 'gtt_active_tool';
 const THEME_KEY = 'gtt_theme';
 
-/* ============================================================
- * DOM
- * ============================================================ */
 const frameContainer = document.getElementById('frameContainer');
 const sidebarDrawer  = document.getElementById('sidebarDrawer');
 const sidebarBackdrop= document.getElementById('sidebarBackdrop');
@@ -371,14 +356,29 @@ const btnTheme       = document.getElementById('btnTheme');
 
 const frameCache = new Map();
 
-/* ============================================================
- * 主题
- * ============================================================ */
 let currentTheme = 'light';
 
 function applyTheme(theme) {
   currentTheme = theme === 'dark' ? 'dark' : 'light';
+
+  document.documentElement.classList.add('theme-switching');
   document.documentElement.setAttribute('data-theme', currentTheme);
+
+  frameCache.forEach(record => {
+    if (!record.loaded) return;
+    try {
+      var doc = record.iframe.contentDocument;
+      if (doc && doc.documentElement) {
+        doc.documentElement.classList.add('theme-switching');
+        doc.documentElement.setAttribute('data-theme', currentTheme);
+      }
+    } catch (e) {}
+    try {
+      if (record.iframe.contentWindow) {
+        record.iframe.contentWindow.postMessage({ type: 'theme', theme: currentTheme }, '*');
+      }
+    } catch (e) {}
+  });
 
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', currentTheme === 'dark' ? '#121212' : '#F2EFEA');
@@ -387,30 +387,24 @@ function applyTheme(theme) {
 
   try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
 
-  frameCache.forEach(record => {
-    if (!record.loaded) return;
-    /* 直接操控 iframe DOM：同源，同步执行，零延迟 */
-    try {
-      if (record.iframe.contentDocument && record.iframe.contentDocument.documentElement) {
-        record.iframe.contentDocument.documentElement.setAttribute('data-theme', currentTheme);
-      }
-    } catch (e) {}
-    /* 同时发 postMessage（兼容子页面内部逻辑） */
-    try {
-      if (record.iframe.contentWindow) {
-        record.iframe.contentWindow.postMessage({ type: 'theme', theme: currentTheme }, '*');
-      }
-    } catch (e) {}
-  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.documentElement.classList.remove('theme-switching');
+    frameCache.forEach(record => {
+      if (!record.loaded) return;
+      try {
+        var doc = record.iframe.contentDocument;
+        if (doc && doc.documentElement) {
+          doc.documentElement.classList.remove('theme-switching');
+        }
+      } catch (e) {}
+    });
+  }));
 }
 
 function toggleTheme() {
   applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
 }
 
-/* ============================================================
- * 侧边抽屉
- * ============================================================ */
 function openSidebar() {
   sidebarDrawer.classList.add('open');
   sidebarBackdrop.classList.add('active');
@@ -420,9 +414,6 @@ function closeSidebar() {
   sidebarBackdrop.classList.remove('active');
 }
 
-/* ============================================================
- * 渲染菜单
- * ============================================================ */
 function renderMenu() {
   sidebarMenu.innerHTML = '';
 
@@ -488,9 +479,6 @@ function renderMenu() {
   });
 }
 
-/* ============================================================
- * iframe 懒加载
- * ============================================================ */
 function ensureFrame(tool) {
   if (frameCache.has(tool.key)) return frameCache.get(tool.key);
 
@@ -510,13 +498,12 @@ function ensureFrame(tool) {
     if (view.classList.contains('active')) {
       loadingMask.classList.remove('show');
     }
-    /* 立即同步主题（同步操作，零延迟） */
     try {
-      if (iframe.contentDocument && iframe.contentDocument.documentElement) {
-        iframe.contentDocument.documentElement.setAttribute('data-theme', currentTheme);
+      var doc = iframe.contentDocument;
+      if (doc && doc.documentElement) {
+        doc.documentElement.setAttribute('data-theme', currentTheme);
       }
     } catch (e) {}
-    /* 同时发 postMessage（兼容子页面内部逻辑） */
     try {
       if (iframe.contentWindow) {
         iframe.contentWindow.postMessage({ type: 'theme', theme: currentTheme }, '*');
@@ -530,9 +517,6 @@ function ensureFrame(tool) {
   return record;
 }
 
-/* ============================================================
- * 切换工具 / 子功能
- * ============================================================ */
 let activeTool = DEFAULT_TOOL;
 let activeSubtool = '';
 
@@ -624,9 +608,6 @@ function updateNavTitle() {
   }
 }
 
-/* ============================================================
- * 接收子页面消息
- * ============================================================ */
 window.addEventListener('message', (e) => {
   const data = e.data;
   if (!data || typeof data !== 'object') return;
@@ -649,9 +630,6 @@ window.addEventListener('message', (e) => {
   }
 });
 
-/* ============================================================
- * 事件绑定
- * ============================================================ */
 btnMenu.addEventListener('click', openSidebar);
 btnClose.addEventListener('click', closeSidebar);
 sidebarBackdrop.addEventListener('click', closeSidebar);
@@ -661,9 +639,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSidebar();
 });
 
-/* ============================================================
- * 初始化
- * ============================================================ */
 (function init() {
   btnMenu.innerHTML = ICONS.app.hamburger;
   btnClose.innerHTML = ICONS.app.close;
