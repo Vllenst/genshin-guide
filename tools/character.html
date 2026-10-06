@@ -2024,11 +2024,11 @@ async function selectFont(index) {
 }
 
 /* =========================================================================
- * 【JS 模块 10.4】角色编号 txt 读取
+ * 【JS 模块 10.4】角色编号 txt 读取（路径已改为 data/）
  * ========================================================================= */
 async function loadCharOrderTxt() {
   try {
-    const res = await fetch('../icons/characters.txt?t=' + Date.now());
+    const res = await fetch('../data/characters.txt?t=' + Date.now());
     if (!res.ok) { console.warn('characters.txt HTTP ' + res.status); return; }
     const text = await res.text();
     CHAR_NAME_TO_ORDER = {};
@@ -2600,4 +2600,4 @@ window.addEventListener('message', function (e) {
 });
 </script>
 </body>
-</html>
+  </html>
