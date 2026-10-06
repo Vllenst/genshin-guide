@@ -38,7 +38,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
 .entry-key { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-sunken); color: var(--text-primary); font-family: inherit; font-size: 12.5px; outline: none; }
 .entry-key:focus { border-color: var(--accent); background: var(--bg-surface); }
 .entry-mid { display: flex; align-items: center; gap: 6px; }
-.entry-name { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-sunken); color: var(--text-primary); font-family: inherit; font-size: 12.5px; outline: none; }
+.entry-name { flex: 0 0 auto; width: 90px; min-width: 0; margin-right: auto; height: 34px; padding: 0 10px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-sunken); color: var(--text-primary); font-family: inherit; font-size: 12.5px; outline: none; }
 .entry-name:focus { border-color: var(--accent); background: var(--bg-surface); }
 .entry-name.fetching { background: linear-gradient(90deg, var(--bg-sunken) 25%, var(--bg-hover) 50%, var(--bg-sunken) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -47,7 +47,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
 .mode-btn.mode-id { background: rgba(10,132,255,.12); color: #0A84FF; border-color: rgba(10,132,255,.35); }
 .mode-btn.mode-url { background: rgba(139,115,85,.12); color: var(--accent); border-color: var(--accent); }
 .mode-btn.mode-local { background: rgba(48,209,88,.12); color: #2A8A3E; border-color: rgba(48,209,88,.35); }
-.entry-del { height: 34px; padding: 0 10px; border: 1px solid rgba(220,76,62,.3); background: var(--danger-bg); color: var(--danger); border-radius: 8px; font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.entry-del { width: 34px; height: 34px; padding: 0; border: 1px solid rgba(220,76,62,.3); background: var(--danger-bg); color: var(--danger); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .entry-del svg { width: 14px; height: 14px; display: block; }
 .empty-tip { padding: 50px 20px; text-align: center; color: var(--text-tertiary); font-size: 13px; line-height: 1.7; }
 .empty-tip .big-icon { font-size: 36px; opacity: 0.4; margin-bottom: 8px; display: block; }
@@ -96,7 +96,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
         <span class="btn-icon"></span>从仓库载入
       </button>
       <button type="button" class="btn" id="btnExport">
-        <span class="btn-icon"></span>导出 icon-dict.js
+        <span class="btn-icon"></span>导出
       </button>
       <button type="button" class="btn danger" id="btnClear">
         <span class="btn-icon"></span>清空分类
@@ -204,9 +204,13 @@ body { padding: 0 0 60px; min-height: 100vh; }
 
   async function lookupAmberName(type, id) {
     if (!id) return "";
+    var normalized = String(id).toLowerCase()
+      .replace(/^ui_avataricon_/i, "")
+      .replace(/^ui_equipicon_/i, "")
+      .replace(/^ui_relicicon_/i, "");
     try {
       var map = await loadAmberData(type);
-      return map[id.toLowerCase()] || "";
+      return map[normalized] || map[String(id).toLowerCase()] || "";
     } catch (e) {
       return "";
     }
@@ -360,7 +364,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
 
       var btnDel = document.createElement("button");
       btnDel.type = "button"; btnDel.className = "entry-del";
-      btnDel.innerHTML = ICONS.ui.trash + "<span>删</span>";
+      btnDel.innerHTML = ICONS.ui.trash;
       btnDel.addEventListener("click", function () {
         var idx = data[currentTab].indexOf(row);
         if (idx >= 0) data[currentTab].splice(idx, 1);
@@ -395,7 +399,8 @@ body { padding: 0 0 60px; min-height: 100vh; }
     var newRows = [];
     urls.forEach(function (url) {
       maxOrder++;
-      var id = ICON_LIB.extractId(currentTab, url);
+      var fileName = url.split("/").pop().split("?")[0];
+      var id = fileName.replace(/\.[^.]+$/, "");
       var row = { order: maxOrder, key: url, name: "", star: 5 };
       list.push(row);
       newRows.push({ row: row, id: id });
