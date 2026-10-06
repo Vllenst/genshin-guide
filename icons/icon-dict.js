@@ -8,19 +8,15 @@ window.ICON_DICT = {
   /* ============ 角色 ============ */
   characters: {
     "UI_AvatarIcon_Traveler.webp": { name: "旅行者", star: 5, order: 1, local: true },
-    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_Escoffier.webp": { name: "爱可菲", star: 5, order: 98 },
-    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_SkirkNew.webp": { name: "丝柯克", star: 5, order: 100 },
-    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_Valeriy.webp": { name: "瓦列里", star: 4, order: 121 },
-    "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_Mitya.webp": { name: "米提亚", star: 5, order: 122 }
+    "Escoffier": { name: "爱可菲", star: 5, order: 98 },
+    "SkirkNew": { name: "丝柯克", star: 5, order: 100 },
+    "Valeriy": { name: "瓦列里", star: 4, order: 121 },
+    "Mitya": { name: "米提亚", star: 5, order: 122 }
   },
 
   /* ============ 圣遗物 ============ */
-  artifacts: {
-    // 暂无条目
-  },
+  artifacts: {},
 
   /* ============ 武器 ============ */
-  weapons: {
-    // 暂无条目
-  }
+  weapons: {}
 };
