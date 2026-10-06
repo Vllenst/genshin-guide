@@ -40,6 +40,8 @@ body { padding: 0 0 60px; min-height: 100vh; }
 .entry-mid { display: flex; align-items: center; gap: 6px; }
 .entry-name { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-sunken); color: var(--text-primary); font-family: inherit; font-size: 12.5px; outline: none; }
 .entry-name:focus { border-color: var(--accent); background: var(--bg-surface); }
+.entry-name.fetching { background: linear-gradient(90deg, var(--bg-sunken) 25%, var(--bg-hover) 50%, var(--bg-sunken) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .star-select { height: 34px; padding: 0 8px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-sunken); color: var(--text-primary); font-family: inherit; font-size: 12.5px; outline: none; cursor: pointer; flex-shrink: 0; }
 .mode-btn { height: 34px; padding: 0 10px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-sunken); color: var(--text-secondary); font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
 .mode-btn.mode-id { background: rgba(10,132,255,.12); color: #0A84FF; border-color: rgba(10,132,255,.35); }
@@ -53,7 +55,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
 .modal-backdrop.show { display: flex; }
 .modal { background: var(--bg-base); border-radius: 16px; width: 100%; max-width: 480px; padding: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 80vh; }
 .modal-title { font-size: 15px; font-weight: 600; }
-.modal textarea { width: 100%; height: 200px; padding: 10px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--bg-sunken); color: var(--text-primary); font-family: inherit; font-size: 12px; resize: vertical; outline: none; line-height: 1.6; }
+.modal textarea { width: 100%; height: 180px; padding: 10px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--bg-sunken); color: var(--text-primary); font-family: inherit; font-size: 12px; resize: vertical; outline: none; line-height: 1.6; }
 .modal textarea:focus { border-color: var(--accent); background: var(--bg-surface); }
 .modal-hint { font-size: 11.5px; color: var(--text-tertiary); line-height: 1.6; }
 .modal-actions { display: flex; gap: 8px; }
@@ -113,8 +115,8 @@ body { padding: 0 0 60px; min-height: 100vh; }
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modal-title">粘贴图标链接</div>
-    <div class="modal-hint">每行一个完整 URL，程序自动识别为 URL 模式。</div>
-    <textarea id="pasteArea" placeholder="https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_Escoffier.webp"></textarea>
+    <div class="modal-hint">每行一个完整 URL。将自动查询 Amber 数据库填入中文名。</div>
+    <textarea id="pasteArea" placeholder="https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_SkirkNew.webp"></textarea>
     <div class="modal-actions">
       <button type="button" class="btn" id="modalCancel">取消</button>
       <button type="button" class="btn primary" id="modalConfirm">解析并添加</button>
@@ -130,7 +132,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "icon_dict_editor_v1";
+  var STORAGE_KEY = "icon_dict_editor_v2";
   var THEME_KEY = "gtt_theme";
 
   var DEFAULT_CONFIG = {
@@ -144,11 +146,65 @@ body { padding: 0 0 60px; min-height: 100vh; }
   var currentTab = "characters";
   var tempThumbs = {};
 
-  var NAME_HINTS = {
-    characters: { Vesna: "薇斯娜", Hutao: "胡桃", Escoffier: "爱可菲", SkirkNew: "丝柯克", Ganyu: "甘雨", Zhongli: "钟离", Furina: "芙宁娜", Nahida: "纳西妲", Shougun: "雷电将军", Xiangling: "香菱", Xingqiu: "行秋", Bennett: "班尼特", Fischl: "菲谢尔" },
-    artifacts: { "15001_4": "炽烈的炎之魔女", "15003_4": "昔日宗室之仪", "15005_4": "角斗士的终幕礼", "15014_4": "冰风迷途的勇士", "15016_4": "沉沦之心", "15020_4": "绝缘之旗印", "15025_4": "深林的记忆" },
-    weapons: { Pole_Homa: "护摩之杖", Pole_Narukami: "薙草之稻光", Bow_Amos: "阿莫斯之弓", Sword_Favonius: "西风剑" }
+  /* ============ Project Amber 数据 ============ */
+  var AMBER_ENDPOINTS = {
+    characters: "https://gi.yatta.moe/api/v2/CHS/avatar",
+    weapons:    "https://gi.yatta.moe/api/v2/CHS/weapon",
+    artifacts:  "https://gi.yatta.moe/api/v2/CHS/reliquary"
   };
+  var amberCache = { characters: null, weapons: null, artifacts: null };
+  var amberLoading = {};
+
+  /* Amber icon 前缀 → 剥离后得到英文 ID */
+  function stripAmberPrefix(icon) {
+    if (!icon) return "";
+    return String(icon)
+      .replace(/^UI_AvatarIcon_/i, "")
+      .replace(/^UI_EquipIcon_/i, "")
+      .replace(/^UI_RelicIcon_/i, "")
+      .toLowerCase();
+  }
+
+  async function loadAmberData(type) {
+    if (amberCache[type]) return amberCache[type];
+    if (amberLoading[type]) return amberLoading[type];
+
+    var promise = (async function () {
+      var url = AMBER_ENDPOINTS[type];
+      var res = await fetch(url);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var json = await res.json();
+      var items = (json && json.data && json.data.items) || json.items || {};
+      var map = {};
+      Object.keys(items).forEach(function (k) {
+        var item = items[k] || {};
+        var name = item.name || "";
+        if (!name) return;
+        /* 从 icon 字段提取英文 ID */
+        var icon = item.icon || "";
+        var id = stripAmberPrefix(icon);
+        if (id) map[id] = name;
+        /* 也尝试用数字 ID 作为备选键 */
+        if (item.id != null) map[String(item.id)] = name;
+      });
+      amberCache[type] = map;
+      return map;
+    })();
+
+    amberLoading[type] = promise;
+    try { await promise; } finally { amberLoading[type] = null; }
+    return promise;
+  }
+
+  async function lookupAmberName(type, id) {
+    if (!id) return "";
+    try {
+      var map = await loadAmberData(type);
+      return map[id.toLowerCase()] || "";
+    } catch (e) {
+      return "";
+    }
+  }
 
   var entriesEl = document.getElementById("entries");
   var emptyTip = document.getElementById("emptyTip");
@@ -262,6 +318,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
       var inpName = document.createElement("input");
       inpName.type = "text"; inpName.className = "entry-name";
       inpName.value = row.name || ""; inpName.placeholder = "中文名";
+      if (row._fetching) { inpName.classList.add("fetching"); inpName.placeholder = "查询中…"; }
       inpName.addEventListener("input", function () { row.name = inpName.value; saveLocal(); });
       mid.appendChild(inpName);
 
@@ -291,7 +348,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
         else if (next === "local") row.key = "";
         saveLocal();
         render();
-        setStatus("切换到「" + (next === "id" ? "ID" : next === "url" ? "URL" : "本地") + "」模式，请填写对应内容", "ok");
+        setStatus("切换到「" + (next === "id" ? "ID" : next === "url" ? "URL" : "本地") + "」模式", "ok");
       });
       mid.appendChild(modeBtn);
 
@@ -311,25 +368,65 @@ body { padding: 0 0 60px; min-height: 100vh; }
     });
   }
 
-  function parsePastedUrls(text) {
+  /* ============ 粘贴 URL + Amber 自动填名 ============ */
+  async function parsePastedUrls(text) {
     var lines = String(text || "").split(/\r?\n/);
+    var urls = lines.map(function (l) { return l.trim(); }).filter(function (l) { return /^https?:\/\//i.test(l); });
+    if (!urls.length) { setStatus("未识别到有效链接", "err"); return; }
+
+    /* 预加载 Amber 数据（一次请求） */
+    setStatus("正在加载 Amber 数据…");
+    var amberReady = false;
+    try {
+      await loadAmberData(currentTab);
+      amberReady = true;
+    } catch (e) {
+      amberReady = false;
+    }
+
     var list = data[currentTab];
     var maxOrder = list.reduce(function (m, r) { return Math.max(m, r.order || 0); }, 0);
-    var added = 0;
 
-    lines.forEach(function (line) {
-      var url = line.trim();
-      if (!url || !/^https?:\/\//i.test(url)) return;
+    /* 先添加所有条目 */
+    var newRows = [];
+    urls.forEach(function (url) {
       maxOrder++;
       var id = ICON_LIB.extractId(currentTab, url);
-      var hintName = (NAME_HINTS[currentTab] || {})[id] || "";
-      list.push({ order: maxOrder, key: url, name: hintName, star: 5 });
-      added++;
+      var row = { order: maxOrder, key: url, name: "", star: 5 };
+      list.push(row);
+      newRows.push({ row: row, id: id });
     });
 
-    if (added) { saveLocal(); render(); setStatus("已添加 " + added + " 条", "ok"); }
-    else setStatus("未识别到有效链接", "err");
+    saveLocal();
+    render();
+    setStatus("已添加 " + urls.length + " 条，正在查询中文名…");
+
+    /* 逐个查询 Amber */
+    for (var i = 0; i < newRows.length; i++) {
+      var item = newRows[i];
+      if (!amberReady) break;
+      item.row._fetching = true;
+      render();
+      var name = await lookupAmberName(currentTab, item.id);
+      item.row._fetching = false;
+      if (name) item.row.name = name;
+      saveLocal();
+      render();
+    }
+
+    /* 清理 _fetching 标记 */
+    list.forEach(function (r) { delete r._fetching; });
+
+    if (!amberReady) {
+      setStatus("Amber 数据加载失败，中文名请手动填写", "err");
+    } else {
+      var filled = newRows.filter(function (it) { return it.row.name; }).length;
+      setStatus("完成 · 自动填充 " + filled + " / " + newRows.length + " 条", "ok");
+    }
+    saveLocal();
+    render();
   }
+
   function openPasteModal() { pasteArea.value = ""; modalBackdrop.classList.add("show"); setTimeout(function () { pasteArea.focus(); }, 50); }
   function closePasteModal() { modalBackdrop.classList.remove("show"); }
 
@@ -466,7 +563,10 @@ body { padding: 0 0 60px; min-height: 100vh; }
   fileInput.addEventListener("change", function (e) { handleFiles(e.target.files); e.target.value = ""; });
   document.getElementById("btnPaste").addEventListener("click", openPasteModal);
   document.getElementById("modalCancel").addEventListener("click", closePasteModal);
-  document.getElementById("modalConfirm").addEventListener("click", function () { parsePastedUrls(pasteArea.value); closePasteModal(); });
+  document.getElementById("modalConfirm").addEventListener("click", function () {
+    closePasteModal();
+    parsePastedUrls(pasteArea.value);
+  });
   modalBackdrop.addEventListener("click", function (e) { if (e.target === modalBackdrop) closePasteModal(); });
   document.getElementById("btnClear").addEventListener("click", clearCurrent);
   document.getElementById("btnLoad").addEventListener("click", loadFromRepo);
