@@ -5,48 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2EFEA">
 <title>原神攻略工具集</title>
+<link rel="stylesheet" href="shared-theme.css">
 <style>
-/* ============================================================
- * 设计令牌 · 浅色
- * ============================================================ */
-:root {
-  --bg-base: #F2EFEA;
-  --bg-surface: #FFFFFF;
-  --bg-surface-2: #FAF8F5;
-  --bg-sunken: #EBE7E0;
-  --bg-hover: #F5F2ED;
-  --text-primary: #1F1D1A;
-  --text-secondary: #6B655C;
-  --text-tertiary: #9C958A;
-  --accent: #8B7355;
-  --accent-soft: rgba(139,115,85,.10);
-  --border-subtle: #EBE6DF;
-  --border-default: #DDD6CC;
-  --shadow-nav: rgba(31,29,26,.06);
-  --mask: rgba(31,29,26,.35);
-  --std-font: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-
-/* ============================================================
- * 设计令牌 · 深色
- * ============================================================ */
-[data-theme="dark"] {
-  --bg-base: #121212;
-  --bg-surface: #1E1C1A;
-  --bg-surface-2: #242220;
-  --bg-sunken: #0A0A0A;
-  --bg-hover: #2A2725;
-  --text-primary: #F0EBE3;
-  --text-secondary: #B8B0A6;
-  --text-tertiary: #8A8279;
-  --accent: #A47864;
-  --accent-soft: rgba(164,120,100,.16);
-  --border-subtle: #2A2725;
-  --border-default: #3D3835;
-  --shadow-nav: rgba(0,0,0,.35);
-  --mask: rgba(0,0,0,.55);
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; height: 100dvh; }
 html, body, button { font-family: var(--std-font); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -427,62 +387,27 @@ const frameCache = new Map(); // key -> { view, iframe, loaded }
 /* ============================================================
  * 主题
  * ============================================================ */
-const THEME_TOKENS = {
-  light: {
-    '--bg-base': '#F2EFEA',
-    '--bg-surface': '#FFFFFF',
-    '--bg-surface-2': '#FAF8F5',
-    '--bg-sunken': '#EBE7E0',
-    '--bg-hover': '#F5F2ED',
-    '--text-primary': '#1F1D1A',
-    '--text-secondary': '#6B655C',
-    '--text-tertiary': '#9C958A',
-    '--accent': '#8B7355',
-    '--accent-soft': 'rgba(139,115,85,.10)',
-    '--border-subtle': '#EBE6DF',
-    '--border-default': '#DDD6CC'
-  },
-  dark: {
-    '--bg-base': '#121212',
-    '--bg-surface': '#1E1C1A',
-    '--bg-surface-2': '#242220',
-    '--bg-sunken': '#0A0A0A',
-    '--bg-hover': '#2A2725',
-    '--text-primary': '#F0EBE3',
-    '--text-secondary': '#B8B0A6',
-    '--text-tertiary': '#8A8279',
-    '--accent': '#A47864',
-    '--accent-soft': 'rgba(164,120,100,.16)',
-    '--border-subtle': '#2A2725',
-    '--border-default': '#3D3835'
-  }
-};
-
 let currentTheme = 'light';
 
 function applyTheme(theme) {
   currentTheme = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', currentTheme);
 
-  // 主题色 meta
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', currentTheme === 'dark' ? '#121212' : '#F2EFEA');
 
   // 顶部按钮图标：浅色显示太阳，深色显示月亮
   btnTheme.innerHTML = currentTheme === 'dark' ? ICONS.app.moonBold : ICONS.app.sunBold;
 
-  // 持久化
   try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
 
   // 广播给所有已加载的 iframe
-  const tokens = THEME_TOKENS[currentTheme];
   frameCache.forEach(record => {
     if (record.loaded && record.iframe.contentWindow) {
       try {
         record.iframe.contentWindow.postMessage({
           type: 'theme',
-          theme: currentTheme,
-          tokens: tokens
+          theme: currentTheme
         }, '*');
       } catch (e) {}
     }
@@ -514,9 +439,8 @@ function renderMenu() {
   TOOLS.forEach(tool => {
     const subs = SUBTOOLS[tool.key] || [];
     const isActive = tool.key === activeTool;
-    const isExpanded = isActive; // 仅当前工具展开
+    const isExpanded = isActive;
 
-    // 主工具行
     const mainBtn = document.createElement('button');
     mainBtn.type = 'button';
     mainBtn.className = 'menu-main' + (isActive ? ' active' : '') + (isExpanded && subs.length ? ' expanded' : '');
@@ -532,9 +456,7 @@ function renderMenu() {
 
     mainBtn.addEventListener('click', () => {
       if (subs.length) {
-        // 有子功能：切换到该工具（默认第一个子功能），已激活则只切换展开状态
         if (tool.key === activeTool) {
-          // 展开/收起切换
           const subWrap = sidebarMenu.querySelector('.menu-sub[data-tool="' + tool.key + '"]');
           if (subWrap) {
             const willOpen = !subWrap.classList.contains('open');
@@ -545,14 +467,12 @@ function renderMenu() {
           selectSubtool(tool.key, subs[0].key);
         }
       } else {
-        // 无子功能：直接切换工具
         selectTool(tool.key);
       }
     });
 
     sidebarMenu.appendChild(mainBtn);
 
-    // 子功能列表
     if (subs.length) {
       const subWrap = document.createElement('div');
       subWrap.className = 'menu-sub' + (isExpanded ? ' open' : '');
@@ -604,8 +524,7 @@ function ensureFrame(tool) {
     try {
       iframe.contentWindow.postMessage({
         type: 'theme',
-        theme: currentTheme,
-        tokens: THEME_TOKENS[currentTheme]
+        theme: currentTheme
       }, '*');
     } catch (e) {}
   });
@@ -628,16 +547,11 @@ function selectTool(toolKey, opts) {
   const subs = SUBTOOLS[tool.key] || [];
 
   activeTool = tool.key;
-  // 有子功能时，激活第一个子功能
   activeSubtool = subs.length ? (activeSubtool && subs.some(s => s.key === activeSubtool) ? activeSubtool : subs[0].key) : '';
 
-  // 顶部标题
   updateNavTitle();
-
-  // 菜单重新渲染
   renderMenu();
 
-  // 内容区切换
   const record = ensureFrame(tool);
   frameCache.forEach((r, k) => {
     r.view.classList.toggle('active', k === tool.key);
@@ -649,7 +563,6 @@ function selectTool(toolKey, opts) {
     loadingMask.classList.remove('show');
   }
 
-  // 保存 & hash
   try { localStorage.setItem(STORAGE_KEY, tool.key); } catch (e) {}
   if (!silent) {
     try { history.replaceState(null, '', '#' + tool.key); } catch (e) {}
@@ -665,7 +578,6 @@ function selectSubtool(toolKey, subKey, opts) {
   const subs = SUBTOOLS[toolKey] || [];
   if (!subs.some(s => s.key === subKey)) return;
 
-  const toolChanged = activeTool !== toolKey;
   activeTool = toolKey;
   activeSubtool = subKey;
 
@@ -725,19 +637,15 @@ window.addEventListener('message', (e) => {
   const data = e.data;
   if (!data || typeof data !== 'object') return;
 
-  // 子页面加载后上报子功能清单
   if (data.type === 'subtools' && data.toolKey && Array.isArray(data.list)) {
     SUBTOOLS[data.toolKey] = data.list;
-    // 重新渲染菜单（保持当前激活状态）
     renderMenu();
     updateNavTitle();
-    // 如果是当前激活工具，切到上报的第一个子功能
     if (data.toolKey === activeTool && data.list.length && !activeSubtool) {
       selectSubtool(data.toolKey, data.list[0].key, { silent: true });
     }
   }
 
-  // 子页面内部切换了子功能，同步给父页面
   if (data.type === 'active-subtool' && data.toolKey && data.subtoolKey) {
     if (data.toolKey === activeTool && data.subtoolKey !== activeSubtool) {
       activeSubtool = data.subtoolKey;
@@ -763,16 +671,13 @@ document.addEventListener('keydown', e => {
  * 初始化
  * ============================================================ */
 (function init() {
-  // 顶部按钮图标
   btnMenu.innerHTML = ICONS.app.hamburger;
   btnClose.innerHTML = ICONS.app.close;
 
-  // 恢复主题
   let savedTheme = 'light';
   try { savedTheme = localStorage.getItem(THEME_KEY) || 'light'; } catch (e) {}
   applyTheme(savedTheme);
 
-  // 决定初始工具
   let initialKey = DEFAULT_TOOL;
   const hashKey = (location.hash || '').replace(/^#/, '');
   if (hashKey && TOOLS.some(t => t.key === hashKey)) {
@@ -787,7 +692,6 @@ document.addEventListener('keydown', e => {
   selectTool(initialKey, { silent: true });
 })();
 
-/* hash 变化时同步 */
 window.addEventListener('hashchange', () => {
   const key = (location.hash || '').replace(/^#/, '');
   if (key && TOOLS.some(t => t.key === key) && key !== activeTool) {
