@@ -11,7 +11,6 @@
 html, body { font-family: var(--std-font); -webkit-font-smoothing: antialiased; background: var(--bg-base); color: var(--text-primary); font-size: 13px; letter-spacing: -0.2px; }
 body { padding: 0 0 60px; min-height: 100vh; }
 
-/* ============ 页面 header ============ */
 .editor-header {
   position: sticky; top: 0; z-index: 50;
   height: 52px; padding: 0 12px;
@@ -29,7 +28,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
 }
 .theme-btn svg { width: 18px; height: 18px; display: block; }
 
-/* ============ 吸顶区（Tabs + 工具栏） ============ */
 .sticky-head {
   position: sticky; top: 52px; z-index: 40;
   background: var(--bg-base);
@@ -61,7 +59,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
 .btn-icon { width: 16px; height: 16px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
 .btn-icon svg { width: 100%; height: 100%; display: block; }
 
-/* ============ 条目列表 ============ */
 .main { max-width: 760px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .entries { display: flex; flex-direction: column; gap: 8px; }
 .entry-card {
@@ -100,7 +97,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
 .empty-tip { padding: 50px 20px; text-align: center; color: var(--text-tertiary); font-size: 13px; line-height: 1.7; }
 .empty-tip .big-icon { font-size: 36px; opacity: 0.4; margin-bottom: 8px; display: block; }
 
-/* 弹窗 */
 .modal-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 20px; }
 .modal-backdrop.show { display: flex; }
 .modal { background: var(--bg-base); border-radius: 16px; width: 100%; max-width: 480px; padding: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 80vh; }
@@ -187,7 +183,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
   var currentTab = "characters";
   var tempThumbs = {};
 
-  /* Amber 数据 */
   var AMBER_ENDPOINTS = {
     characters: "https://gi.yatta.moe/api/v2/CHS/avatar",
     weapons:    "https://gi.yatta.moe/api/v2/CHS/weapon",
@@ -196,7 +191,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
   var amberCache = { characters: null, weapons: null, artifacts: null };
   var amberLoading = {};
 
-  /* 角色编号表（从 icons/characters.txt 读取） */
   var CHAR_ORDER_TO_NAME = {};
   var CHAR_NAME_TO_ORDER = {};
 
@@ -253,14 +247,10 @@ body { padding: 0 0 60px; min-height: 100vh; }
     }
   }
 
-  /* ============ 读取角色编号 txt ============ */
   async function loadCharOrderTxt() {
     try {
       var res = await fetch("./icons/characters.txt?t=" + Date.now());
-      if (!res.ok) {
-        console.warn("characters.txt HTTP " + res.status);
-        return;
-      }
+      if (!res.ok) { console.warn("characters.txt HTTP " + res.status); return; }
       var text = await res.text();
       CHAR_ORDER_TO_NAME = {};
       CHAR_NAME_TO_ORDER = {};
@@ -281,7 +271,33 @@ body { padding: 0 0 60px; min-height: 100vh; }
     }
   }
 
-  /* ============ DOM ============ */
+  /* ============ 查找辅助：字典优先，其次 txt ============ */
+  function findOrderByName(name, excludeRow) {
+    if (!name) return 0;
+    /* 1. 已在编辑器数据里的角色（字典） */
+    var list = data.characters || [];
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      if (r !== excludeRow && r.name === name && r.order) return r.order;
+    }
+    /* 2. txt 对照表 */
+    if (CHAR_NAME_TO_ORDER[name]) return CHAR_NAME_TO_ORDER[name];
+    return 0;
+  }
+
+  function findNameByOrder(order, excludeRow) {
+    if (!order) return "";
+    /* 1. 已在编辑器数据里的角色（字典） */
+    var list = data.characters || [];
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      if (r !== excludeRow && r.order === order && r.name) return r.name;
+    }
+    /* 2. txt 对照表 */
+    if (CHAR_ORDER_TO_NAME[order]) return CHAR_ORDER_TO_NAME[order];
+    return "";
+  }
+
   var entriesEl = document.getElementById("entries");
   var emptyTip = document.getElementById("emptyTip");
   var statusBar = document.getElementById("status");
@@ -324,13 +340,11 @@ body { padding: 0 0 60px; min-height: 100vh; }
     return cfg.prefix + key + (cfg.ext || "");
   }
 
-  /* ============ 短 ID 提取（三种类型通用） ============ */
   function extractShortId(fileName) {
     var fullId = String(fileName || "").replace(/\.[^.]+$/, "");
     return fullId.replace(/^UI_(?:AvatarIcon|EquipIcon|RelicIcon)_/i, "");
   }
 
-  /* 圣遗物：从短 ID 提取 5 位数字编号 */
   function extractRelicOrder(shortId) {
     var m = /^(\d{5})(?:_\d+)?$/.exec(String(shortId || ""));
     return m ? parseInt(m[1], 10) : 0;
@@ -355,7 +369,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
 
   function render() {
     var list = data[currentTab] || [];
-    /* 空序号排最后 */
     var sorted = list.slice().sort(function (a, b) {
       var ao = a.order || 99999;
       var bo = b.order || 99999;
@@ -370,21 +383,34 @@ body { padding: 0 0 60px; min-height: 100vh; }
       var card = document.createElement("div");
       card.className = "entry-card";
 
-      /* 第一行：序号 + 缩略图 + ID */
       var top = document.createElement("div");
       top.className = "entry-top";
 
+      /* ============ 序号输入框 ============ */
       var inpOrder = document.createElement("input");
       inpOrder.type = "number"; inpOrder.className = "entry-order";
       inpOrder.value = row.order || "";
       inpOrder.title = "序号";
       inpOrder.addEventListener("change", function () {
         var v = (inpOrder.value || "").trim();
-        row.order = v === "" ? 0 : (parseInt(v, 10) || 0);
-        /* 角色 Tab：填了序号自动补中文名（前提是中文名为空） */
-        if (currentTab === "characters" && !row.name && row.order > 0) {
-          var autoName = CHAR_ORDER_TO_NAME[row.order];
-          if (autoName) row.name = autoName;
+        var newOrder = v === "" ? 0 : (parseInt(v, 10) || 0);
+
+        if (currentTab === "characters") {
+          var curName = (row.name || "").trim();
+          if (curName) {
+            /* 名字还在 → 从 字典/txt 强制还原编号 */
+            var autoOrder = findOrderByName(curName, row);
+            row.order = autoOrder ? autoOrder : newOrder;
+          } else {
+            /* 名字为空 → 允许改编号，能查到就补名字 */
+            row.order = newOrder;
+            if (newOrder > 0) {
+              var autoName = findNameByOrder(newOrder, row);
+              if (autoName) row.name = autoName;
+            }
+          }
+        } else {
+          row.order = newOrder;
         }
         saveLocal(); render();
       });
@@ -416,7 +442,7 @@ body { padding: 0 0 60px; min-height: 100vh; }
       top.appendChild(inpKey);
       card.appendChild(top);
 
-      /* 第二行：中文名 + 星级 + 模式 + 删除 */
+      /* ============ 中文名输入框 ============ */
       var mid = document.createElement("div");
       mid.className = "entry-mid";
 
@@ -427,10 +453,17 @@ body { padding: 0 0 60px; min-height: 100vh; }
       inpName.addEventListener("blur", function () {
         var name = (inpName.value || "").trim();
         row.name = name;
-        /* 角色 Tab：填了中文名自动补序号 */
-        if (currentTab === "characters" && name) {
-          var autoOrder = CHAR_NAME_TO_ORDER[name];
-          if (autoOrder) row.order = autoOrder;
+
+        if (currentTab === "characters") {
+          if (name) {
+            /* 名字在 字典/txt 里 → 强制对齐编号 */
+            var autoOrder = findOrderByName(name, row);
+            if (autoOrder) row.order = autoOrder;
+            /* 名字不在 → 编号保持原样 */
+          } else {
+            /* 名字为空 → 编号清空 */
+            row.order = 0;
+          }
         }
         saveLocal(); render();
       });
@@ -482,7 +515,6 @@ body { padding: 0 0 60px; min-height: 100vh; }
     });
   }
 
-  /* ============ 粘贴 URL ============ */
   async function parsePastedUrls(text) {
     var lines = String(text || "").split(/\r?\n/);
     var urls = lines.map(function (l) { return l.trim(); }).filter(function (l) { return /^https?:\/\//i.test(l); });
@@ -498,11 +530,10 @@ body { padding: 0 0 60px; min-height: 100vh; }
     var newRows = [];
     urls.forEach(function (url) {
       maxOrder++;
-      var fileName = url.split("/").pop().split("?")[0];   // UI_AvatarIcon_SkirkNew.webp
-      var shortId = extractShortId(fileName);                // SkirkNew
+      var fileName = url.split("/").pop().split("?")[0];
+      var shortId = extractShortId(fileName);
       var row = { order: maxOrder, key: shortId, name: "", star: 5 };
 
-      /* 圣遗物：自动填 order（末尾 5 位数字） */
       if (currentTab === "artifacts") {
         var relicOrder = extractRelicOrder(shortId);
         if (relicOrder) row.order = relicOrder;
@@ -521,9 +552,9 @@ body { padding: 0 0 60px; min-height: 100vh; }
       var name = await lookupAmberName(currentTab, item.fullId);
       if (name) {
         item.row.name = name;
-        /* 角色 Tab：如果 txt 里有对应编号，覆盖 order */
-        if (currentTab === "characters" && CHAR_NAME_TO_ORDER[name]) {
-          item.row.order = CHAR_NAME_TO_ORDER[name];
+        if (currentTab === "characters") {
+          var autoOrder = findOrderByName(name, item.row);
+          if (autoOrder) item.row.order = autoOrder;
         }
       }
       saveLocal(); render();
