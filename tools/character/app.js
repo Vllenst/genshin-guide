@@ -11,7 +11,7 @@
  *   【JS 模块 6】    SVG 绘制辅助
  *   【JS 模块 7】    SVG 图层构建
  *   【JS 模块 8】    预览挂载 + 字段增量更新
- *   【JS 模块 8.5】  Tab Sheet 切换
+ *   【JS 模块 8.5】  横向 Tab 栏
  *   【JS 模块 9】    UI 编辑器渲染
  *   【JS 模块 10】   图片上传
  *   【JS 模块 10.3】 字体库
@@ -117,7 +117,6 @@ const TAB_DEFS = [
   { key: 'team', label: '配队区' }
 ];
 let currentTab = 'style';
-let tabSheetOpen = false;
 
 let CHAR_NAME_TO_ORDER = {};
 
@@ -929,33 +928,26 @@ function syncInputs() {
 }
 
 /* =========================================================================
- * 【JS 模块 8.5】Tab Sheet
+ * 【JS 模块 8.5】横向 Tab 栏
  * ========================================================================= */
-function renderTabSheetList() {
-  const el = document.getElementById('tabSheetList');
+function renderTabBar() {
+  const el = document.getElementById('tabBar');
   if (!el) return;
-  el.innerHTML = TAB_DEFS.map(t => `
-    <button type="button" class="tab-sheet-item ${t.key === currentTab ? 'active' : ''}" onclick="App.selectTab('${t.key}')">
-      <span>${t.label}</span>
-      <svg class="tab-sheet-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-    </button>`).join('');
+  el.innerHTML = TAB_DEFS.map(t =>
+    `<button type="button" class="tab-btn ${t.key === currentTab ? 'active' : ''}" data-tab="${t.key}" onclick="App.selectTab('${t.key}')">${t.label}</button>`
+  ).join('');
 }
-function openTabSheet() {
-  if (tabSheetOpen) return;
-  tabSheetOpen = true;
-  renderTabSheetList();
-  document.getElementById('tabSheetBackdrop').classList.add('show');
-  document.getElementById('tabSheet').classList.add('show');
-  const trigger = document.getElementById('tabTrigger');
-  if (trigger) trigger.setAttribute('aria-expanded', 'true');
-}
-function closeTabSheet() {
-  if (!tabSheetOpen) return;
-  tabSheetOpen = false;
-  document.getElementById('tabSheetBackdrop').classList.remove('show');
-  document.getElementById('tabSheet').classList.remove('show');
-  const trigger = document.getElementById('tabTrigger');
-  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+/* 把选中的 Tab 按钮滚到可视区中间（只动横向容器，不影响页面） */
+function scrollTabIntoView(btn) {
+  const bar = document.getElementById('tabBar');
+  if (!bar || !btn) return;
+  const barRect = bar.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  if (btnRect.left < barRect.left) {
+    bar.scrollLeft -= (barRect.left - btnRect.left) + 16;
+  } else if (btnRect.right > barRect.right) {
+    bar.scrollLeft += (btnRect.right - barRect.right) + 16;
+  }
 }
 function selectTab(tabId) {
   if (!TAB_DEFS.find(t => t.key === tabId)) return;
@@ -963,13 +955,14 @@ function selectTab(tabId) {
   document.querySelectorAll('.tabs-content .tab-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById(`tab-${tabId}`);
   if (panel) panel.classList.add('active');
-  const label = document.getElementById('tabTriggerLabel');
-  if (label) label.textContent = TAB_DEFS.find(t => t.key === tabId).label;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tabId);
+  });
   const tc = document.querySelector('.tabs-content');
   if (tc) tc.scrollTop = 0;
-  closeTabSheet();
+  const activeBtn = document.querySelector('.tab-btn.active');
+  scrollTabIntoView(activeBtn);
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && tabSheetOpen) closeTabSheet(); });
 
 /* =========================================================================
  * 【JS 模块 9】UI 编辑器
@@ -1889,7 +1882,7 @@ function setEmptyAltText(ti, ci, v) {
  * 【JS 模块 14】App 接口
  * ========================================================================= */
 const App = {
-  openTabSheet, closeTabSheet, selectTab,
+  selectTab,
   setField, setTheme, setPanelPrimaryKey, setPanelField,
   toggleCollapse, toggleConstellation, setConstellationDesc,
   addWeapon, removeWeapon, moveWeapon, setWeaponName,
@@ -1933,6 +1926,15 @@ function injectFloatIcons() {
   const loadSaveIcon = document.getElementById('btnLoadSaveIcon');
   if (loadSaveIcon && S.ui) loadSaveIcon.innerHTML = S.ui.import || '';
 }
+/* 点击预览区切换浮动按钮显隐（手机端用；桌面端有 :hover 兜底） */
+function bindPreviewTapToggle() {
+  const frame = document.getElementById('previewFrame');
+  const toolbar = document.getElementById('floatToolbar');
+  if (!frame || !toolbar) return;
+  frame.addEventListener('click', () => {
+    toolbar.classList.toggle('hidden');
+  });
+}
 async function init() {
   injectFloatIcons();
   tightenAllIconViewBoxes();
@@ -1944,8 +1946,10 @@ async function init() {
   initThumbnails();
   syncInputs();
   renderEditorsByKey();
+  renderTabBar();
   mountPreview();
   selectTab(currentTab);
+  bindPreviewTapToggle();
 }
 window.addEventListener('DOMContentLoaded', init);
 
