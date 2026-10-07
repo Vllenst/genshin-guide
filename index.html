@@ -16,7 +16,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2EFEA">
 <title>原神攻略工具集</title>
-<link rel="stylesheet" href="shared-theme.css">
+<link rel="stylesheet" href="shared/theme.css">
 <style>
 /* ---------- 全局重置 ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -336,13 +336,13 @@ html.theme-switching *::after {
 </main>
 
 <!-- 【HTML 模块 5】JS 引用 -->
-<script src="icons.js"></script>
+<script src="shared/ui-icons.js"></script>
 <script>
 /* =========================================================================
  * 主页逻辑
  * =========================================================================
- * 【JS 模块 1】常量：TOOLS 列表 / 二级菜单 / Storage Key
- * 【JS 模块 2】DOM 引用
+ * 【JS 模块 1】常量：TOOLS 列表 / Storage Key
+ * 【JS 模块 2】DOM 引用 + 运行时状态
  * 【JS 模块 3】主题切换
  * 【JS 模块 4】侧边栏开关
  * 【JS 模块 5】菜单渲染
@@ -351,46 +351,84 @@ html.theme-switching *::after {
  * 【JS 模块 8】导航标题同步
  * 【JS 模块 9】跨 iframe 通信
  * 【JS 模块 10】事件绑定
- * 【JS 模块 11】初始化 + hash 路由
+ * 【JS 模块 11】初始化
  * ========================================================================= */
 'use strict';
 
 /* 【JS 模块 1】常量 */
+/* 工具列表：src 必填；subtools 可选
+ *   - 无 subtools → 一级菜单，直接加载 src
+ *   - 有 subtools → 二级菜单展开；每个子工具若有自己的 src 走独立 iframe，
+ *     没有 src 则共用父工具 src（老式单 iframe + postMessage 切换）
+ */
 const TOOLS = [
-  { key: 'character',   label: '角色一图流', src: 'tools/character/index.html', icon: 'character',   iconBold: 'characterBold' },
-  { key: 'image-tools', label: '图片处理',   src: 'tools/image-tools.html',    icon: 'imageTools',  iconBold: 'imageToolsBold' },
-  { key: 'video-cover', label: '封面制作',   src: 'tools/video-cover.html',    icon: 'videoCover',  iconBold: 'videoCoverBold' },
-  { key: 'chart',       label: '图表',       src: 'tools/chart.html',          icon: 'chart',       iconBold: 'chartBold' },
-  { key: 'tier',        label: '角色梯队',   src: 'tools/tier.html',           icon: 'tier',        iconBold: 'tierBold' }
+  {
+    key: 'character',
+    label: '角色一图流',
+    icon: 'character',
+    iconBold: 'characterBold',
+    src: 'tools/character/index.html'
+  },
+  {
+    key: 'map-editor',
+    label: '图标字典编辑器',
+    icon: 'mapEditor',
+    iconBold: 'mapEditorBold',
+    src: 'tools/map-editor.html'
+  },
+  {
+    key: 'image-tools',
+    label: '图片处理',
+    icon: 'imageTools',
+    iconBold: 'imageToolsBold',
+    src: 'tools/image-tools.html',
+    subtools: [
+      { key: 'background',  label: '背景修改' },
+      { key: 'blend',       label: '双图羽化' },
+      { key: 'overlay',     label: '对位裁切' },
+      { key: 'collage',     label: '图层拼接' },
+      { key: 'weapon-icon', label: '武器图标' },
+      { key: 'weapon-card', label: '武器卡片' },
+      { key: 'achievement', label: '成就制作' }
+    ]
+  },
+  {
+    key: 'video-cover',
+    label: '封面制作',
+    icon: 'videoCover',
+    iconBold: 'videoCoverBold',
+    src: 'tools/video-cover.html',
+    subtools: [
+      { key: 'video',      label: '视频封面' },
+      { key: 'collection', label: '合集封面' }
+    ]
+  },
+  {
+    key: 'chart',
+    label: '图表',
+    icon: 'chart',
+    iconBold: 'chartBold',
+    src: 'tools/chart.html',
+    subtools: [
+      { key: 'radar', label: '雷达图' },
+      { key: 'bar',   label: '柱状图' }
+    ]
+  },
+  {
+    key: 'tier',
+    label: '角色梯队',
+    icon: 'tier',
+    iconBold: 'tierBold',
+    src: 'tools/tier.html'
+  }
 ];
-
-const SUBTOOLS = {
-  'character':   [],
-  'image-tools': [
-    { key: 'background',  label: '背景修改' },
-    { key: 'blend',       label: '双图羽化' },
-    { key: 'overlay',     label: '对位裁切' },
-    { key: 'collage',     label: '图层拼接' },
-    { key: 'weapon-icon', label: '武器图标' },
-    { key: 'weapon-card', label: '武器卡片' },
-    { key: 'achievement', label: '成就制作' }
-  ],
-  'video-cover': [
-    { key: 'video',      label: '视频封面' },
-    { key: 'collection', label: '合集封面' }
-  ],
-  'chart': [
-    { key: 'radar', label: '雷达图' },
-    { key: 'bar',   label: '柱状图' }
-  ],
-  'tier': []
-};
 
 const DEFAULT_TOOL = 'character';
 const STORAGE_KEY  = 'gtt_active_tool';
+const STORAGE_SUB  = 'gtt_active_subtool';
 const THEME_KEY    = 'gtt_theme';
 
-/* 【JS 模块 2】DOM 引用 */
+/* 【JS 模块 2】DOM 引用 + 运行时状态 */
 const frameContainer  = document.getElementById('frameContainer');
 const sidebarDrawer   = document.getElementById('sidebarDrawer');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -402,7 +440,18 @@ const btnMenu         = document.getElementById('btnMenu');
 const btnClose        = document.getElementById('btnClose');
 const btnTheme        = document.getElementById('btnTheme');
 
+/* iframe 缓存：key = cacheKey，value = { view, iframe, loaded, src } */
 const frameCache = new Map();
+/* cacheKey 生成：无子工具 → tool.key；有子工具且子工具有独立 src → tool.key+'::'+sub.key */
+function cacheKeyOf(tool, sub) {
+  if (sub && sub.src) return tool.key + '::' + sub.key;
+  return tool.key;
+}
+/* 该工具/子工具最终加载的 src */
+function srcOf(tool, sub) {
+  if (sub && sub.src) return sub.src;
+  return tool.src;
+}
 
 let currentTheme  = 'light';
 let activeTool    = DEFAULT_TOOL;
@@ -412,11 +461,9 @@ let activeSubtool = '';
 function applyTheme(theme) {
   currentTheme = theme === 'dark' ? 'dark' : 'light';
 
-  // 加 class 让所有过渡临时失效，避免切换主题时颜色"慢慢渐变"
   document.documentElement.classList.add('theme-switching');
   document.documentElement.setAttribute('data-theme', currentTheme);
 
-  // 同步到已加载的 iframe（DOM 直改 + postMessage 双保险）
   frameCache.forEach(record => {
     if (!record.loaded) return;
     try {
@@ -440,7 +487,6 @@ function applyTheme(theme) {
 
   try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
 
-  // 下一帧移除 class，恢复过渡
   requestAnimationFrame(() => requestAnimationFrame(() => {
     document.documentElement.classList.remove('theme-switching');
     frameCache.forEach(record => {
@@ -474,13 +520,13 @@ function renderMenu() {
   sidebarMenu.innerHTML = '';
 
   TOOLS.forEach(tool => {
-    const subs = SUBTOOLS[tool.key] || [];
+    const subs = tool.subtools || [];
     const isActive = tool.key === activeTool;
-    const isExpanded = isActive;
+    const isExpanded = isActive && subs.length > 0;
 
     const mainBtn = document.createElement('button');
     mainBtn.type = 'button';
-    mainBtn.className = 'menu-main' + (isActive ? ' active' : '') + (isExpanded && subs.length ? ' expanded' : '');
+    mainBtn.className = 'menu-main' + (isActive ? ' active' : '') + (isExpanded ? ' expanded' : '');
     mainBtn.dataset.tool = tool.key;
 
     const iconKey = isActive ? tool.iconBold : tool.icon;
@@ -536,19 +582,22 @@ function renderMenu() {
 }
 
 /* 【JS 模块 6】iframe 管理 */
-function ensureFrame(tool) {
-  if (frameCache.has(tool.key)) return frameCache.get(tool.key);
+function ensureFrame(tool, sub) {
+  const key = cacheKeyOf(tool, sub);
+  if (frameCache.has(key)) return frameCache.get(key);
+
+  const src = srcOf(tool, sub);
 
   const view = document.createElement('div');
   view.className = 'frame-view';
-  view.dataset.tool = tool.key;
+  view.dataset.cacheKey = key;
 
   const iframe = document.createElement('iframe');
-  iframe.title = tool.label;
+  iframe.title = sub ? (tool.label + ' · ' + sub.label) : tool.label;
   iframe.setAttribute('loading', 'lazy');
-  iframe.src = tool.src;
+  iframe.src = src;
 
-  const record = { view, iframe, loaded: false, tool: tool };
+  const record = { view, iframe, loaded: false, src };
 
   iframe.addEventListener('load', () => {
     record.loaded = true;
@@ -570,7 +619,7 @@ function ensureFrame(tool) {
 
   view.appendChild(iframe);
   frameContainer.appendChild(view);
-  frameCache.set(tool.key, record);
+  frameCache.set(key, record);
   return record;
 }
 
@@ -578,24 +627,33 @@ function ensureFrame(tool) {
 function selectTool(toolKey, opts) {
   const silent = opts && opts.silent;
   const tool = TOOLS.find(t => t.key === toolKey) || TOOLS[0];
-  const subs = SUBTOOLS[tool.key] || [];
+  const subs = tool.subtools || [];
+
+  if (subs.length) {
+    /* 有子工具：默认选第一个（或保留当前仍有效的子工具） */
+    const subKey = (activeSubtool && subs.some(s => s.key === activeSubtool))
+      ? activeSubtool
+      : subs[0].key;
+    return selectSubtool(tool.key, subKey, opts);
+  }
 
   activeTool = tool.key;
-  activeSubtool = subs.length
-    ? (activeSubtool && subs.some(s => s.key === activeSubtool) ? activeSubtool : subs[0].key)
-    : '';
+  activeSubtool = '';
 
   updateNavTitle();
   renderMenu();
 
   const record = ensureFrame(tool);
-  frameCache.forEach((r, k) => {
-    r.view.classList.toggle('active', k === tool.key);
+  frameCache.forEach(r => {
+    r.view.classList.toggle('active', r === record);
   });
 
   loadingMask.classList.toggle('show', !record.loaded);
 
-  try { localStorage.setItem(STORAGE_KEY, tool.key); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY, tool.key);
+    localStorage.removeItem(STORAGE_SUB);
+  } catch (e) {}
   if (!silent) {
     try { history.replaceState(null, '', '#' + tool.key); } catch (e) {}
   }
@@ -607,8 +665,9 @@ function selectSubtool(toolKey, subKey, opts) {
   const silent = opts && opts.silent;
   const tool = TOOLS.find(t => t.key === toolKey);
   if (!tool) return;
-  const subs = SUBTOOLS[toolKey] || [];
-  if (!subs.some(s => s.key === subKey)) return;
+  const subs = tool.subtools || [];
+  const sub = subs.find(s => s.key === subKey);
+  if (!sub) return;
 
   activeTool = toolKey;
   activeSubtool = subKey;
@@ -616,20 +675,24 @@ function selectSubtool(toolKey, subKey, opts) {
   updateNavTitle();
   renderMenu();
 
-  const record = ensureFrame(tool);
-  frameCache.forEach((r, k) => {
-    r.view.classList.toggle('active', k === toolKey);
+  const record = ensureFrame(tool, sub);
+  frameCache.forEach(r => {
+    r.view.classList.toggle('active', r === record);
   });
 
   loadingMask.classList.toggle('show', !record.loaded);
 
-  if (record.loaded && record.iframe.contentWindow) {
+  /* 兼容未拆的老式工具：子工具没有独立 src，靠 postMessage 让工具内部切换 */
+  if (!sub.src && record.loaded && record.iframe.contentWindow) {
     try {
       record.iframe.contentWindow.postMessage({ type: 'navigate', subtool: subKey }, '*');
     } catch (e) {}
   }
 
-  try { localStorage.setItem(STORAGE_KEY, toolKey); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY, toolKey);
+    localStorage.setItem(STORAGE_SUB, subKey);
+  } catch (e) {}
   if (!silent) {
     try { history.replaceState(null, '', '#' + toolKey); } catch (e) {}
   }
@@ -644,7 +707,7 @@ function updateNavTitle() {
 
   navIcon.innerHTML = (ICONS.nav && ICONS.nav[tool.iconBold]) || '';
 
-  const subs = SUBTOOLS[tool.key] || [];
+  const subs = tool.subtools || [];
   const sub = subs.find(s => s.key === activeSubtool);
   if (sub) {
     navText.innerHTML = tool.label + '<span class="nav-title-sep"> · </span>' + sub.label;
@@ -658,20 +721,13 @@ window.addEventListener('message', (e) => {
   const data = e.data;
   if (!data || typeof data !== 'object') return;
 
-  if (data.type === 'subtools' && data.toolKey && Array.isArray(data.list)) {
-    SUBTOOLS[data.toolKey] = data.list;
-    renderMenu();
-    updateNavTitle();
-    if (data.toolKey === activeTool && data.list.length && !activeSubtool) {
-      selectSubtool(data.toolKey, data.list[0].key, { silent: true });
-    }
-  }
-
+  /* 工具自报子工具切换（例如工具内部 Tab 切了） */
   if (data.type === 'active-subtool' && data.toolKey && data.subtoolKey) {
     if (data.toolKey === activeTool && data.subtoolKey !== activeSubtool) {
       activeSubtool = data.subtoolKey;
       renderMenu();
       updateNavTitle();
+      try { localStorage.setItem(STORAGE_SUB, data.subtoolKey); } catch (err) {}
     }
   }
 });
@@ -712,8 +768,19 @@ window.addEventListener('hashchange', () => {
       if (saved && TOOLS.some(t => t.key === saved)) initialKey = saved;
     } catch (e) {}
   }
+  try {
+    const savedSub = localStorage.getItem(STORAGE_SUB) || '';
+    if (savedSub) activeSubtool = savedSub;
+  } catch (e) {}
 
-  selectTool(initialKey, { silent: true });
+  const tool = TOOLS.find(t => t.key === initialKey) || TOOLS[0];
+  const subs = tool.subtools || [];
+  if (subs.length) {
+    const validSub = subs.some(s => s.key === activeSubtool) ? activeSubtool : subs[0].key;
+    selectSubtool(tool.key, validSub, { silent: true });
+  } else {
+    selectTool(tool.key, { silent: true });
+  }
 })();
 </script>
 </body>
