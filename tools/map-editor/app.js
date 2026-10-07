@@ -16,7 +16,7 @@
  *   【JS 模块 12】 清空当前分类
  *   【JS 模块 13】 从仓库载入 icon-dict.js
  *   【JS 模块 14】 导出 icon-dict.js
- *   【JS 模块 15】 主题切换
+ *   【JS 模块 15】 主题（由父页面控制，本页仅被动接收）
  *   【JS 模块 16】 图标注入
  *   【JS 模块 17】 事件绑定
  *   【JS 模块 18】 跨 iframe 通信
@@ -29,7 +29,6 @@
    * 【JS 模块 1】常量配置
    * ------------------------------------------------------------------- */
   var STORAGE_KEY = "icon_dict_editor_v3";
-  var THEME_KEY   = "gtt_theme";
 
   var DEFAULT_CONFIG = {
     characters: { prefix: "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_", ext: ".webp" },
@@ -53,7 +52,6 @@
   var emptyTip      = document.getElementById("emptyTip");
   var statusBar     = document.getElementById("status");
   var fileInput     = document.getElementById("fileInput");
-  var btnTheme      = document.getElementById("btnTheme");
   var modalBackdrop = document.getElementById("modalBackdrop");
   var pasteArea     = document.getElementById("pasteArea");
 
@@ -293,11 +291,9 @@
         if (currentTab === "characters") {
           var curName = (row.name || "").trim();
           if (curName) {
-            /* 名字还在 → 从 字典/txt 强制还原编号 */
             var autoOrder = findOrderByName(curName, row);
             row.order = autoOrder ? autoOrder : newOrder;
           } else {
-            /* 名字为空 → 允许改编号，能查到就补名字 */
             row.order = newOrder;
             if (newOrder > 0) {
               var autoName = findNameByOrder(newOrder, row);
@@ -584,16 +580,10 @@
   }
 
   /* ---------------------------------------------------------------------
-   * 【JS 模块 15】主题切换
+   * 【JS 模块 15】主题（由父页面控制，本页仅被动接收）
    * ------------------------------------------------------------------- */
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    btnTheme.innerHTML = theme === "dark" ? ICONS.app.moonBold : ICONS.app.sunBold;
-    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
-  }
-  function toggleTheme() {
-    var cur = document.documentElement.getAttribute("data-theme") || "light";
-    applyTheme(cur === "dark" ? "light" : "dark");
   }
 
   /* ---------------------------------------------------------------------
@@ -637,7 +627,6 @@
     document.getElementById("btnClear").addEventListener("click", clearCurrent);
     document.getElementById("btnLoad").addEventListener("click", loadFromRepo);
     document.getElementById("btnExport").addEventListener("click", exportJS);
-    btnTheme.addEventListener("click", toggleTheme);
   }
 
   /* ---------------------------------------------------------------------
@@ -654,9 +643,6 @@
    * ------------------------------------------------------------------- */
   (async function init() {
     injectIcons();
-    var savedTheme = "light";
-    try { savedTheme = localStorage.getItem(THEME_KEY) || "light"; } catch (e) {}
-    applyTheme(savedTheme);
     await loadCharOrderTxt();
     loadLocal();
     bindEvents();
