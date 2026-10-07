@@ -5,12 +5,11 @@
      =========================================================================
      HTML 模块导航：
        【HTML 模块 1】 head / 资源引用 / 样式
-       【HTML 模块 2】 顶部工具栏
-       【HTML 模块 3】 分类 Tab + 操作按钮
-       【HTML 模块 4】 条目列表容器
-       【HTML 模块 5】 粘贴 URL 弹窗
-       【HTML 模块 6】 状态栏
-       【HTML 模块 7】 JS 引用
+       【HTML 模块 2】 分类 Tab + 操作按钮
+       【HTML 模块 3】 条目列表容器
+       【HTML 模块 4】 粘贴 URL 弹窗
+       【HTML 模块 5】 状态栏
+       【HTML 模块 6】 JS 引用
      ========================================================================= -->
 <head>
 <!-- 【HTML 模块 1】head / 资源引用 / 样式 -->
@@ -23,13 +22,7 @@
 </head>
 <body>
 
-<!-- 【HTML 模块 2】顶部工具栏 -->
-<header class="editor-header">
-  <div class="editor-title">图标字典编辑器</div>
-  <button type="button" class="theme-btn" id="btnTheme"></button>
-</header>
-
-<!-- 【HTML 模块 3】分类 Tab + 操作按钮 -->
+<!-- 【HTML 模块 2】分类 Tab + 操作按钮 -->
 <div class="sticky-head">
   <div class="sticky-inner">
     <nav class="tabs">
@@ -52,7 +45,7 @@
   </div>
 </div>
 
-<!-- 【HTML 模块 4】条目列表容器 -->
+<!-- 【HTML 模块 3】条目列表容器 -->
 <div class="main">
   <div class="entries" id="entries"></div>
   <div class="empty-tip" id="emptyTip" style="display:none;">
@@ -62,7 +55,7 @@
   </div>
 </div>
 
-<!-- 【HTML 模块 5】粘贴 URL 弹窗 -->
+<!-- 【HTML 模块 4】粘贴 URL 弹窗 -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modal-title">粘贴图标链接</div>
@@ -75,10 +68,10 @@
   </div>
 </div>
 
-<!-- 【HTML 模块 6】状态栏 -->
+<!-- 【HTML 模块 5】状态栏 -->
 <div class="status-bar" id="status">就绪</div>
 
-<!-- 【HTML 模块 7】JS 引用 -->
+<!-- 【HTML 模块 6】JS 引用 -->
 <script src="../../shared/ui-icons.js"></script>
 <script src="../../shared/gi-icons/icon-loader.js"></script>
 <script src="app.js"></script>
