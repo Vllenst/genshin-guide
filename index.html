@@ -357,9 +357,8 @@ html.theme-switching *::after {
 
 /* 【JS 模块 1】常量 */
 /* 工具列表：src 必填；subtools 可选
- *   - 无 subtools → 一级菜单，直接加载 src
- *   - 有 subtools → 二级菜单展开；每个子工具若有自己的 src 走独立 iframe，
- *     没有 src 则共用父工具 src（老式单 iframe + postMessage 切换）
+ *   - 无 subtools → 一级菜单，点击直接加载 src
+ *   - 有 subtools → 一级菜单只展开/收起，点子菜单才切换
  */
 const TOOLS = [
   {
@@ -442,6 +441,10 @@ const btnTheme        = document.getElementById('btnTheme');
 
 /* iframe 缓存：key = cacheKey，value = { view, iframe, loaded, src } */
 const frameCache = new Map();
+
+/* 用户手动展开的一级菜单（有子菜单的） */
+const expandedTools = new Set();
+
 /* cacheKey 生成：无子工具 → tool.key；有子工具且子工具有独立 src → tool.key+'::'+sub.key */
 function cacheKeyOf(tool, sub) {
   if (sub && sub.src) return tool.key + '::' + sub.key;
@@ -522,11 +525,11 @@ function renderMenu() {
   TOOLS.forEach(tool => {
     const subs = tool.subtools || [];
     const isActive = tool.key === activeTool;
-    const isExpanded = isActive && subs.length > 0;
+    const isExpanded = expandedTools.has(tool.key);
 
     const mainBtn = document.createElement('button');
     mainBtn.type = 'button';
-    mainBtn.className = 'menu-main' + (isActive ? ' active' : '') + (isExpanded ? ' expanded' : '');
+    mainBtn.className = 'menu-main' + (isActive ? ' active' : '') + (isExpanded && subs.length ? ' expanded' : '');
     mainBtn.dataset.tool = tool.key;
 
     const iconKey = isActive ? tool.iconBold : tool.icon;
@@ -539,17 +542,17 @@ function renderMenu() {
 
     mainBtn.addEventListener('click', () => {
       if (subs.length) {
-        if (tool.key === activeTool) {
-          const subWrap = sidebarMenu.querySelector('.menu-sub[data-tool="' + tool.key + '"]');
-          if (subWrap) {
-            const willOpen = !subWrap.classList.contains('open');
-            subWrap.classList.toggle('open', willOpen);
-            mainBtn.classList.toggle('expanded', willOpen);
-          }
-        } else {
-          selectSubtool(tool.key, subs[0].key);
+        /* 有子菜单：只 toggle 展开 / 收起，不切换 */
+        const subWrap = sidebarMenu.querySelector('.menu-sub[data-tool="' + tool.key + '"]');
+        if (subWrap) {
+          const willOpen = !subWrap.classList.contains('open');
+          subWrap.classList.toggle('open', willOpen);
+          mainBtn.classList.toggle('expanded', willOpen);
+          if (willOpen) expandedTools.add(tool.key);
+          else expandedTools.delete(tool.key);
         }
       } else {
+        /* 无子菜单：直接切换 */
         selectTool(tool.key);
       }
     });
@@ -671,6 +674,7 @@ function selectSubtool(toolKey, subKey, opts) {
 
   activeTool = toolKey;
   activeSubtool = subKey;
+  expandedTools.add(toolKey);
 
   updateNavTitle();
   renderMenu();
@@ -721,7 +725,6 @@ window.addEventListener('message', (e) => {
   const data = e.data;
   if (!data || typeof data !== 'object') return;
 
-  /* 工具自报子工具切换（例如工具内部 Tab 切了） */
   if (data.type === 'active-subtool' && data.toolKey && data.subtoolKey) {
     if (data.toolKey === activeTool && data.subtoolKey !== activeSubtool) {
       activeSubtool = data.subtoolKey;
