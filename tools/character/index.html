@@ -7,7 +7,7 @@
        【HTML 模块 1】 head / 资源引用
        【HTML 模块 2】 主容器 app-container
        【HTML 模块 3】 预览区（工具栏 + 实时视口）
-       【HTML 模块 4】 右侧编辑区 / Tab 触发器
+       【HTML 模块 4】 编辑区 / 横向 Tab 栏
        【HTML 模块 5】 Tab 内容容器
          · 5.1 外观样式（角色信息 / 样式图 / 元素色 / 字体）
          · 5.2 立绘区（立绘 / 元素图 / 大背景）
@@ -19,7 +19,7 @@
          · 5.8 命座区
          · 5.9 配队区
        【HTML 模块 6】 移动端底部导出按钮
-       【HTML 模块 7】 Toast / Modal / Tab Sheet / Font Sheet
+       【HTML 模块 7】 Toast / Modal / Font Sheet
        【HTML 模块 8】 JS 引用
      ========================================================================= -->
 <head>
@@ -40,7 +40,7 @@
   <section class="preview-pane">
     <div class="preview-card">
       <!-- 3.1 浮动工具栏 -->
-      <div class="float-toolbar">
+      <div class="float-toolbar" id="floatToolbar">
         <button type="button" class="float-btn" id="floatExportBtn" onclick="App.exportConfig()" title="导出配置"></button>
         <button type="button" class="float-btn" id="floatImportBtn" onclick="document.getElementById('importJsonInput').click()" title="导入配置"></button>
         <button type="button" class="float-btn float-btn-danger" id="floatClearBtn" onclick="App.clearAllData()" title="清空全部数据"></button>
@@ -52,20 +52,16 @@
         <button class="ios-btn-fill btn-sm" onclick="App.exportPNG()" id="exportDesktopBtn">导出 4K PNG</button>
       </div>
       <!-- 3.3 SVG 挂载点 -->
-      <div class="preview-frame">
+      <div class="preview-frame" id="previewFrame">
         <div id="svgPreviewHost"></div>
       </div>
     </div>
   </section>
 
-  <!-- 【HTML 模块 4】右侧编辑区 / Tab 触发器 -->
+  <!-- 【HTML 模块 4】编辑区 / 横向 Tab 栏 -->
   <section class="inspector-pane">
-    <button type="button" class="tab-trigger" id="tabTrigger" onclick="App.openTabSheet()" aria-haspopup="true" aria-expanded="false">
-      <span class="tab-trigger-label" id="tabTriggerLabel">外观样式</span>
-      <svg class="tab-trigger-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    </button>
+    <!-- 4.1 横向 Tab 栏（手机端横向滚动） -->
+    <div class="tab-bar" id="tabBar" role="tablist" aria-label="编辑区域切换"></div>
 
     <!-- 【HTML 模块 5】Tab 内容容器 -->
     <div class="tabs-content">
@@ -308,7 +304,7 @@
   <button class="export-btn-main" onclick="App.exportPNG()" id="exportMobileBtn">生成并导出 4K PNG</button>
 </div>
 
-<!-- 【HTML 模块 7】Toast / Modal / Tab Sheet / Font Sheet -->
+<!-- 【HTML 模块 7】Toast / Modal / Font Sheet -->
 <!-- 7.1 Toast 容器 -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -324,15 +320,7 @@
   </div>
 </div>
 
-<!-- 7.3 Tab 切换底部抽屉 -->
-<div class="tab-sheet-backdrop" id="tabSheetBackdrop" onclick="App.closeTabSheet()"></div>
-<div class="tab-sheet" id="tabSheet" role="dialog" aria-modal="true" aria-labelledby="tabSheetTitle">
-  <div class="tab-sheet-handle" aria-hidden="true"></div>
-  <div class="tab-sheet-header" id="tabSheetTitle">选择编辑区域</div>
-  <div class="tab-sheet-list" id="tabSheetList"></div>
-</div>
-
-<!-- 7.4 字体选择底部抽屉 -->
+<!-- 7.3 字体选择底部抽屉 -->
 <div class="tab-sheet-backdrop" id="fontSheetBackdrop" onclick="App.closeFontPicker()"></div>
 <div class="tab-sheet" id="fontSheet" role="dialog" aria-modal="true">
   <div class="tab-sheet-handle" aria-hidden="true"></div>
