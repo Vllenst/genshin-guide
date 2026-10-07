@@ -65,7 +65,6 @@
   var config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   var editorData = { characters: [], artifacts: [], weapons: [], monsters: [] };
   var currentTab = "characters";
-  var tempThumbs = {};
 
   var amberCache   = { characters: null, weapons: null, artifacts: null, monsters: null };
   var amberLoading = {};
@@ -257,9 +256,7 @@
 
   function makeThumbFor(row, cb) {
     var mode = detectMode(row.key);
-    var src = "";
-    if (mode === "local" && tempThumbs[row.key]) src = tempThumbs[row.key];
-    else src = resolveUrl(currentTab, row.key, mode);
+    var src = resolveUrl(currentTab, row.key, mode);
     cb(src);
   }
 
@@ -388,7 +385,6 @@
       btnDel.addEventListener("click", function () {
         var idx = editorData[currentTab].indexOf(row);
         if (idx >= 0) editorData[currentTab].splice(idx, 1);
-        delete tempThumbs[row.key];
         saveLocal(); render(); setStatus("已删除", "ok");
       });
       mid.appendChild(btnDel);
@@ -489,7 +485,7 @@
       var star = null;
 
       if (type === "characters") {
-        if (!CHAR_NAME_TO_ORDER[name]) return;  /* txt 里没有 → 跳过 */
+        if (!CHAR_NAME_TO_ORDER[name]) return;
         order = CHAR_NAME_TO_ORDER[name];
         star = item.rank || 5;
       } else if (type === "weapons") {
@@ -501,7 +497,6 @@
         star = lvList.length ? Math.max.apply(null, lvList) : 5;
       } else if (type === "monsters") {
         order = item.id || 0;
-        /* 怪物无 star */
       }
 
       result[key] = { name: name, star: star, order: order };
@@ -512,10 +507,8 @@
   async function syncFromAmber() {
     setStatus("正在从 Amber 同步…");
 
-    /* 强制重置 config，避免被旧字典污染 */
     config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
-    /* 1. 备份本地图条目（按中文名索引） */
     var localByName = {};
     ALL_TYPES.forEach(function (type) {
       localByName[type] = {};
@@ -524,7 +517,6 @@
       });
     });
 
-    /* 2. 遍历 4 类拉数据 */
     var amberResult = {};
     for (var i = 0; i < ALL_TYPES.length; i++) {
       var type = ALL_TYPES[i];
@@ -538,11 +530,6 @@
       }
     }
 
-    /* 3. 合并策略：
-     *    优先级 1（最高）：本地图（local:true）→ 保留
-     *    优先级 2：Amber 里有的中文名 → 用 Amber 的
-     *    优先级 3：Amber 里没有、但字典里已有的 → 保留
-     */
     setStatus("正在合并数据…");
     ALL_TYPES.forEach(function (type) {
       var merged = {};
@@ -612,12 +599,12 @@
    * ------------------------------------------------------------------- */
   function loadFromRepo() {
     setStatus("正在从仓库载入…");
-    fetch("../../shared/gi-icons/icon-dict.js?t=" + Date.now())
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(function (code) {
-        var sandbox = { window: {} };
-        new Function("window", code)(sandbox.window);
-        var dict = sandbox.window.ICON_DICT || {};
+
+    var script = document.createElement("script");
+    script.src = "../../shared/gi-icons/icon-dict.js?t=" + Date.now();
+    script.onload = function () {
+      try {
+        var dict = window.ICON_DICT || {};
         if (dict.config) config = dict.config;
         ALL_TYPES.forEach(function (type) {
           var obj = dict[type] || {};
@@ -630,9 +617,18 @@
             return out;
           });
         });
-        saveLocal(); render(); setStatus("已从仓库载入", "ok");
-      })
-      .catch(function (e) { setStatus("载入失败：" + e.message, "err"); });
+        saveLocal(); render();
+        setStatus("已从仓库载入", "ok");
+      } catch (err) {
+        setStatus("载入失败：" + err.message, "err");
+      }
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+    script.onerror = function () {
+      setStatus("载入失败：网络错误或文件不存在（icon-dict.js）", "err");
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+    document.body.appendChild(script);
   }
 
   /* ---------------------------------------------------------------------
