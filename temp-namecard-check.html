@@ -62,8 +62,9 @@ pre {
 
 <h1>名片图链接探测</h1>
 <div class="hint">
-  遍历 icon-dict.js 的所有角色，拼 <code>UI_NameCardPic_{shortId}_P.png</code>，
-  探测 Lunaris 外链是否有效。探测完复制结果到 <code>shared/data/namecards.txt</code>。
+  以 <code>characters.txt</code> 为角色主表，从 <code>icon-dict.js</code> 查短 ID，
+  拼 <code>UI_NameCardPic_{shortId}_P.png</code> 探测 Lunaris 外链。
+  输出格式：<code>编号 角色名 URL</code>，按编号倒序。
 </div>
 
 <div class="card">
@@ -78,15 +79,19 @@ pre {
 <div id="output">
 
   <div class="card">
-    <div class="section-title">✅ 探测成功 <span id="okCount">0</span></div>
+    <div class="section-title">✅ 成功 <span id="okCount">0</span></div>
     <pre id="okList"></pre>
     <button class="btn" onclick="copyOk()">复制成功列表</button>
   </div>
 
   <div class="card">
-    <div class="section-title">❌ 探测失败 <span id="failCount">0</span></div>
+    <div class="section-title">❌ 失败 <span id="failCount">0</span></div>
     <pre id="failList"></pre>
-    <button class="btn sec" onclick="copyFail()">复制失败列表</button>
+  </div>
+
+  <div class="card" id="extraCard" style="display:none;">
+    <div class="section-title">⚠️ 字典里有但 characters.txt 没有</div>
+    <pre id="extraList"></pre>
   </div>
 
 </div>
@@ -101,24 +106,50 @@ const CONCURRENCY = 5;
 
 const okList = [];
 const failList = [];
+const extraList = [];
 
 function stripPrefix(key) {
   return key.replace(/^UI_AvatarIcon_/i, '').replace(/\.[^.]+$/, '');
 }
 
-function setStatus(text) {
-  document.getElementById('statusText').textContent = text;
-}
-function setSubStatus(text) {
-  document.getElementById('subStatus').textContent = text;
-}
-function setBadge(text, cls) {
+function setStatus(t) { document.getElementById('statusText').textContent = t; }
+function setSubStatus(t) { document.getElementById('subStatus').textContent = t; }
+function setBadge(t, c) {
   const b = document.getElementById('badge');
-  b.textContent = text;
-  b.className = 'badge ' + cls;
+  b.textContent = t; b.className = 'badge ' + c;
 }
-function setProgress(cur, total) {
-  document.getElementById('progressBar').style.width = (cur / total * 100) + '%';
+function setProgress(c, t) {
+  document.getElementById('progressBar').style.width = (c / t * 100) + '%';
+}
+
+/* 读 characters.txt → [{ order, name }]，原顺序 */
+async function loadCharList() {
+  const res = await fetch('shared/data/characters.txt?t=' + Date.now());
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  const list = [];
+  text.split(/\r?\n/).forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#')) return;
+    const parts = line.split(/[\s,，\t]+/);
+    if (parts.length < 2) return;
+    const order = parseInt(parts[0], 10);
+    const name = parts.slice(1).join(' ').trim();
+    if (!order || !name) return;
+    list.push({ order, name });
+  });
+  return list;
+}
+
+/* 从 icon-dict 查角色名 → 短 ID */
+function findShortIdByName(name, dict) {
+  for (const key in dict) {
+    const item = dict[key];
+    if (item && item.name === name) {
+      return stripPrefix(key);
+    }
+  }
+  return '';
 }
 
 async function urlExists(url) {
@@ -132,8 +163,8 @@ async function urlExists(url) {
     return false;
   } catch (e) {
     try {
-      const res2 = await fetch(url);
-      return res2.ok;
+      const r2 = await fetch(url);
+      return r2.ok;
     } catch (e2) {
       return false;
     }
@@ -141,12 +172,17 @@ async function urlExists(url) {
 }
 
 async function probeOne(item) {
-  const url = PREFIX + item.shortId + SUFFIX;
+  const shortId = findShortIdByName(item.name, window.ICON_DICT.characters);
+  if (!shortId) {
+    failList.push({ ...item, shortId: '', reason: 'icon-dict 无此角色' });
+    return;
+  }
+  const url = PREFIX + shortId + SUFFIX;
   const ok = await urlExists(url);
   if (ok) {
-    okList.push({ name: item.name, shortId: item.shortId, url });
+    okList.push({ ...item, shortId, url });
   } else {
-    failList.push({ name: item.name, shortId: item.shortId, url });
+    failList.push({ ...item, shortId, url, reason: '链接 404' });
   }
 }
 
@@ -158,27 +194,43 @@ async function run() {
     return;
   }
 
-  const items = Object.keys(dict).map(key => ({
-    name: dict[key].name || '',
-    shortId: stripPrefix(key),
-    order: dict[key].order || 0
-  })).filter(it => it.name && it.shortId);
-
-  items.sort((a, b) => a.order - b.order);
-
-  setBadge('运行中', 'run');
-  setStatus(`共 ${items.length} 个角色，开始探测…`);
-
-  let done = 0;
-  for (let i = 0; i < items.length; i += CONCURRENCY) {
-    const batch = items.slice(i, i + CONCURRENCY);
-    await Promise.all(batch.map(it => probeOne(it)));
-    done += batch.length;
-    setProgress(done, items.length);
-    setStatus(`探测中… ${done}/${items.length}`);
+  setStatus('加载 characters.txt…');
+  let list;
+  try {
+    list = await loadCharList();
+  } catch (e) {
+    setStatus('characters.txt 加载失败：' + e.message);
+    setBadge('错误', 'fail');
+    return;
   }
 
-  setProgress(items.length, items.length);
+  setSubStatus(`characters.txt 读到 ${list.length} 条`);
+  setBadge('运行中', 'run');
+  setStatus(`开始探测 ${list.length} 个角色…`);
+
+  let done = 0;
+  for (let i = 0; i < list.length; i += CONCURRENCY) {
+    const batch = list.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(it => probeOne(it)));
+    done += batch.length;
+    setProgress(done, list.length);
+    setStatus(`探测中… ${done}/${list.length}`);
+  }
+
+  /* 结果按 order 倒序 */
+  okList.sort((a, b) => b.order - a.order);
+  failList.sort((a, b) => b.order - a.order);
+
+  /* 找出 icon-dict 有、但 characters.txt 没有的角色 */
+  const txtNames = new Set(list.map(it => it.name));
+  for (const key in dict) {
+    const item = dict[key];
+    if (item && item.name && !txtNames.has(item.name)) {
+      extraList.push({ name: item.name, shortId: stripPrefix(key) });
+    }
+  }
+
+  setProgress(list.length, list.length);
   setBadge('完成', 'ok');
   setStatus(`完成：成功 ${okList.length}，失败 ${failList.length}`);
 
@@ -186,10 +238,16 @@ async function run() {
   document.getElementById('failCount').textContent = failList.length;
 
   document.getElementById('okList').textContent =
-    okList.map(o => o.name + ' ' + o.url).join('\n') || '（无）';
+    okList.map(o => o.order + ' ' + o.name + ' ' + o.url).join('\n') || '（无）';
 
   document.getElementById('failList').textContent =
-    failList.map(o => o.name + '（' + o.shortId + '）').join('\n') || '（无）';
+    failList.map(o => o.order + ' ' + o.name + '（' + (o.shortId || '?') + '）— ' + o.reason).join('\n') || '（无）';
+
+  if (extraList.length) {
+    document.getElementById('extraCard').style.display = 'block';
+    document.getElementById('extraList').textContent =
+      extraList.map(o => o.name + '（' + o.shortId + '）').join('\n');
+  }
 
   document.getElementById('output').style.display = 'block';
   setSubStatus('翻到下面查看结果');
@@ -213,21 +271,13 @@ function fallbackCopy(text, label) {
   ta.style.left = '-9999px';
   document.body.appendChild(ta);
   ta.select();
-  try {
-    document.execCommand('copy');
-    alert(label + '已复制');
-  } catch (e) {
-    alert('复制失败，请手动选中文字复制');
-  }
+  try { document.execCommand('copy'); alert(label + '已复制'); }
+  catch (e) { alert('复制失败，请手动选中复制'); }
   ta.remove();
 }
 function copyOk() {
-  const text = okList.map(o => o.name + ' ' + o.url).join('\n');
+  const text = okList.map(o => o.order + ' ' + o.name + ' ' + o.url).join('\n');
   copyText(text, '成功列表');
-}
-function copyFail() {
-  const text = failList.map(o => o.name + '（' + o.shortId + '）').join('\n');
-  copyText(text, '失败列表');
 }
 
 window.addEventListener('DOMContentLoaded', run);
