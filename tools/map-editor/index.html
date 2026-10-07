@@ -29,12 +29,13 @@
       <button class="tab active" data-tab="characters">角色</button>
       <button class="tab" data-tab="artifacts">圣遗物</button>
       <button class="tab" data-tab="weapons">武器</button>
+      <button class="tab" data-tab="monsters">怪物</button>
     </nav>
 
     <div class="actions-group">
       <div class="actions-row">
-        <button type="button" class="btn primary" id="btnPaste"><span class="btn-icon"></span>粘贴 URL</button>
-        <label class="btn"><span class="btn-icon"></span>上传本地图<input type="file" id="fileInput" accept="image/*" multiple></label>
+        <button type="button" class="btn primary" id="btnSync"><span class="btn-icon"></span>从 Amber 同步</button>
+        <button type="button" class="btn" id="btnPaste"><span class="btn-icon"></span>粘贴 URL</button>
       </div>
       <div class="actions-row">
         <button type="button" class="btn" id="btnLoad"><span class="btn-icon"></span>载入</button>
@@ -59,7 +60,7 @@
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modal-title">粘贴图标链接</div>
-    <div class="modal-hint">每行一个完整 URL，程序自动提取短 ID 并查 Amber 中文名。</div>
+    <div class="modal-hint">每行一个完整 URL，程序自动提取图标名并查 Amber 中文名。</div>
     <textarea id="pasteArea" placeholder="https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_SkirkNew.webp"></textarea>
     <div class="modal-actions">
       <button type="button" class="btn" id="modalCancel">取消</button>
