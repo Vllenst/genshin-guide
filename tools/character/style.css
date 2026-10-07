@@ -185,12 +185,15 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
   transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
   -webkit-appearance: none; appearance: none;
 }
-.tab-btn:hover { background: var(--bg-hover); }
+/* 未选中时才有 hover 效果，避免手机点完后的 hover 残留覆盖 active */
+.tab-btn:hover:not(.active) { background: var(--bg-hover); }
 .tab-btn:active { transform: scale(0.96); }
-.tab-btn.active {
-  background: var(--text-primary);
-  color: var(--bg-base);
-  border-color: var(--text-primary);
+/* 选中：反色填充（浅色主题 → 深底浅字；暗色主题 → 浅底深字） */
+.tab-btn.active,
+.tab-btn.active:hover {
+  background: var(--text-primary) !important;
+  color: var(--bg-base) !important;
+  border-color: var(--text-primary) !important;
   font-weight: 600;
 }
 
