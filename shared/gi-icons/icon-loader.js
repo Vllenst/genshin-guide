@@ -1,9 +1,9 @@
 /* ============================================================
  * 图标加载器 · 全站共享
  * 三种模式：
- *   - 本地：key 是文件名，条目带 local: true，从 icons/ 根目录加载
+ *   - 本地：key 是文件名（如 UI_AvatarIcon_Traveler.webp），条目带 local: true，从 icons/ 根目录加载
  *   - URL ：key 以 http 开头，直接用
- *   - ID  ：key 只是 ID，靠 config[type].prefix 拼 URL
+ *   - ID  ：key 是图标全名（如 UI_AvatarIcon_HuTao），靠 config[type].prefix 拼 URL
  * ============================================================ */
 (function () {
   "use strict";
@@ -66,6 +66,15 @@
   }
 
   function applyBackground(img, star, opts) {
+    /* 无星级（如怪物图标）→ 不加背景，直接返回原图 */
+    if (star == null) {
+      var canvas0 = document.createElement("canvas");
+      canvas0.width = img.width;
+      canvas0.height = img.height;
+      canvas0.getContext("2d").drawImage(img, 0, 0);
+      return canvas0.toDataURL("image/png");
+    }
+
     opts = opts || {};
     var size = opts.size || 256;
     var padding = opts.padding != null ? opts.padding : 0;
@@ -111,7 +120,7 @@
         raw = key;
       }
     }
-    /* 剥掉 UI_AvatarIcon_ / UI_EquipIcon_ / UI_RelicIcon_ 前缀 */
+    /* 剥掉 UI_AvatarIcon_ / UI_EquipIcon_ / UI_RelicIcon_ / UI_MonsterIcon_ 前缀 */
     return raw.replace(/^UI_[A-Za-z]+_/i, "");
   }
 
@@ -125,7 +134,7 @@
     if (item.local) return ICON_BASE + key;
     /* 2. 完整 URL：直接用 */
     if (/^https?:\/\//i.test(key)) return key;
-    /* 3. ID + 前缀 */
+    /* 3. 全名 + 前缀（prefix 已缩短，如 https://.../avataricon/） */
     var cfg = dict.config && dict.config[type];
     if (cfg && cfg.prefix) return cfg.prefix + key + (cfg.ext || "");
     return "";
