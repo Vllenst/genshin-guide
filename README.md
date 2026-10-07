@@ -26,6 +26,7 @@ genshin-guide/
 ├── index.html            主页
 ├── README.md
 ├── CHANGELOG.md          更新记录
+├── favicon.png           网站图标
 │
 ├── tools/                所有工具页
 │   ├── character/        角色一图流（已拆）
@@ -110,22 +111,6 @@ genshin-guide/
 
 ---
 
-## 🔧 本地开发
-
-纯静态站点，双击 index.html 就能跑。
-
-**注意**：`file://` 协议下 `fetch` 加载本地文件会失败，建议用本地服务器：
-
-```
-python -m http.server 8000
-```
-
-然后访问 http://localhost:8000/
-
-推送到 main 分支后 GitHub Pages 自动部署，1~3 分钟生效。
-
----
-
 ## 📝 备注
 
 - 中文名查询：Project Amber（gi.yatta.moe）
@@ -135,6 +120,7 @@ python -m http.server 8000
   https://yesicon.app/zh-Hans/ph
 - **元素 / 圣遗物图标**：来自 iconfont 的「原神图标」库（作者 SwordMasterJS）
   https://www.iconfont.cn/collections/detail?cid=34264
+- **favicon**：AI 生成（豆包），工具箱 + 游戏手柄
 
 ---
 
