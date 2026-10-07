@@ -131,7 +131,8 @@ python -m http.server 8000
 - 中文名查询：Project Amber（gi.yatta.moe）
 - 主题系统：通过 `shared/theme.css` 统一管理
 - 所有编辑数据存在浏览器本地（IndexedDB）
-- **UI 图标**：Phosphor
+- **UI 图标**：来自 Phosphor Icons
+  https://yesicon.app/zh-Hans/ph
 - **元素 / 圣遗物图标**：来自 iconfont 的「原神图标」库（作者 SwordMasterJS）
   https://www.iconfont.cn/collections/detail?cid=34264
 
