@@ -142,6 +142,37 @@ genshin-guide/
 
 ---
 
+## 8. 主页菜单交互调整
+
+**改动目标**
+- 点有子菜单的一级菜单（如「图片处理」）→ 只展开 / 收起，**不切换 iframe**
+- 点无子菜单的一级菜单（如「角色一图流」）→ 直接切换
+- 点子菜单项 → 切换 iframe
+
+**代码改动（`index.html`）**
+- 新增运行时状态 `expandedTools`（Set，记录哪些一级菜单是展开的）
+- `renderMenu` 里的 `isExpanded` 从「当前激活的工具自动展开」改为「看 `expandedTools` 集合」
+- 一级菜单的 click 事件：有子菜单时**只 toggle 展开/收起**，删掉「自动切到第一个子工具」的分支
+- `selectSubtool` 里把 `toolKey` 加入 `expandedTools`（保证进入子工具后一级菜单保持展开）
+
+---
+
+## 9. 主页初始化改为永远从角色卡开始
+
+**问题**
+- 原来初始化会读 localStorage 恢复上次用的工具
+- 导致「上次用过图片处理 → 这次打开主页自动进图片处理」
+- 容易被误认为「点菜单自动跳转」
+
+**改动（`index.html`）**
+- 删掉 `STORAGE_KEY` / `STORAGE_SUB` 常量
+- `selectTool` / `selectSubtool` 里删掉写 localStorage 的代码
+- `init()` 里删掉读 localStorage 恢复工具的逻辑
+- 打开主页永远从 `DEFAULT_TOOL`（角色一图流）开始
+- 保留 hash 直达（如 `#map-editor` 可直连）
+
+---
+
 ## 命名规范（一直沿用）
 
 - **文件夹名 / 文件名**：全部英文小写，多词用短横线（如 `map-editor`）
@@ -199,10 +230,14 @@ genshin-guide/
 3. **遇到路径改动**
    - 一并给完整对照表
 
-4. **当前进度**
-   - 已完成：拆 character、map-editor
+4. **如果改完代码用户反映没效果**
+   - 优先让用户关掉浏览器重开（手机端缓存特别顽固）
+   - 或让用户用无痕模式测试
+
+5. **当前进度**
+   - 已完成：拆 character、map-editor、主页交互调整
    - 待办：拆 video-cover、image-tools、chart
-   - 详见上方「待办」章节
+   - 详见下方「待办」章节
 
 ---
 
