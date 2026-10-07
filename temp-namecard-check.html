@@ -102,7 +102,7 @@ pre {
 
 const PREFIX = 'https://api.lunaris.moe/data/assets/namecardpic/';
 const SUFFIX = '_P.png';
-const CONCURRENCY = 5;
+const CONCURRENCY = 8;
 
 const okList = [];
 const failList = [];
@@ -122,7 +122,7 @@ function setProgress(c, t) {
   document.getElementById('progressBar').style.width = (c / t * 100) + '%';
 }
 
-/* 读 characters.txt → [{ order, name }]，原顺序 */
+/* 读 characters.txt → [{ order, name }] */
 async function loadCharList() {
   const res = await fetch('shared/data/characters.txt?t=' + Date.now());
   if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -141,34 +141,32 @@ async function loadCharList() {
   return list;
 }
 
-/* 从 icon-dict 查角色名 → 短 ID */
+/* icon-dict 查角色名 → 短 ID */
 function findShortIdByName(name, dict) {
   for (const key in dict) {
     const item = dict[key];
-    if (item && item.name === name) {
-      return stripPrefix(key);
-    }
+    if (item && item.name === name) return stripPrefix(key);
   }
   return '';
 }
 
-async function urlExists(url) {
-  try {
-    let res = await fetch(url, { method: 'HEAD' });
-    if (res.ok) return true;
-    if (res.status === 405) {
-      res = await fetch(url);
-      return res.ok;
-    }
-    return false;
-  } catch (e) {
-    try {
-      const r2 = await fetch(url);
-      return r2.ok;
-    } catch (e2) {
-      return false;
-    }
-  }
+/* 用 Image 探测外链（不受 CORS 限制） */
+function urlExists(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    let settled = false;
+    const done = ok => {
+      if (settled) return;
+      settled = true;
+      img.onload = null;
+      img.onerror = null;
+      resolve(ok);
+    };
+    img.onload = () => done(true);
+    img.onerror = () => done(false);
+    setTimeout(() => done(false), 15000);
+    img.src = url;
+  });
 }
 
 async function probeOne(item) {
@@ -182,7 +180,7 @@ async function probeOne(item) {
   if (ok) {
     okList.push({ ...item, shortId, url });
   } else {
-    failList.push({ ...item, shortId, url, reason: '链接 404' });
+    failList.push({ ...item, shortId, url, reason: '链接加载失败' });
   }
 }
 
@@ -217,11 +215,9 @@ async function run() {
     setStatus(`探测中… ${done}/${list.length}`);
   }
 
-  /* 结果按 order 倒序 */
   okList.sort((a, b) => b.order - a.order);
   failList.sort((a, b) => b.order - a.order);
 
-  /* 找出 icon-dict 有、但 characters.txt 没有的角色 */
   const txtNames = new Set(list.map(it => it.name));
   for (const key in dict) {
     const item = dict[key];
