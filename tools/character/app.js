@@ -1,7 +1,7 @@
 /* =========================================================================
  * 原神一图流生成器 · app.js
  * =========================================================================
- * 模块导航（搜索 “【JS 模块 N】” 快速跳转）：
+ * 模块导航（搜索 "【JS 模块 N】" 快速跳转）：
  *   【JS 模块 1】    图标常量
  *   【JS 模块 2】    全局常量（尺寸 / 布局 LAYOUT / 元素色 / Tab 定义）
  *   【JS 模块 3】    State 全局状态 + IndexedDB 持久化
@@ -1294,7 +1294,7 @@ let fontSheetOpen = false;
 
 async function loadFontList() {
   try {
-    const res = await fetch('../../fonts/fonts.json?t=' + Date.now());
+    const res = await fetch('../../shared/fonts/fonts.json?t=' + Date.now());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     FONT_LIST = Array.isArray(json.fonts) ? json.fonts : [];
@@ -1367,7 +1367,7 @@ async function selectFont(index) {
   }
   if (labelEl) labelEl.textContent = '正在加载 ' + f.name + '…';
   try {
-    const res = await fetch('../../fonts/' + encodeURIComponent(f.file));
+    const res = await fetch('../../shared/fonts/' + encodeURIComponent(f.file));
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const buf = await res.arrayBuffer();
     const blob = new Blob([buf]);
@@ -1393,7 +1393,7 @@ async function selectFont(index) {
  * ========================================================================= */
 async function loadCharOrderTxt() {
   try {
-    const res = await fetch('../../data/characters.txt?t=' + Date.now());
+    const res = await fetch('../../shared/data/characters.txt?t=' + Date.now());
     if (!res.ok) { console.warn('characters.txt HTTP ' + res.status); return; }
     const text = await res.text();
     CHAR_NAME_TO_ORDER = {};
@@ -1429,7 +1429,7 @@ async function matchStyleImages() {
 
   let standingUrl = '';
   if (order) {
-    const ghUrl = '../../assets/characters/standing/' + padOrder(order) + '.' + name + '.png';
+    const ghUrl = '../../shared/assets/characters/standing/' + padOrder(order) + '.' + name + '.png';
     if (await urlExists(ghUrl)) standingUrl = ghUrl;
   }
   if (standingUrl) {
@@ -1445,7 +1445,7 @@ async function matchStyleImages() {
   const elementName = themeToElementName();
   let elementUrl = '';
   if (elementName) {
-    const ghUrl = '../../assets/characters/element/' + elementName + '.png';
+    const ghUrl = '../../shared/assets/characters/element/' + elementName + '.png';
     if (await urlExists(ghUrl)) elementUrl = ghUrl;
   }
   if (elementUrl) {
@@ -1491,7 +1491,7 @@ async function loadSaveFromRepo() {
   const order = CHAR_NAME_TO_ORDER[name];
   if (!order) { showToast('characters.txt 中找不到「' + name + '」', 'error'); return; }
   const filename = padOrder(order) + '.' + name + '.json';
-  const url = '../../save/characters/' + filename;
+  const url = '../../shared/saves/characters/' + filename;
   showToast('正在查找存档…', 'info');
   try {
     const res = await fetch(url + '?t=' + Date.now());
