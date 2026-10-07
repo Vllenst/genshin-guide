@@ -16,6 +16,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2EFEA">
 <title>原神攻略工具集</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231F1D1A' d='M13.409 2.513a3.75 3.75 0 0 0-2.818 0l-2.19.888l9.592 3.73l3.374-1.303a1.8 1.8 0 0 0-.46-.275zM22 7.191l-9.25 3.574v3.35a3 3 0 0 1 .25-.064v-.05a2.75 2.75 0 0 1 2.75-2.75h3.5A2.75 2.75 0 0 1 22 13.989zm-10.75 3.574v4.645c-.16.33-.25.7-.25 1.091v5q0 .065.003.128a4 4 0 0 1-.412-.14l-7.498-3.04A1.75 1.75 0 0 1 2 16.827V7.192zM2.633 5.828L12 9.447l3.917-1.514l-9.543-3.71l-3.281 1.33q-.256.104-.46.275M14 15h-.5a1.5 1.5 0 0 0-1.5 1.5V18h2.5v-.25a.75.75 0 0 1 1.5 0V18h3v-.25a.75.75 0 0 1 1.5 0V18H23v-1.5a1.5 1.5 0 0 0-1.5-1.5H21v-1a1.75 1.75 0 0 0-1.75-1.75h-3.5A1.75 1.75 0 0 0 14 14zm1.5-1a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v1h-4zM12 21.5v-2h2.5v.75a.75.75 0 0 0 1.5 0v-.75h3v.75a.75.75 0 0 0 1.5 0v-.75H23v2a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="shared/theme.css">
 <style>
 /* ---------- 全局重置 ---------- */
@@ -341,7 +342,7 @@ html.theme-switching *::after {
 /* =========================================================================
  * 主页逻辑
  * =========================================================================
- * 【JS 模块 1】常量：TOOLS 列表 / Storage Key
+ * 【JS 模块 1】常量：TOOLS 列表
  * 【JS 模块 2】DOM 引用 + 运行时状态
  * 【JS 模块 3】主题切换
  * 【JS 模块 4】侧边栏开关
@@ -356,10 +357,6 @@ html.theme-switching *::after {
 'use strict';
 
 /* 【JS 模块 1】常量 */
-/* 工具列表：src 必填；subtools 可选
- *   - 无 subtools → 一级菜单，点击直接加载 src
- *   - 有 subtools → 一级菜单只展开/收起，点子菜单才切换
- */
 const TOOLS = [
   {
     key: 'character',
@@ -423,8 +420,6 @@ const TOOLS = [
 ];
 
 const DEFAULT_TOOL = 'character';
-const STORAGE_KEY  = 'gtt_active_tool';
-const STORAGE_SUB  = 'gtt_active_subtool';
 const THEME_KEY    = 'gtt_theme';
 
 /* 【JS 模块 2】DOM 引用 + 运行时状态 */
@@ -439,18 +434,13 @@ const btnMenu         = document.getElementById('btnMenu');
 const btnClose        = document.getElementById('btnClose');
 const btnTheme        = document.getElementById('btnTheme');
 
-/* iframe 缓存：key = cacheKey，value = { view, iframe, loaded, src } */
 const frameCache = new Map();
-
-/* 用户手动展开的一级菜单（有子菜单的） */
 const expandedTools = new Set();
 
-/* cacheKey 生成：无子工具 → tool.key；有子工具且子工具有独立 src → tool.key+'::'+sub.key */
 function cacheKeyOf(tool, sub) {
   if (sub && sub.src) return tool.key + '::' + sub.key;
   return tool.key;
 }
-/* 该工具/子工具最终加载的 src */
 function srcOf(tool, sub) {
   if (sub && sub.src) return sub.src;
   return tool.src;
@@ -542,7 +532,6 @@ function renderMenu() {
 
     mainBtn.addEventListener('click', () => {
       if (subs.length) {
-        /* 有子菜单：只 toggle 展开 / 收起，不切换 */
         const subWrap = sidebarMenu.querySelector('.menu-sub[data-tool="' + tool.key + '"]');
         if (subWrap) {
           const willOpen = !subWrap.classList.contains('open');
@@ -552,7 +541,6 @@ function renderMenu() {
           else expandedTools.delete(tool.key);
         }
       } else {
-        /* 无子菜单：直接切换 */
         selectTool(tool.key);
       }
     });
@@ -633,7 +621,6 @@ function selectTool(toolKey, opts) {
   const subs = tool.subtools || [];
 
   if (subs.length) {
-    /* 有子工具：默认选第一个（或保留当前仍有效的子工具） */
     const subKey = (activeSubtool && subs.some(s => s.key === activeSubtool))
       ? activeSubtool
       : subs[0].key;
@@ -653,10 +640,6 @@ function selectTool(toolKey, opts) {
 
   loadingMask.classList.toggle('show', !record.loaded);
 
-  try {
-    localStorage.setItem(STORAGE_KEY, tool.key);
-    localStorage.removeItem(STORAGE_SUB);
-  } catch (e) {}
   if (!silent) {
     try { history.replaceState(null, '', '#' + tool.key); } catch (e) {}
   }
@@ -686,17 +669,12 @@ function selectSubtool(toolKey, subKey, opts) {
 
   loadingMask.classList.toggle('show', !record.loaded);
 
-  /* 兼容未拆的老式工具：子工具没有独立 src，靠 postMessage 让工具内部切换 */
   if (!sub.src && record.loaded && record.iframe.contentWindow) {
     try {
       record.iframe.contentWindow.postMessage({ type: 'navigate', subtool: subKey }, '*');
     } catch (e) {}
   }
 
-  try {
-    localStorage.setItem(STORAGE_KEY, toolKey);
-    localStorage.setItem(STORAGE_SUB, subKey);
-  } catch (e) {}
   if (!silent) {
     try { history.replaceState(null, '', '#' + toolKey); } catch (e) {}
   }
@@ -730,7 +708,6 @@ window.addEventListener('message', (e) => {
       activeSubtool = data.subtoolKey;
       renderMenu();
       updateNavTitle();
-      try { localStorage.setItem(STORAGE_SUB, data.subtoolKey); } catch (err) {}
     }
   }
 });
@@ -753,6 +730,9 @@ window.addEventListener('hashchange', () => {
 });
 
 /* 【JS 模块 11】初始化 */
+/* 打开主页永远从角色卡开始，不再恢复上次的工具
+ * 只保留 hash 直达（如 #map-editor）
+ */
 (function init() {
   btnMenu.innerHTML  = ICONS.app.hamburger;
   btnClose.innerHTML = ICONS.app.close;
@@ -765,22 +745,12 @@ window.addEventListener('hashchange', () => {
   const hashKey = (location.hash || '').replace(/^#/, '');
   if (hashKey && TOOLS.some(t => t.key === hashKey)) {
     initialKey = hashKey;
-  } else {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && TOOLS.some(t => t.key === saved)) initialKey = saved;
-    } catch (e) {}
   }
-  try {
-    const savedSub = localStorage.getItem(STORAGE_SUB) || '';
-    if (savedSub) activeSubtool = savedSub;
-  } catch (e) {}
 
   const tool = TOOLS.find(t => t.key === initialKey) || TOOLS[0];
   const subs = tool.subtools || [];
   if (subs.length) {
-    const validSub = subs.some(s => s.key === activeSubtool) ? activeSubtool : subs[0].key;
-    selectSubtool(tool.key, validSub, { silent: true });
+    selectSubtool(tool.key, subs[0].key, { silent: true });
   } else {
     selectTool(tool.key, { silent: true });
   }
