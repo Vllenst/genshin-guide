@@ -1,12 +1,24 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
+<!-- =========================================================================
+     原神攻略工具集 · index.html
+     =========================================================================
+     HTML 模块导航：
+       【HTML 模块 1】 head / 资源引用 / 全局样式
+       【HTML 模块 2】 顶部导航栏
+       【HTML 模块 3】 侧边菜单抽屉
+       【HTML 模块 4】 iframe 容器 + loading
+       【HTML 模块 5】 JS 引用
+     ========================================================================= -->
 <head>
+<!-- 【HTML 模块 1】head / 资源引用 / 全局样式 -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2EFEA">
 <title>原神攻略工具集</title>
 <link rel="stylesheet" href="shared-theme.css">
 <style>
+/* ---------- 全局重置 ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; height: 100dvh; }
 html, body, button { font-family: var(--std-font); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -19,6 +31,17 @@ body {
   letter-spacing: -0.2px;
 }
 
+/* ---------- 主题切换瞬间：禁用所有过渡 / 动画 ---------- */
+html.theme-switching,
+html.theme-switching body,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* ---------- 顶部导航栏 ---------- */
 .app-navbar {
   flex: none;
   height: 52px;
@@ -73,6 +96,7 @@ body {
   margin: 0 1px;
 }
 
+/* ---------- 侧边抽屉 ---------- */
 .sidebar-backdrop {
   position: fixed; inset: 0;
   background: var(--mask);
@@ -120,6 +144,7 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 一级菜单 */
 .menu-main {
   width: 100%;
   display: flex;
@@ -183,6 +208,7 @@ body {
 .menu-main-arrow svg { width: 100%; height: 100%; display: block; }
 .menu-main.expanded .menu-main-arrow { transform: rotate(180deg); }
 
+/* 二级菜单 */
 .menu-sub {
   overflow: hidden;
   max-height: 0;
@@ -232,6 +258,7 @@ body {
   transform: translateY(-50%) scale(1.35);
 }
 
+/* ---------- iframe 容器 ---------- */
 .frame-container {
   flex: 1;
   position: relative;
@@ -252,6 +279,7 @@ body {
   background: var(--bg-base);
 }
 
+/* ---------- Loading ---------- */
 .loading-mask {
   position: absolute;
   inset: 0;
@@ -279,6 +307,7 @@ body {
 </head>
 <body>
 
+<!-- 【HTML 模块 2】顶部导航栏 -->
 <header class="app-navbar">
   <button type="button" class="nav-btn" id="btnMenu" aria-label="打开菜单"></button>
   <div class="nav-title">
@@ -288,6 +317,7 @@ body {
   <button type="button" class="nav-btn" id="btnTheme" aria-label="切换主题"></button>
 </header>
 
+<!-- 【HTML 模块 3】侧边菜单抽屉 -->
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <aside class="sidebar-drawer" id="sidebarDrawer">
   <div class="sidebar-header">
@@ -297,6 +327,7 @@ body {
   <nav class="sidebar-menu" id="sidebarMenu"></nav>
 </aside>
 
+<!-- 【HTML 模块 4】iframe 容器 + loading -->
 <main class="frame-container" id="frameContainer">
   <div class="loading-mask" id="loadingMask">
     <div class="spinner"></div>
@@ -304,19 +335,36 @@ body {
   </div>
 </main>
 
+<!-- 【HTML 模块 5】JS 引用 -->
 <script src="icons.js"></script>
 <script>
+/* =========================================================================
+ * 主页逻辑
+ * =========================================================================
+ * 【JS 模块 1】常量：TOOLS 列表 / 二级菜单 / Storage Key
+ * 【JS 模块 2】DOM 引用
+ * 【JS 模块 3】主题切换
+ * 【JS 模块 4】侧边栏开关
+ * 【JS 模块 5】菜单渲染
+ * 【JS 模块 6】iframe 管理
+ * 【JS 模块 7】工具切换 / 子工具切换
+ * 【JS 模块 8】导航标题同步
+ * 【JS 模块 9】跨 iframe 通信
+ * 【JS 模块 10】事件绑定
+ * 【JS 模块 11】初始化 + hash 路由
+ * ========================================================================= */
 'use strict';
 
+/* 【JS 模块 1】常量 */
 const TOOLS = [
-  { key: 'character',   label: '角色一图流', src: 'tools/character.html',   icon: 'character',   iconBold: 'characterBold' },
-  { key: 'image-tools', label: '图片处理',   src: 'tools/image-tools.html', icon: 'imageTools',  iconBold: 'imageToolsBold' },
-  { key: 'video-cover', label: '封面制作',   src: 'tools/video-cover.html', icon: 'videoCover',  iconBold: 'videoCoverBold' },
-  { key: 'chart',       label: '图表',       src: 'tools/chart.html',       icon: 'chart',       iconBold: 'chartBold' },
-  { key: 'tier',        label: '角色梯队',   src: 'tools/tier.html',        icon: 'tier',        iconBold: 'tierBold' }
+  { key: 'character',   label: '角色一图流', src: 'tools/character/index.html', icon: 'character',   iconBold: 'characterBold' },
+  { key: 'image-tools', label: '图片处理',   src: 'tools/image-tools.html',    icon: 'imageTools',  iconBold: 'imageToolsBold' },
+  { key: 'video-cover', label: '封面制作',   src: 'tools/video-cover.html',    icon: 'videoCover',  iconBold: 'videoCoverBold' },
+  { key: 'chart',       label: '图表',       src: 'tools/chart.html',          icon: 'chart',       iconBold: 'chartBold' },
+  { key: 'tier',        label: '角色梯队',   src: 'tools/tier.html',           icon: 'tier',        iconBold: 'tierBold' }
 ];
 
-const FALLBACK_SUBTOOLS = {
+const SUBTOOLS = {
   'character':   [],
   'image-tools': [
     { key: 'background',  label: '背景修改' },
@@ -338,32 +386,37 @@ const FALLBACK_SUBTOOLS = {
   'tier': []
 };
 
-const SUBTOOLS = JSON.parse(JSON.stringify(FALLBACK_SUBTOOLS));
 const DEFAULT_TOOL = 'character';
-const STORAGE_KEY = 'gtt_active_tool';
-const THEME_KEY = 'gtt_theme';
+const STORAGE_KEY  = 'gtt_active_tool';
+const THEME_KEY    = 'gtt_theme';
 
-const frameContainer = document.getElementById('frameContainer');
-const sidebarDrawer  = document.getElementById('sidebarDrawer');
-const sidebarBackdrop= document.getElementById('sidebarBackdrop');
-const sidebarMenu    = document.getElementById('sidebarMenu');
-const loadingMask    = document.getElementById('loadingMask');
-const navIcon        = document.getElementById('navIcon');
-const navText        = document.getElementById('navText');
-const btnMenu        = document.getElementById('btnMenu');
-const btnClose       = document.getElementById('btnClose');
-const btnTheme       = document.getElementById('btnTheme');
+/* 【JS 模块 2】DOM 引用 */
+const frameContainer  = document.getElementById('frameContainer');
+const sidebarDrawer   = document.getElementById('sidebarDrawer');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const sidebarMenu     = document.getElementById('sidebarMenu');
+const loadingMask     = document.getElementById('loadingMask');
+const navIcon         = document.getElementById('navIcon');
+const navText         = document.getElementById('navText');
+const btnMenu         = document.getElementById('btnMenu');
+const btnClose        = document.getElementById('btnClose');
+const btnTheme        = document.getElementById('btnTheme');
 
 const frameCache = new Map();
 
-let currentTheme = 'light';
+let currentTheme  = 'light';
+let activeTool    = DEFAULT_TOOL;
+let activeSubtool = '';
 
+/* 【JS 模块 3】主题切换 */
 function applyTheme(theme) {
   currentTheme = theme === 'dark' ? 'dark' : 'light';
 
+  // 加 class 让所有过渡临时失效，避免切换主题时颜色"慢慢渐变"
   document.documentElement.classList.add('theme-switching');
   document.documentElement.setAttribute('data-theme', currentTheme);
 
+  // 同步到已加载的 iframe（DOM 直改 + postMessage 双保险）
   frameCache.forEach(record => {
     if (!record.loaded) return;
     try {
@@ -387,6 +440,7 @@ function applyTheme(theme) {
 
   try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
 
+  // 下一帧移除 class，恢复过渡
   requestAnimationFrame(() => requestAnimationFrame(() => {
     document.documentElement.classList.remove('theme-switching');
     frameCache.forEach(record => {
@@ -405,6 +459,7 @@ function toggleTheme() {
   applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
 }
 
+/* 【JS 模块 4】侧边栏开关 */
 function openSidebar() {
   sidebarDrawer.classList.add('open');
   sidebarBackdrop.classList.add('active');
@@ -414,6 +469,7 @@ function closeSidebar() {
   sidebarBackdrop.classList.remove('active');
 }
 
+/* 【JS 模块 5】菜单渲染 */
 function renderMenu() {
   sidebarMenu.innerHTML = '';
 
@@ -479,6 +535,7 @@ function renderMenu() {
   });
 }
 
+/* 【JS 模块 6】iframe 管理 */
 function ensureFrame(tool) {
   if (frameCache.has(tool.key)) return frameCache.get(tool.key);
 
@@ -517,16 +574,16 @@ function ensureFrame(tool) {
   return record;
 }
 
-let activeTool = DEFAULT_TOOL;
-let activeSubtool = '';
-
+/* 【JS 模块 7】工具切换 / 子工具切换 */
 function selectTool(toolKey, opts) {
   const silent = opts && opts.silent;
   const tool = TOOLS.find(t => t.key === toolKey) || TOOLS[0];
   const subs = SUBTOOLS[tool.key] || [];
 
   activeTool = tool.key;
-  activeSubtool = subs.length ? (activeSubtool && subs.some(s => s.key === activeSubtool) ? activeSubtool : subs[0].key) : '';
+  activeSubtool = subs.length
+    ? (activeSubtool && subs.some(s => s.key === activeSubtool) ? activeSubtool : subs[0].key)
+    : '';
 
   updateNavTitle();
   renderMenu();
@@ -536,11 +593,7 @@ function selectTool(toolKey, opts) {
     r.view.classList.toggle('active', k === tool.key);
   });
 
-  if (!record.loaded) {
-    loadingMask.classList.add('show');
-  } else {
-    loadingMask.classList.remove('show');
-  }
+  loadingMask.classList.toggle('show', !record.loaded);
 
   try { localStorage.setItem(STORAGE_KEY, tool.key); } catch (e) {}
   if (!silent) {
@@ -568,18 +621,11 @@ function selectSubtool(toolKey, subKey, opts) {
     r.view.classList.toggle('active', k === toolKey);
   });
 
-  if (!record.loaded) {
-    loadingMask.classList.add('show');
-  } else {
-    loadingMask.classList.remove('show');
-  }
+  loadingMask.classList.toggle('show', !record.loaded);
 
   if (record.loaded && record.iframe.contentWindow) {
     try {
-      record.iframe.contentWindow.postMessage({
-        type: 'navigate',
-        subtool: subKey
-      }, '*');
+      record.iframe.contentWindow.postMessage({ type: 'navigate', subtool: subKey }, '*');
     } catch (e) {}
   }
 
@@ -591,13 +637,12 @@ function selectSubtool(toolKey, subKey, opts) {
   closeSidebar();
 }
 
+/* 【JS 模块 8】导航标题同步 */
 function updateNavTitle() {
   const tool = TOOLS.find(t => t.key === activeTool);
   if (!tool) return;
 
-  const iconKey = tool.iconBold;
-  const iconSvg = (ICONS.nav && ICONS.nav[iconKey]) || '';
-  navIcon.innerHTML = iconSvg;
+  navIcon.innerHTML = (ICONS.nav && ICONS.nav[tool.iconBold]) || '';
 
   const subs = SUBTOOLS[tool.key] || [];
   const sub = subs.find(s => s.key === activeSubtool);
@@ -608,6 +653,7 @@ function updateNavTitle() {
   }
 }
 
+/* 【JS 模块 9】跨 iframe 通信 */
 window.addEventListener('message', (e) => {
   const data = e.data;
   if (!data || typeof data !== 'object') return;
@@ -630,6 +676,7 @@ window.addEventListener('message', (e) => {
   }
 });
 
+/* 【JS 模块 10】事件绑定 */
 btnMenu.addEventListener('click', openSidebar);
 btnClose.addEventListener('click', closeSidebar);
 sidebarBackdrop.addEventListener('click', closeSidebar);
@@ -639,8 +686,16 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSidebar();
 });
 
+window.addEventListener('hashchange', () => {
+  const key = (location.hash || '').replace(/^#/, '');
+  if (key && TOOLS.some(t => t.key === key) && key !== activeTool) {
+    selectTool(key, { silent: true });
+  }
+});
+
+/* 【JS 模块 11】初始化 */
 (function init() {
-  btnMenu.innerHTML = ICONS.app.hamburger;
+  btnMenu.innerHTML  = ICONS.app.hamburger;
   btnClose.innerHTML = ICONS.app.close;
 
   let savedTheme = 'light';
@@ -660,13 +715,6 @@ document.addEventListener('keydown', e => {
 
   selectTool(initialKey, { silent: true });
 })();
-
-window.addEventListener('hashchange', () => {
-  const key = (location.hash || '').replace(/^#/, '');
-  if (key && TOOLS.some(t => t.key === key) && key !== activeTool) {
-    selectTool(key, { silent: true });
-  }
-});
 </script>
 </body>
 </html>
