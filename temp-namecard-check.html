@@ -28,12 +28,6 @@ pre {
   max-height: 300px; overflow-y: auto;
   font-family: ui-monospace, Menlo, monospace;
 }
-.btn {
-  display: block; width: 100%; height: 44px;
-  background: #222; color: #fff; border: 0; border-radius: 10px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-  margin-top: 10px; font-family: inherit;
-}
 img.testimg { max-width: 100%; border-radius: 8px; margin-top: 6px; display: block; }
 </style>
 </head>
@@ -79,7 +73,6 @@ function log(msg, cls) {
   div.className = 'line ' + (cls || '');
   div.textContent = msg;
   batchLog.appendChild(div);
-  batchLog.parentNode.scrollTop = batchLog.scrollHeight;
 }
 
 /* ① 检查 icon-dict */
@@ -188,10 +181,9 @@ async function runBatch(charList) {
       log('✅ ' + item.order + ' ' + item.name + ' → ' + shortId, 'ok');
     } else {
       fail++;
-      log('❌ ' + item.order + ' ' + item.name + ' → ' + shortId + '（URL: ' + url + '）', 'fail');
+      log('❌ ' + item.order + ' ' + item.name + ' → ' + shortId + '（' + url + '）', 'fail');
     }
     diagBatch.textContent = '进行中：' + (i + 1) + '/' + charList.length + '（成功 ' + ok + '，失败 ' + fail + '）';
-    /* 每 10 个让 UI 喘口气 */
     if (i % 10 === 9) await new Promise(r => setTimeout(r, 30));
   }
 
@@ -212,7 +204,6 @@ async function runBatch(charList) {
     return;
   }
 
-  /* ② characters.txt */
   let charList;
   try {
     charList = await loadCharList();
