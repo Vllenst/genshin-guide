@@ -44,7 +44,6 @@
     monsters:   "https://gi.yatta.moe/api/v2/CHS/monster"
   };
 
-  /* 本地图目录（相对 app.js 所在位置） */
   var LOCAL_IMG_BASE = "../../shared/gi-icons/";
 
   var ALL_TYPES = ["characters", "artifacts", "weapons", "monsters"];
@@ -200,7 +199,7 @@
           if (Array.isArray(parsed.data[t])) editorData[t] = parsed.data[t];
           else editorData[t] = [];
         });
-        if (parsed.config) config = parsed.config;
+        /* config 永远是默认值，不读旧的（旧字典前缀会污染 URL 拼接） */
       }
     } catch (e) {}
   }
@@ -233,7 +232,6 @@
     return cfg.prefix + key + (cfg.ext || "");
   }
 
-  /* 从 URL 或文件名提取图标全名（去路径、去扩展名） */
   function extractIconFullName(input) {
     var s = String(input || "").trim();
     if (!s) return "";
@@ -242,31 +240,11 @@
   }
 
   function makeThumbFor(row, cb) {
-    var star = row.star;
     var mode = detectMode(row.key);
     var src = "";
     if (mode === "local" && tempThumbs[row.key]) src = tempThumbs[row.key];
     else src = resolveUrl(currentTab, row.key, mode);
-    if (!src) { cb(""); return; }
-
-    var lib = window.ICON_LIB;
-    var img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = function () {
-      try {
-        if (star == null) {
-          /* 无星级 → 直接返回原图 */
-          var canvas = document.createElement("canvas");
-          canvas.width = img.width; canvas.height = img.height;
-          canvas.getContext("2d").drawImage(img, 0, 0);
-          cb(canvas.toDataURL("image/png"));
-        } else {
-          cb(lib.applyBackground(img, star, { size: 80 }));
-        }
-      } catch (e) { cb(""); }
-    };
-    img.onerror = function () { cb(""); };
-    img.src = src;
+    cb(src);
   }
 
   function esc(s) {
@@ -323,12 +301,22 @@
       });
       top.appendChild(inpOrder);
 
-      var thumb = document.createElement("img");
-      thumb.className = "entry-thumb"; thumb.alt = "";
+      var thumb = document.createElement("div");
+      thumb.className = "entry-thumb";
+      if (row.star != null) {
+        var c = starColor(row.star);
+        var edge = darken(c, 50);
+        thumb.style.background = "radial-gradient(circle, " + c + ", " + edge + ")";
+      }
+      var thumbImg = document.createElement("img");
+      thumbImg.alt = "";
+      thumb.appendChild(thumbImg);
       top.appendChild(thumb);
       makeThumbFor(row, function (url) {
-        if (url) thumb.src = url;
-        else { thumb.style.background = starColor(row.star); thumb.removeAttribute("src"); }
+        if (url) {
+          thumbImg.src = url;
+          thumbImg.onerror = function () { thumbImg.removeAttribute("src"); };
+        }
       });
 
       var inpName = document.createElement("input");
@@ -358,7 +346,6 @@
       var mid = document.createElement("div");
       mid.className = "entry-mid";
 
-      /* 占位，让删除按钮靠右 */
       var spacer = document.createElement("div");
       spacer.style.flex = "1";
       mid.appendChild(spacer);
@@ -503,6 +490,9 @@
   async function syncFromAmber() {
     setStatus("正在从 Amber 同步…");
 
+    /* 强制重置 config，避免被旧字典污染 */
+    config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
     /* 1. 备份本地图条目（按中文名索引） */
     var localByName = {};
     ALL_TYPES.forEach(function (type) {
@@ -525,12 +515,43 @@
       }
     }
 
-    /* 3. 合并：本地图优先，amber 里名字相同的跳过 */
+    /* 3. 合并策略：
+     *    优先级 1（最高）：本地图（local:true）→ 保留
+     *    优先级 2：Amber 里有的中文名 → 用 Amber 的
+     *    优先级 3：Amber 里没有、但字典里已有的 → 保留
+     */
     ALL_TYPES.forEach(function (type) {
       var merged = {};
       var localMap = localByName[type] || {};
 
-      /* 先放本地图 */
+      /* 3.1 现有条目按中文名索引 */
+      var existingByName = {};
+      (editorData[type] || []).forEach(function (row) {
+        if (row.name) existingByName[row.name] = row;
+      });
+
+      /* 3.2 Amber 里的条目：全部放进去 */
+      var amberItems = amberResult[type] || {};
+      var amberNames = {};
+      Object.keys(amberItems).forEach(function (key) {
+        var item = amberItems[key];
+        amberNames[item.name] = true;
+        merged[key] = item;
+      });
+
+      /* 3.3 现有条目里，Amber 没有的 → 保留 */
+      Object.keys(existingByName).forEach(function (name) {
+        if (amberNames[name]) return;
+        var row = existingByName[name];
+        merged[row.key] = {
+          name: row.name,
+          star: row.star,
+          order: row.order,
+          local: row.local || false
+        };
+      });
+
+      /* 3.4 本地图强制保留 */
       Object.keys(localMap).forEach(function (name) {
         var row = localMap[name];
         merged[row.key] = {
@@ -538,15 +559,7 @@
         };
       });
 
-      /* 再放 amber（名字冲突的跳过） */
-      var amberItems = amberResult[type] || {};
-      Object.keys(amberItems).forEach(function (key) {
-        var item = amberItems[key];
-        if (localMap[item.name]) return;  /* 本地已有同名 → 跳过 */
-        merged[key] = item;
-      });
-
-      /* 转成数组 */
+      /* 3.5 转成数组 */
       editorData[type] = Object.keys(merged).map(function (k) {
         var r = merged[k];
         var out = { key: k, name: r.name, order: r.order };
@@ -611,7 +624,7 @@
     lines.push("window.ICON_DICT = {");
     lines.push("  config: {");
     ALL_TYPES.forEach(function (type, ti) {
-      var cfg = config[type];
+      var cfg = config[type] || DEFAULT_CONFIG[type] || { prefix: "", ext: "" };
       lines.push('    ' + type + ': { prefix: "' + esc(cfg.prefix) + '", ext: "' + esc(cfg.ext || "") + '" }' + (ti < ALL_TYPES.length - 1 ? "," : ""));
     });
     lines.push("  },");
