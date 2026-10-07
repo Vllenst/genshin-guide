@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>名片图链接探测</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  background: #f5f5f5; color: #222; font-size: 14px;
+  padding: 12px; padding-bottom: 80px;
+  line-height: 1.5;
+}
+h1 { font-size: 17px; margin-bottom: 8px; }
+.hint { font-size: 12px; color: #666; margin-bottom: 12px; line-height: 1.6; }
+.card {
+  background: #fff; border-radius: 10px; padding: 12px;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+}
+.badge.ok { background: #e6f7e6; color: #2a7a2a; }
+.badge.fail { background: #fdecea; color: #b3261e; }
+.badge.run { background: #e8f0fe; color: #1a5ccc; }
+pre {
+  background: #fafafa; border: 1px solid #eee; border-radius: 8px;
+  padding: 10px; font-size: 12px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-all;
+  max-height: 320px; overflow-y: auto;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.btn {
+  display: block; width: 100%; height: 44px;
+  background: #222; color: #fff; border: 0; border-radius: 10px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  margin-top: 10px; font-family: inherit;
+}
+.btn:active { opacity: .85; }
+.btn.sec {
+  background: #fff; color: #222; border: 1px solid #ddd;
+}
+.progress {
+  height: 6px; background: #eee; border-radius: 3px;
+  overflow: hidden; margin: 8px 0;
+}
+.progress > div {
+  height: 100%; background: #222; width: 0%; transition: width .2s;
+}
+.status { font-size: 12px; color: #666; }
+.section-title {
+  font-size: 13px; font-weight: 600; color: #444;
+  margin-bottom: 6px;
+}
+#output { display: none; }
+</style>
+</head>
+<body>
+
+<h1>名片图链接探测</h1>
+<div class="hint">
+  遍历 icon-dict.js 的所有角色，拼 <code>UI_NameCardPic_{shortId}_P.png</code>，
+  探测 Lunaris 外链是否有效。探测完复制结果到 <code>shared/data/namecards.txt</code>。
+</div>
+
+<div class="card">
+  <div class="row">
+    <span class="status" id="statusText">准备中…</span>
+    <span class="badge run" id="badge">等待</span>
+  </div>
+  <div class="progress"><div id="progressBar"></div></div>
+  <div class="status" id="subStatus"></div>
+</div>
+
+<div id="output">
+
+  <div class="card">
+    <div class="section-title">✅ 探测成功 <span id="okCount">0</span></div>
+    <pre id="okList"></pre>
+    <button class="btn" onclick="copyOk()">复制成功列表</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">❌ 探测失败 <span id="failCount">0</span></div>
+    <pre id="failList"></pre>
+    <button class="btn sec" onclick="copyFail()">复制失败列表</button>
+  </div>
+
+</div>
+
+<script src="shared/gi-icons/icon-dict.js"></script>
+<script>
+'use strict';
+
+const PREFIX = 'https://api.lunaris.moe/data/assets/namecardpic/';
+const SUFFIX = '_P.png';
+const CONCURRENCY = 5;
+
+const okList = [];
+const failList = [];
+
+function stripPrefix(key) {
+  return key.replace(/^UI_AvatarIcon_/i, '').replace(/\.[^.]+$/, '');
+}
+
+function setStatus(text) {
+  document.getElementById('statusText').textContent = text;
+}
+function setSubStatus(text) {
+  document.getElementById('subStatus').textContent = text;
+}
+function setBadge(text, cls) {
+  const b = document.getElementById('badge');
+  b.textContent = text;
+  b.className = 'badge ' + cls;
+}
+function setProgress(cur, total) {
+  document.getElementById('progressBar').style.width = (cur / total * 100) + '%';
+}
+
+async function urlExists(url) {
+  try {
+    let res = await fetch(url, { method: 'HEAD' });
+    if (res.ok) return true;
+    if (res.status === 405) {
+      res = await fetch(url);
+      return res.ok;
+    }
+    return false;
+  } catch (e) {
+    try {
+      const res2 = await fetch(url);
+      return res2.ok;
+    } catch (e2) {
+      return false;
+    }
+  }
+}
+
+async function probeOne(item) {
+  const url = PREFIX + item.shortId + SUFFIX;
+  const ok = await urlExists(url);
+  if (ok) {
+    okList.push({ name: item.name, shortId: item.shortId, url });
+  } else {
+    failList.push({ name: item.name, shortId: item.shortId, url });
+  }
+}
+
+async function run() {
+  const dict = window.ICON_DICT && window.ICON_DICT.characters;
+  if (!dict) {
+    setStatus('icon-dict.js 未加载！');
+    setBadge('错误', 'fail');
+    return;
+  }
+
+  const items = Object.keys(dict).map(key => ({
+    name: dict[key].name || '',
+    shortId: stripPrefix(key),
+    order: dict[key].order || 0
+  })).filter(it => it.name && it.shortId);
+
+  items.sort((a, b) => a.order - b.order);
+
+  setBadge('运行中', 'run');
+  setStatus(`共 ${items.length} 个角色，开始探测…`);
+
+  let done = 0;
+  for (let i = 0; i < items.length; i += CONCURRENCY) {
+    const batch = items.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(it => probeOne(it)));
+    done += batch.length;
+    setProgress(done, items.length);
+    setStatus(`探测中… ${done}/${items.length}`);
+  }
+
+  setProgress(items.length, items.length);
+  setBadge('完成', 'ok');
+  setStatus(`完成：成功 ${okList.length}，失败 ${failList.length}`);
+
+  document.getElementById('okCount').textContent = okList.length;
+  document.getElementById('failCount').textContent = failList.length;
+
+  document.getElementById('okList').textContent =
+    okList.map(o => o.name + ' ' + o.url).join('\n') || '（无）';
+
+  document.getElementById('failList').textContent =
+    failList.map(o => o.name + '（' + o.shortId + '）').join('\n') || '（无）';
+
+  document.getElementById('output').style.display = 'block';
+  setSubStatus('翻到下面查看结果');
+}
+
+function copyText(text, label) {
+  if (!text) { alert('列表为空'); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => alert(label + '已复制'),
+      () => fallbackCopy(text, label)
+    );
+  } else {
+    fallbackCopy(text, label);
+  }
+}
+function fallbackCopy(text, label) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    alert(label + '已复制');
+  } catch (e) {
+    alert('复制失败，请手动选中文字复制');
+  }
+  ta.remove();
+}
+function copyOk() {
+  const text = okList.map(o => o.name + ' ' + o.url).join('\n');
+  copyText(text, '成功列表');
+}
+function copyFail() {
+  const text = failList.map(o => o.name + '（' + o.shortId + '）').join('\n');
+  copyText(text, '失败列表');
+}
+
+window.addEventListener('DOMContentLoaded', run);
+</script>
+</body>
+</html>
