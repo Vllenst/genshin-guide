@@ -258,16 +258,14 @@ function themeToElementName() {
   }
   return '';
 }
+/* key 现在是图标全名（如 UI_AvatarIcon_HuTao），剥前缀 + 剥扩展名 → 短 ID */
 function findShortIdByName(name) {
   var dict = window.ICON_DICT && window.ICON_DICT.characters;
   if (!dict || !name) return '';
   for (var key in dict) {
     var item = dict[key];
     if (item && item.name === name) {
-      if (item.local) {
-        return key.replace(/^UI_AvatarIcon_/i, '').replace(/\.[^.]+$/, '');
-      }
-      return key;
+      return key.replace(/^UI_AvatarIcon_/i, '').replace(/\.[^.]+$/, '');
     }
   }
   return '';
