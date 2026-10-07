@@ -48,6 +48,8 @@
 
   var ALL_TYPES = ["characters", "artifacts", "weapons", "monsters"];
 
+  var TYPE_LABELS = { characters: "角色", artifacts: "圣遗物", weapons: "武器", monsters: "怪物" };
+
   /* ---------------------------------------------------------------------
    * 【JS 模块 2】DOM 引用
    * ------------------------------------------------------------------- */
@@ -217,6 +219,20 @@
     return (lib && lib.starColors && lib.starColors[s]) || "#939393";
   }
 
+  function darkenHex(hex, amt) {
+    if (!hex || typeof hex !== "string") return "#333333";
+    var h = hex.charAt(0) === "#" ? hex.slice(1) : hex;
+    if (h.length !== 6) return "#333333";
+    var r = parseInt(h.slice(0, 2), 16);
+    var g = parseInt(h.slice(2, 4), 16);
+    var b = parseInt(h.slice(4, 6), 16);
+    if ([r, g, b].some(function (v) { return isNaN(v); })) return "#333333";
+    var rr = Math.max(0, r - amt);
+    var gg = Math.max(0, g - amt);
+    var bb = Math.max(0, b - amt);
+    return "#" + rr.toString(16).padStart(2, "0") + gg.toString(16).padStart(2, "0") + bb.toString(16).padStart(2, "0");
+  }
+
   function detectMode(key) {
     if (!key) return "id";
     if (/^https?:\/\//i.test(key)) return "url";
@@ -305,7 +321,7 @@
       thumb.className = "entry-thumb";
       if (row.star != null) {
         var c = starColor(row.star);
-        var edge = darken(c, 50);
+        var edge = darkenHex(c, 50);
         thumb.style.background = "radial-gradient(circle, " + c + ", " + edge + ")";
       }
       var thumbImg = document.createElement("img");
@@ -446,11 +462,17 @@
    * 【JS 模块 11】从 Amber 同步（生成完整字典）
    * ------------------------------------------------------------------- */
   async function fetchAmberItems(type) {
-    var res = await fetch(AMBER_ENDPOINTS[type]);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    var json = await res.json();
-    var raw = (json && json.data) || json || {};
-    return raw.items || raw;
+    var controller = new AbortController();
+    var timer = setTimeout(function () { controller.abort(); }, 20000);
+    try {
+      var res = await fetch(AMBER_ENDPOINTS[type], { signal: controller.signal });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var json = await res.json();
+      var raw = (json && json.data) || json || {};
+      return raw.items || raw;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   function transformAmberItems(type, items) {
@@ -506,11 +528,12 @@
     var amberResult = {};
     for (var i = 0; i < ALL_TYPES.length; i++) {
       var type = ALL_TYPES[i];
+      setStatus("正在拉取" + TYPE_LABELS[type] + "…");
       try {
         var items = await fetchAmberItems(type);
         amberResult[type] = transformAmberItems(type, items);
       } catch (e) {
-        setStatus("同步失败：" + type + " - " + e.message, "err");
+        setStatus("同步失败：" + TYPE_LABELS[type] + " - " + (e.message || "超时或网络异常"), "err");
         return;
       }
     }
@@ -520,17 +543,16 @@
      *    优先级 2：Amber 里有的中文名 → 用 Amber 的
      *    优先级 3：Amber 里没有、但字典里已有的 → 保留
      */
+    setStatus("正在合并数据…");
     ALL_TYPES.forEach(function (type) {
       var merged = {};
       var localMap = localByName[type] || {};
 
-      /* 3.1 现有条目按中文名索引 */
       var existingByName = {};
       (editorData[type] || []).forEach(function (row) {
         if (row.name) existingByName[row.name] = row;
       });
 
-      /* 3.2 Amber 里的条目：全部放进去 */
       var amberItems = amberResult[type] || {};
       var amberNames = {};
       Object.keys(amberItems).forEach(function (key) {
@@ -539,7 +561,6 @@
         merged[key] = item;
       });
 
-      /* 3.3 现有条目里，Amber 没有的 → 保留 */
       Object.keys(existingByName).forEach(function (name) {
         if (amberNames[name]) return;
         var row = existingByName[name];
@@ -551,7 +572,6 @@
         };
       });
 
-      /* 3.4 本地图强制保留 */
       Object.keys(localMap).forEach(function (name) {
         var row = localMap[name];
         merged[row.key] = {
@@ -559,7 +579,6 @@
         };
       });
 
-      /* 3.5 转成数组 */
       editorData[type] = Object.keys(merged).map(function (k) {
         var r = merged[k];
         var out = { key: k, name: r.name, order: r.order };
@@ -573,7 +592,7 @@
     render();
 
     var summary = ALL_TYPES.map(function (t) {
-      return { characters: "角色", artifacts: "圣遗物", weapons: "武器", monsters: "怪物" }[t] + " " + editorData[t].length;
+      return TYPE_LABELS[t] + " " + editorData[t].length;
     }).join(" · ");
     setStatus("同步完成 · " + summary, "ok");
   }
@@ -582,7 +601,7 @@
    * 【JS 模块 12】清空当前分类
    * ------------------------------------------------------------------- */
   function clearCurrent() {
-    var label = { characters: "角色", artifacts: "圣遗物", weapons: "武器", monsters: "怪物" }[currentTab];
+    var label = TYPE_LABELS[currentTab];
     if (!confirm("确定清空「" + label + "」的所有条目吗？")) return;
     editorData[currentTab] = [];
     saveLocal(); render(); setStatus("已清空", "ok");
@@ -629,11 +648,9 @@
     });
     lines.push("  },");
 
-    var labels = { characters: "角色", artifacts: "圣遗物", weapons: "武器", monsters: "怪物" };
-
     ALL_TYPES.forEach(function (type, ti) {
       lines.push("");
-      lines.push("  /* ============ " + labels[type] + " ============ */");
+      lines.push("  /* ============ " + TYPE_LABELS[type] + " ============ */");
       lines.push("  " + type + ": {");
 
       var list = editorData[type].slice()
