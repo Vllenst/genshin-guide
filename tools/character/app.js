@@ -15,7 +15,7 @@
  *   【JS 模块 9】    UI 编辑器渲染
  *   【JS 模块 10】   图片上传
  *   【JS 模块 10.3】 字体库
- *   【JS 模块 10.4】 characters.txt 读取
+ *   【JS 模块 10.4】 characters.txt / namecards.txt 读取
  *   【JS 模块 10.5】 样式图匹配 + 在线存档
  *   【JS 模块 10.6】 图标库匹配
  *   【JS 模块 11】   数据归一化
@@ -119,6 +119,7 @@ const TAB_DEFS = [
 let currentTab = 'style';
 
 let CHAR_NAME_TO_ORDER = {};
+let NAMECARD_DICT = {};
 
 /* =========================================================================
  * 【JS 模块 3】State 与持久化
@@ -254,18 +255,6 @@ function themeToElementName() {
   var t = (State.data.theme || '').toLowerCase();
   for (var i = 0; i < elementColors.length; i++) {
     if (elementColors[i][1].toLowerCase() === t) return elementColors[i][0];
-  }
-  return '';
-}
-/* key 现在是图标全名（如 UI_AvatarIcon_HuTao），剥前缀 + 剥扩展名 → 短 ID */
-function findShortIdByName(name) {
-  var dict = window.ICON_DICT && window.ICON_DICT.characters;
-  if (!dict || !name) return '';
-  for (var key in dict) {
-    var item = dict[key];
-    if (item && item.name === name) {
-      return key.replace(/^UI_AvatarIcon_/i, '').replace(/\.[^.]+$/, '');
-    }
   }
   return '';
 }
@@ -937,7 +926,6 @@ function renderTabBar() {
     `<button type="button" class="tab-btn ${t.key === currentTab ? 'active' : ''}" data-tab="${t.key}" onclick="App.selectTab('${t.key}')">${t.label}</button>`
   ).join('');
 }
-/* 把选中的 Tab 按钮滚到可视区中间（只动横向容器，不影响页面） */
 function scrollTabIntoView(btn) {
   const bar = document.getElementById('tabBar');
   if (!bar || !btn) return;
@@ -1265,7 +1253,6 @@ function doUpload(input, setter) {
   reader.readAsDataURL(input.files[0]);
   input.value = '';
 }
-/* 更新立绘偏移提示：有原图尺寸就显示尺寸，没有就显示默认文案 */
 function updateImgXHint() {
   const el = document.getElementById('imgXHint');
   if (!el) return;
@@ -1380,7 +1367,7 @@ async function selectFont(index) {
 }
 
 /* =========================================================================
- * 【JS 模块 10.4】characters.txt 读取
+ * 【JS 模块 10.4】characters.txt / namecards.txt 读取
  * ========================================================================= */
 async function loadCharOrderTxt() {
   try {
@@ -1404,6 +1391,26 @@ async function loadCharOrderTxt() {
   }
 }
 
+async function loadNamecards() {
+  try {
+    const res = await fetch('../../shared/data/namecards.txt?t=' + Date.now());
+    if (!res.ok) { console.warn('namecards.txt HTTP ' + res.status); return; }
+    const text = await res.text();
+    NAMECARD_DICT = {};
+    text.split(/\r?\n/).forEach(function (line) {
+      line = line.trim();
+      if (!line || line.startsWith('#')) return;
+      // 格式：编号 空格 角色名 空格 URL
+      const m = line.match(/^(\d+)\s+(\S+)\s+(https?:\/\/\S+)$/);
+      if (!m) return;
+      NAMECARD_DICT[m[2]] = m[3];
+    });
+    console.log('namecards.txt 加载成功，共 ' + Object.keys(NAMECARD_DICT).length + ' 条');
+  } catch (e) {
+    console.warn('namecards.txt 加载失败：', e.message);
+  }
+}
+
 /* =========================================================================
  * 【JS 模块 10.5】样式图匹配 + 在线存档载入
  * ========================================================================= */
@@ -1416,8 +1423,8 @@ async function matchStyleImages() {
   showToast('正在匹配样式图…', 'info');
   const results = { standing: false, element: false, namecard: false };
   const order = CHAR_NAME_TO_ORDER[name];
-  const shortId = findShortIdByName(name);
 
+  // 立绘：本地目录 + urlExists 探测
   let standingUrl = '';
   if (order) {
     const ghUrl = '../../shared/assets/characters/standing/' + padOrder(order) + '.' + name + '.png';
@@ -1433,6 +1440,7 @@ async function matchStyleImages() {
     resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
   }
 
+  // 元素图：本地目录 + urlExists 探测
   const elementName = themeToElementName();
   let elementUrl = '';
   if (elementName) {
@@ -1449,11 +1457,8 @@ async function matchStyleImages() {
     resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
   }
 
-  let namecardUrl = '';
-  if (shortId) {
-    const lmUrl = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_' + shortId + '_P.png';
-    if (await urlExists(lmUrl)) namecardUrl = lmUrl;
-  }
+  // 名片图：查 namecards.txt 字典，不探测
+  const namecardUrl = NAMECARD_DICT[name] || '';
   if (namecardUrl) {
     State.data.bgImg = namecardUrl;
     updateThumb('thumbBg', 'labelBg', namecardUrl, '已匹配名片图');
@@ -1466,10 +1471,9 @@ async function matchStyleImages() {
   const failed = [];
   if (order && !results.standing) failed.push('立绘');
   if (elementName && !results.element) failed.push('元素图');
-  if (shortId && !results.namecard) failed.push('名片图');
+  if (!results.namecard) failed.push('名片图（字典无此角色）');
   if (!order) failed.push('立绘（characters.txt 无此角色）');
   if (!elementName) failed.push('元素图（未选元素色）');
-  if (!shortId) failed.push('名片图（字典无此角色）');
   if (failed.length) showToast('未找到：' + failed.join('、'), 'error');
   else showToast('全部匹配成功', 'success');
   updateImgXHint();
@@ -1926,7 +1930,6 @@ function injectFloatIcons() {
   const loadSaveIcon = document.getElementById('btnLoadSaveIcon');
   if (loadSaveIcon && S.ui) loadSaveIcon.innerHTML = S.ui.import || '';
 }
-/* 点击预览区切换浮动按钮显隐（手机端用；桌面端有 :hover 兜底） */
 function bindPreviewTapToggle() {
   const frame = document.getElementById('previewFrame');
   const toolbar = document.getElementById('floatToolbar');
@@ -1941,6 +1944,7 @@ async function init() {
   const saved = await loadStateFromIDB();
   State.data = normalizeState(saved || {});
   await loadCharOrderTxt();
+  await loadNamecards();
   await loadFontList();
   await installPreviewFont();
   initThumbnails();
