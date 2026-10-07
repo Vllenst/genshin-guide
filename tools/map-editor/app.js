@@ -200,7 +200,6 @@
           if (Array.isArray(parsed.data[t])) editorData[t] = parsed.data[t];
           else editorData[t] = [];
         });
-        /* config 永远是默认值，不读旧的（旧字典前缀会污染 URL 拼接） */
       }
     } catch (e) {}
   }
@@ -283,7 +282,6 @@
       var card = document.createElement("div");
       card.className = "entry-card";
 
-      /* 顶部行：序号 + 缩略图 + 中文名 */
       var top = document.createElement("div");
       top.className = "entry-top";
 
@@ -355,7 +353,6 @@
       top.appendChild(inpName);
       card.appendChild(top);
 
-      /* 底部行：星级（怪物没有） + 删除 */
       var mid = document.createElement("div");
       mid.className = "entry-mid";
 
@@ -509,6 +506,7 @@
 
     config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
+    /* 1. 备份本地图条目（按中文名索引） */
     var localByName = {};
     ALL_TYPES.forEach(function (type) {
       localByName[type] = {};
@@ -517,6 +515,7 @@
       });
     });
 
+    /* 2. 遍历 4 类拉数据 */
     var amberResult = {};
     for (var i = 0; i < ALL_TYPES.length; i++) {
       var type = ALL_TYPES[i];
@@ -530,26 +529,46 @@
       }
     }
 
+    /* 3. 合并策略：
+     *    优先级 1（最高）：本地图（local:true）→ 保留，且占用中文名
+     *    优先级 2：Amber 里有的中文名（没被本地图占用）→ 用 Amber 的
+     *    优先级 3（最低）：Amber 里没有、字典里已有的 → 保留
+     */
     setStatus("正在合并数据…");
     ALL_TYPES.forEach(function (type) {
       var merged = {};
       var localMap = localByName[type] || {};
 
-      var existingByName = {};
-      (editorData[type] || []).forEach(function (row) {
-        if (row.name) existingByName[row.name] = row;
+      /* 本地图名字集合 */
+      var localNames = {};
+      Object.keys(localMap).forEach(function (name) { localNames[name] = true; });
+
+      /* 3.1 先放本地图 */
+      Object.keys(localMap).forEach(function (name) {
+        var row = localMap[name];
+        merged[row.key] = {
+          name: row.name, star: row.star, order: row.order, local: true
+        };
       });
 
+      /* 3.2 Amber 里的条目：名字被本地图占用则跳过 */
       var amberItems = amberResult[type] || {};
       var amberNames = {};
       Object.keys(amberItems).forEach(function (key) {
         var item = amberItems[key];
+        if (localNames[item.name]) return;   /* 本地图有同名 → 跳过 */
         amberNames[item.name] = true;
         merged[key] = item;
       });
 
+      /* 3.3 现有条目里 Amber 没有、也不是本地图的 → 保留 */
+      var existingByName = {};
+      (editorData[type] || []).forEach(function (row) {
+        if (row.name) existingByName[row.name] = row;
+      });
       Object.keys(existingByName).forEach(function (name) {
         if (amberNames[name]) return;
+        if (localNames[name]) return;
         var row = existingByName[name];
         merged[row.key] = {
           name: row.name,
@@ -559,13 +578,7 @@
         };
       });
 
-      Object.keys(localMap).forEach(function (name) {
-        var row = localMap[name];
-        merged[row.key] = {
-          name: row.name, star: row.star, order: row.order, local: true
-        };
-      });
-
+      /* 3.4 转成数组 */
       editorData[type] = Object.keys(merged).map(function (k) {
         var r = merged[k];
         var out = { key: k, name: r.name, order: r.order };
@@ -599,12 +612,12 @@
    * ------------------------------------------------------------------- */
   function loadFromRepo() {
     setStatus("正在从仓库载入…");
-
-    var script = document.createElement("script");
-    script.src = "../../shared/gi-icons/icon-dict.js?t=" + Date.now();
-    script.onload = function () {
-      try {
-        var dict = window.ICON_DICT || {};
+    fetch("../../shared/gi-icons/icon-dict.js?t=" + Date.now())
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (code) {
+        var sandbox = { window: {} };
+        new Function("window", code)(sandbox.window);
+        var dict = sandbox.window.ICON_DICT || {};
         if (dict.config) config = dict.config;
         ALL_TYPES.forEach(function (type) {
           var obj = dict[type] || {};
@@ -617,18 +630,9 @@
             return out;
           });
         });
-        saveLocal(); render();
-        setStatus("已从仓库载入", "ok");
-      } catch (err) {
-        setStatus("载入失败：" + err.message, "err");
-      }
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-    script.onerror = function () {
-      setStatus("载入失败：网络错误或文件不存在（icon-dict.js）", "err");
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-    document.body.appendChild(script);
+        saveLocal(); render(); setStatus("已从仓库载入", "ok");
+      })
+      .catch(function (e) { setStatus("载入失败：" + e.message, "err"); });
   }
 
   /* ---------------------------------------------------------------------
@@ -684,7 +688,7 @@
   }
 
   /* ---------------------------------------------------------------------
-   * 【JS 模块 15】主题（由父页面控制，本页仅被动接收）
+   * 【JS 模块 15】主题
    * ------------------------------------------------------------------- */
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
@@ -733,7 +737,7 @@
   }
 
   /* ---------------------------------------------------------------------
-   * 【JS 模块 18】跨 iframe 通信（主题同步）
+   * 【JS 模块 18】跨 iframe 通信
    * ------------------------------------------------------------------- */
   window.addEventListener("message", function (e) {
     if (e.data && e.data.type === "theme") {
