@@ -12,7 +12,7 @@
  *   【JS 模块 8】 工具函数
  *   【JS 模块 9】 条目列表渲染
  *   【JS 模块 10】 粘贴 URL 解析
- *   【JS 模块 11】 本地文件上传
+ *   【JS 模块 11】 从 Amber 同步（生成完整字典）
  *   【JS 模块 12】 清空当前分类
  *   【JS 模块 13】 从仓库载入 icon-dict.js
  *   【JS 模块 14】 导出 icon-dict.js
@@ -28,22 +28,26 @@
   /* ---------------------------------------------------------------------
    * 【JS 模块 1】常量配置
    * ------------------------------------------------------------------- */
-  var STORAGE_KEY = "icon_dict_editor_v3";
+  var STORAGE_KEY = "icon_dict_editor_v4";
 
   var DEFAULT_CONFIG = {
-    characters: { prefix: "https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_", ext: ".webp" },
-    artifacts:  { prefix: "https://api.lunaris.moe/data/assets/artifacts/UI_RelicIcon_",   ext: ".webp" },
-    weapons:    { prefix: "https://api.lunaris.moe/data/assets/weaponicon/UI_EquipIcon_",   ext: ".webp" }
+    characters: { prefix: "https://api.lunaris.moe/data/assets/avataricon/",  ext: ".webp" },
+    artifacts:  { prefix: "https://api.lunaris.moe/data/assets/artifacts/",   ext: ".webp" },
+    weapons:    { prefix: "https://api.lunaris.moe/data/assets/weaponicon/",  ext: ".webp" },
+    monsters:   { prefix: "https://api.lunaris.moe/data/assets/monstericon/", ext: ".png" }
   };
 
   var AMBER_ENDPOINTS = {
     characters: "https://gi.yatta.moe/api/v2/CHS/avatar",
     weapons:    "https://gi.yatta.moe/api/v2/CHS/weapon",
-    artifacts:  "https://gi.yatta.moe/api/v2/CHS/reliquary"
+    artifacts:  "https://gi.yatta.moe/api/v2/CHS/reliquary",
+    monsters:   "https://gi.yatta.moe/api/v2/CHS/monster"
   };
 
-  /* 本地图片模式：共享图目录（相对 app.js 所在位置） */
+  /* 本地图目录（相对 app.js 所在位置） */
   var LOCAL_IMG_BASE = "../../shared/gi-icons/";
+
+  var ALL_TYPES = ["characters", "artifacts", "weapons", "monsters"];
 
   /* ---------------------------------------------------------------------
    * 【JS 模块 2】DOM 引用
@@ -51,19 +55,18 @@
   var entriesEl     = document.getElementById("entries");
   var emptyTip      = document.getElementById("emptyTip");
   var statusBar     = document.getElementById("status");
-  var fileInput     = document.getElementById("fileInput");
   var modalBackdrop = document.getElementById("modalBackdrop");
   var pasteArea     = document.getElementById("pasteArea");
 
   /* ---------------------------------------------------------------------
    * 【JS 模块 3】全局状态
    * ------------------------------------------------------------------- */
-  var config      = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-  var editorData  = { characters: [], artifacts: [], weapons: [] };
-  var currentTab  = "characters";
-  var tempThumbs  = {};
+  var config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  var editorData = { characters: [], artifacts: [], weapons: [], monsters: [] };
+  var currentTab = "characters";
+  var tempThumbs = {};
 
-  var amberCache   = { characters: null, weapons: null, artifacts: null };
+  var amberCache   = { characters: null, weapons: null, artifacts: null, monsters: null };
   var amberLoading = {};
 
   var CHAR_ORDER_TO_NAME = {};
@@ -78,6 +81,7 @@
       .replace(/^UI_AvatarIcon_/i, "")
       .replace(/^UI_EquipIcon_/i, "")
       .replace(/^UI_RelicIcon_/i, "")
+      .replace(/^UI_MonsterIcon_/i, "")
       .toLowerCase();
   }
 
@@ -116,7 +120,8 @@
     var normalized = String(id).toLowerCase()
       .replace(/^ui_avataricon_/i, "")
       .replace(/^ui_equipicon_/i, "")
-      .replace(/^ui_relicicon_/i, "");
+      .replace(/^ui_relicicon_/i, "")
+      .replace(/^ui_monstericon_/i, "");
     try {
       var table = await loadAmberData(type);
       return table[normalized] || table[String(id).toLowerCase()] || "";
@@ -190,8 +195,11 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       var parsed = JSON.parse(raw);
-      if (parsed && parsed.data && parsed.data.characters && parsed.data.artifacts && parsed.data.weapons) {
-        editorData = parsed.data;
+      if (parsed && parsed.data) {
+        ALL_TYPES.forEach(function (t) {
+          if (Array.isArray(parsed.data[t])) editorData[t] = parsed.data[t];
+          else editorData[t] = [];
+        });
         if (parsed.config) config = parsed.config;
       }
     } catch (e) {}
@@ -225,18 +233,16 @@
     return cfg.prefix + key + (cfg.ext || "");
   }
 
-  function extractShortId(fileName) {
-    var fullId = String(fileName || "").replace(/\.[^.]+$/, "");
-    return fullId.replace(/^UI_(?:AvatarIcon|EquipIcon|RelicIcon)_/i, "");
-  }
-
-  function extractRelicOrder(shortId) {
-    var m = /^(\d{5})(?:_\d+)?$/.exec(String(shortId || ""));
-    return m ? parseInt(m[1], 10) : 0;
+  /* 从 URL 或文件名提取图标全名（去路径、去扩展名） */
+  function extractIconFullName(input) {
+    var s = String(input || "").trim();
+    if (!s) return "";
+    if (/^https?:\/\//i.test(s)) s = s.split("/").pop().split("?")[0];
+    return s.replace(/\.[^.]+$/, "");
   }
 
   function makeThumbFor(row, cb) {
-    var star = row.star || 5;
+    var star = row.star;
     var mode = detectMode(row.key);
     var src = "";
     if (mode === "local" && tempThumbs[row.key]) src = tempThumbs[row.key];
@@ -247,7 +253,17 @@
     var img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = function () {
-      try { cb(lib.applyBackground(img, star, { size: 80 })); } catch (e) { cb(""); }
+      try {
+        if (star == null) {
+          /* 无星级 → 直接返回原图 */
+          var canvas = document.createElement("canvas");
+          canvas.width = img.width; canvas.height = img.height;
+          canvas.getContext("2d").drawImage(img, 0, 0);
+          cb(canvas.toDataURL("image/png"));
+        } else {
+          cb(lib.applyBackground(img, star, { size: 80 }));
+        }
+      } catch (e) { cb(""); }
     };
     img.onerror = function () { cb(""); };
     img.src = src;
@@ -263,8 +279,8 @@
   function render() {
     var list = editorData[currentTab] || [];
     var sorted = list.slice().sort(function (a, b) {
-      var ao = a.order || 99999;
-      var bo = b.order || 99999;
+      var ao = a.order || 99999999;
+      var bo = b.order || 99999999;
       return ao - bo;
     });
 
@@ -276,7 +292,7 @@
       var card = document.createElement("div");
       card.className = "entry-card";
 
-      /* 顶部行：序号 + 缩略图 + key */
+      /* 顶部行：序号 + 缩略图 + 中文名 */
       var top = document.createElement("div");
       top.className = "entry-top";
 
@@ -312,39 +328,19 @@
       top.appendChild(thumb);
       makeThumbFor(row, function (url) {
         if (url) thumb.src = url;
-        else { thumb.style.background = starColor(row.star || 5); thumb.removeAttribute("src"); }
+        else { thumb.style.background = starColor(row.star); thumb.removeAttribute("src"); }
       });
-
-      var inpKey = document.createElement("input");
-      inpKey.type = "text"; inpKey.className = "entry-key";
-      inpKey.value = row.key || "";
-      var mode = detectMode(row.key);
-      inpKey.placeholder = mode === "url" ? "完整 URL" : mode === "local" ? "本地文件名" : "短 ID（如 SkirkNew）";
-      inpKey.addEventListener("input", function () {
-        var oldKey = row.key;
-        row.key = inpKey.value;
-        if (oldKey !== row.key && tempThumbs[oldKey]) {
-          tempThumbs[row.key] = tempThumbs[oldKey];
-          delete tempThumbs[oldKey];
-        }
-        saveLocal();
-      });
-      inpKey.addEventListener("blur", render);
-      top.appendChild(inpKey);
-      card.appendChild(top);
-
-      /* 中部行：中文名 + 星级 + 模式切换 + 删除 */
-      var mid = document.createElement("div");
-      mid.className = "entry-mid";
 
       var inpName = document.createElement("input");
       inpName.type = "text"; inpName.className = "entry-name";
       inpName.value = row.name || ""; inpName.placeholder = "中文名";
+      inpName.style.flex = "1";
+      inpName.style.width = "auto";
+      inpName.style.marginRight = "0";
       inpName.addEventListener("input", function () { row.name = inpName.value; saveLocal(); });
       inpName.addEventListener("blur", function () {
         var name = (inpName.value || "").trim();
         row.name = name;
-
         if (currentTab === "characters") {
           if (name) {
             var autoOrder = findOrderByName(name, row);
@@ -355,37 +351,33 @@
         }
         saveLocal(); render();
       });
-      mid.appendChild(inpName);
+      top.appendChild(inpName);
+      card.appendChild(top);
 
-      var selStar = document.createElement("select");
-      selStar.className = "star-select";
-      [1, 2, 3, 4, 5].forEach(function (s) {
-        var opt = document.createElement("option");
-        opt.value = s; opt.textContent = s + "★";
-        if (s === (row.star || 5)) opt.selected = true;
-        selStar.appendChild(opt);
-      });
-      selStar.addEventListener("change", function () {
-        row.star = parseInt(selStar.value, 10) || 5;
-        saveLocal(); render();
-      });
-      mid.appendChild(selStar);
+      /* 底部行：星级（怪物没有） + 删除 */
+      var mid = document.createElement("div");
+      mid.className = "entry-mid";
 
-      var modeBtn = document.createElement("button");
-      modeBtn.type = "button";
-      var modes = ["id", "url", "local"];
-      var modeIdx = modes.indexOf(mode);
-      modeBtn.className = "mode-btn mode-" + mode;
-      modeBtn.textContent = mode === "id" ? "ID" : mode === "url" ? "URL" : "本地";
-      modeBtn.addEventListener("click", function () {
-        var next = modes[(modeIdx + 1) % 3];
-        var oldKey = row.key;
-        if (next === "id" && oldKey) row.key = extractShortId(oldKey);
-        else if (next === "url") row.key = "";
-        else if (next === "local") row.key = "";
-        saveLocal(); render();
-      });
-      mid.appendChild(modeBtn);
+      /* 占位，让删除按钮靠右 */
+      var spacer = document.createElement("div");
+      spacer.style.flex = "1";
+      mid.appendChild(spacer);
+
+      if (currentTab !== "monsters") {
+        var selStar = document.createElement("select");
+        selStar.className = "star-select";
+        [1, 2, 3, 4, 5].forEach(function (s) {
+          var opt = document.createElement("option");
+          opt.value = s; opt.textContent = s + "★";
+          if (s === (row.star || 5)) opt.selected = true;
+          selStar.appendChild(opt);
+        });
+        selStar.addEventListener("change", function () {
+          row.star = parseInt(selStar.value, 10) || 5;
+          saveLocal(); render();
+        });
+        mid.appendChild(selStar);
+      }
 
       var btnDel = document.createElement("button");
       btnDel.type = "button"; btnDel.className = "entry-del";
@@ -421,26 +413,22 @@
     var newRows = [];
     urls.forEach(function (url) {
       maxOrder++;
-      var fileName = url.split("/").pop().split("?")[0];
-      var shortId = extractShortId(fileName);
-      var row = { order: maxOrder, key: shortId, name: "", star: 5 };
-
-      if (currentTab === "artifacts") {
-        var relicOrder = extractRelicOrder(shortId);
-        if (relicOrder) row.order = relicOrder;
-      }
+      var fullName = extractIconFullName(url);
+      if (!fullName) return;
+      var row = { order: maxOrder, key: fullName, name: "", star: 5 };
+      if (currentTab === "monsters") row.star = null;
 
       list.push(row);
-      newRows.push({ row: row, fullId: fileName.replace(/\.[^.]+$/, "") });
+      newRows.push({ row: row, fullName: fullName });
     });
 
     saveLocal(); render();
-    setStatus("已添加 " + urls.length + " 条，正在查询中文名…");
+    setStatus("已添加 " + newRows.length + " 条，正在查询中文名…");
 
     for (var i = 0; i < newRows.length; i++) {
       var item = newRows[i];
       if (!amberReady) break;
-      var name = await lookupAmberName(currentTab, item.fullId);
+      var name = await lookupAmberName(currentTab, item.fullName);
       if (name) {
         item.row.name = name;
         if (currentTab === "characters") {
@@ -468,33 +456,120 @@
   function closePasteModal() { modalBackdrop.classList.remove("show"); }
 
   /* ---------------------------------------------------------------------
-   * 【JS 模块 11】本地文件上传
+   * 【JS 模块 11】从 Amber 同步（生成完整字典）
    * ------------------------------------------------------------------- */
-  function handleFiles(files) {
-    if (!files || !files.length) return;
-    var list = editorData[currentTab];
-    var maxOrder = list.reduce(function (m, r) { return Math.max(m, r.order || 0); }, 0);
-    var total = files.length, done = 0;
-    Array.prototype.forEach.call(files, function (f) {
-      maxOrder++;
-      var row = { order: maxOrder, key: f.name, name: "", star: 5 };
-      list.push(row);
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        tempThumbs[f.name] = e.target.result;
-        done++;
-        if (done >= total) { saveLocal(); render(); setStatus("已导入 " + total + " 张", "ok"); }
-      };
-      reader.onerror = function () { done++; if (done >= total) { saveLocal(); render(); } };
-      reader.readAsDataURL(f);
+  async function fetchAmberItems(type) {
+    var res = await fetch(AMBER_ENDPOINTS[type]);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var json = await res.json();
+    var raw = (json && json.data) || json || {};
+    return raw.items || raw;
+  }
+
+  function transformAmberItems(type, items) {
+    var result = {};
+    Object.keys(items).forEach(function (id) {
+      var item = items[id];
+      if (!item || typeof item !== "object") return;
+      var icon = item.icon || "";
+      var name = item.name || "";
+      if (!icon || !name) return;
+
+      var key = icon;
+      var order = 0;
+      var star = null;
+
+      if (type === "characters") {
+        if (!CHAR_NAME_TO_ORDER[name]) return;  /* txt 里没有 → 跳过 */
+        order = CHAR_NAME_TO_ORDER[name];
+        star = item.rank || 5;
+      } else if (type === "weapons") {
+        order = item.id || 0;
+        star = item.rank || 5;
+      } else if (type === "artifacts") {
+        order = item.id || 0;
+        var lvList = Array.isArray(item.levelList) ? item.levelList : [];
+        star = lvList.length ? Math.max.apply(null, lvList) : 5;
+      } else if (type === "monsters") {
+        order = item.id || 0;
+        /* 怪物无 star */
+      }
+
+      result[key] = { name: name, star: star, order: order };
     });
+    return result;
+  }
+
+  async function syncFromAmber() {
+    setStatus("正在从 Amber 同步…");
+
+    /* 1. 备份本地图条目（按中文名索引） */
+    var localByName = {};
+    ALL_TYPES.forEach(function (type) {
+      localByName[type] = {};
+      (editorData[type] || []).forEach(function (row) {
+        if (row.local && row.name) localByName[type][row.name] = row;
+      });
+    });
+
+    /* 2. 遍历 4 类拉数据 */
+    var amberResult = {};
+    for (var i = 0; i < ALL_TYPES.length; i++) {
+      var type = ALL_TYPES[i];
+      try {
+        var items = await fetchAmberItems(type);
+        amberResult[type] = transformAmberItems(type, items);
+      } catch (e) {
+        setStatus("同步失败：" + type + " - " + e.message, "err");
+        return;
+      }
+    }
+
+    /* 3. 合并：本地图优先，amber 里名字相同的跳过 */
+    ALL_TYPES.forEach(function (type) {
+      var merged = {};
+      var localMap = localByName[type] || {};
+
+      /* 先放本地图 */
+      Object.keys(localMap).forEach(function (name) {
+        var row = localMap[name];
+        merged[row.key] = {
+          name: row.name, star: row.star, order: row.order, local: true
+        };
+      });
+
+      /* 再放 amber（名字冲突的跳过） */
+      var amberItems = amberResult[type] || {};
+      Object.keys(amberItems).forEach(function (key) {
+        var item = amberItems[key];
+        if (localMap[item.name]) return;  /* 本地已有同名 → 跳过 */
+        merged[key] = item;
+      });
+
+      /* 转成数组 */
+      editorData[type] = Object.keys(merged).map(function (k) {
+        var r = merged[k];
+        var out = { key: k, name: r.name, order: r.order };
+        if (r.star != null) out.star = r.star;
+        if (r.local) out.local = true;
+        return out;
+      });
+    });
+
+    saveLocal();
+    render();
+
+    var summary = ALL_TYPES.map(function (t) {
+      return { characters: "角色", artifacts: "圣遗物", weapons: "武器", monsters: "怪物" }[t] + " " + editorData[t].length;
+    }).join(" · ");
+    setStatus("同步完成 · " + summary, "ok");
   }
 
   /* ---------------------------------------------------------------------
    * 【JS 模块 12】清空当前分类
    * ------------------------------------------------------------------- */
   function clearCurrent() {
-    var label = { characters: "角色", artifacts: "圣遗物", weapons: "武器" }[currentTab];
+    var label = { characters: "角色", artifacts: "圣遗物", weapons: "武器", monsters: "怪物" }[currentTab];
     if (!confirm("确定清空「" + label + "」的所有条目吗？")) return;
     editorData[currentTab] = [];
     saveLocal(); render(); setStatus("已清空", "ok");
@@ -512,12 +587,15 @@
         new Function("window", code)(sandbox.window);
         var dict = sandbox.window.ICON_DICT || {};
         if (dict.config) config = dict.config;
-        ["characters", "artifacts", "weapons"].forEach(function (type) {
+        ALL_TYPES.forEach(function (type) {
           var obj = dict[type] || {};
           var keys = Object.keys(obj);
-          editorData[type] = keys.map(function (k, i) {
+          editorData[type] = keys.map(function (k) {
             var item = obj[k] || {};
-            return { order: item.order || (i + 1), key: k, name: item.name || "", star: item.star || 5 };
+            var out = { key: k, name: item.name || "", order: item.order || 0 };
+            if (item.star != null) out.star = item.star;
+            if (item.local) out.local = true;
+            return out;
           });
         });
         saveLocal(); render(); setStatus("已从仓库载入", "ok");
@@ -532,16 +610,15 @@
     var lines = [];
     lines.push("window.ICON_DICT = {");
     lines.push("  config: {");
-    ["characters", "artifacts", "weapons"].forEach(function (type, ti) {
+    ALL_TYPES.forEach(function (type, ti) {
       var cfg = config[type];
-      lines.push('    ' + type + ': { prefix: "' + esc(cfg.prefix) + '", ext: "' + esc(cfg.ext || "") + '" }' + (ti < 2 ? "," : ""));
+      lines.push('    ' + type + ': { prefix: "' + esc(cfg.prefix) + '", ext: "' + esc(cfg.ext || "") + '" }' + (ti < ALL_TYPES.length - 1 ? "," : ""));
     });
     lines.push("  },");
 
-    var types = ["characters", "artifacts", "weapons"];
-    var labels = { characters: "角色", artifacts: "圣遗物", weapons: "武器" };
+    var labels = { characters: "角色", artifacts: "圣遗物", weapons: "武器", monsters: "怪物" };
 
-    types.forEach(function (type, ti) {
+    ALL_TYPES.forEach(function (type, ti) {
       lines.push("");
       lines.push("  /* ============ " + labels[type] + " ============ */");
       lines.push("  " + type + ": {");
@@ -553,15 +630,16 @@
       if (!list.length) lines.push("    // 暂无条目");
 
       list.forEach(function (item, i) {
-        var mode = detectMode(item.key);
-        var parts = ['name: "' + esc(item.name) + '"', "star: " + (item.star || 5), "order: " + (item.order || (i + 1))];
-        if (mode === "local") parts.push("local: true");
+        var parts = ['name: "' + esc(item.name) + '"'];
+        if (item.star != null) parts.push("star: " + item.star);
+        parts.push("order: " + (item.order || 0));
+        if (item.local) parts.push("local: true");
         var line = '    "' + esc(item.key) + '": { ' + parts.join(", ") + " }";
         if (i < list.length - 1) line += ",";
         lines.push(line);
       });
 
-      lines.push("  }" + (ti < types.length - 1 ? "," : ""));
+      lines.push("  }" + (ti < ALL_TYPES.length - 1 ? "," : ""));
     });
 
     lines.push("};");
@@ -591,6 +669,7 @@
    * ------------------------------------------------------------------- */
   function injectIcons() {
     var iconMap = {
+      "btnSync":   ICONS.ui.import,
       "btnPaste":  ICONS.ui.plus,
       "btnLoad":   ICONS.ui.import,
       "btnExport": ICONS.ui.export,
@@ -600,8 +679,6 @@
       var el = document.querySelector("#" + id + " .btn-icon");
       if (el) el.innerHTML = iconMap[id];
     });
-    var fileBtn = document.querySelector("label.btn .btn-icon");
-    if (fileBtn) fileBtn.innerHTML = ICONS.ui.plus;
   }
 
   /* ---------------------------------------------------------------------
@@ -616,7 +693,7 @@
       });
     });
 
-    fileInput.addEventListener("change", function (e) { handleFiles(e.target.files); e.target.value = ""; });
+    document.getElementById("btnSync").addEventListener("click", syncFromAmber);
     document.getElementById("btnPaste").addEventListener("click", openPasteModal);
     document.getElementById("modalCancel").addEventListener("click", closePasteModal);
     document.getElementById("modalConfirm").addEventListener("click", function () {
