@@ -482,18 +482,21 @@
       var star = null;
 
       if (type === "characters") {
-        if (!CHAR_NAME_TO_ORDER[name]) return;
+        if (!CHAR_NAME_TO_ORDER[name]) return;  /* txt 里没有 → 跳过 */
         order = CHAR_NAME_TO_ORDER[name];
         star = item.rank || 5;
       } else if (type === "weapons") {
         order = item.id || 0;
         star = item.rank || 5;
+        /* 只保留 5 位 order 的武器（过滤幻化皮肤、测试数据等 6 位 order） */
+        if (order < 10000 || order >= 100000) return;
       } else if (type === "artifacts") {
         order = item.id || 0;
         var lvList = Array.isArray(item.levelList) ? item.levelList : [];
         star = lvList.length ? Math.max.apply(null, lvList) : 5;
       } else if (type === "monsters") {
         order = item.id || 0;
+        /* 怪物无 star */
       }
 
       result[key] = { name: name, star: star, order: order };
@@ -506,7 +509,6 @@
 
     config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
-    /* 1. 备份本地图条目（按中文名索引） */
     var localByName = {};
     ALL_TYPES.forEach(function (type) {
       localByName[type] = {};
@@ -515,7 +517,6 @@
       });
     });
 
-    /* 2. 遍历 4 类拉数据 */
     var amberResult = {};
     for (var i = 0; i < ALL_TYPES.length; i++) {
       var type = ALL_TYPES[i];
@@ -529,8 +530,8 @@
       }
     }
 
-    /* 3. 合并策略：
-     *    优先级 1（最高）：本地图（local:true）→ 保留，且占用中文名
+    /* 合并策略：
+     *    优先级 1（最高）：本地图（local:true）→ 保留，占用中文名
      *    优先级 2：Amber 里有的中文名（没被本地图占用）→ 用 Amber 的
      *    优先级 3（最低）：Amber 里没有、字典里已有的 → 保留
      */
@@ -539,7 +540,6 @@
       var merged = {};
       var localMap = localByName[type] || {};
 
-      /* 本地图名字集合 */
       var localNames = {};
       Object.keys(localMap).forEach(function (name) { localNames[name] = true; });
 
@@ -556,7 +556,7 @@
       var amberNames = {};
       Object.keys(amberItems).forEach(function (key) {
         var item = amberItems[key];
-        if (localNames[item.name]) return;   /* 本地图有同名 → 跳过 */
+        if (localNames[item.name]) return;
         amberNames[item.name] = true;
         merged[key] = item;
       });
