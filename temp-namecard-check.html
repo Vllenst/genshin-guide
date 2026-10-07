@@ -29,6 +29,12 @@ pre {
   font-family: ui-monospace, Menlo, monospace;
 }
 img.testimg { max-width: 100%; border-radius: 8px; margin-top: 6px; display: block; }
+.copybtn {
+  display: block; width: 100%; height: 44px;
+  background: #222; color: #fff; border: 0; border-radius: 10px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  margin-top: 10px; font-family: inherit;
+}
 </style>
 </head>
 <body>
@@ -51,15 +57,16 @@ img.testimg { max-width: 100%; border-radius: 8px; margin-top: 6px; display: blo
   <div class="title">③ 批量探测结果</div>
   <div class="line" id="diagBatch">等待①②先完成…</div>
   <pre id="batchLog"></pre>
+  <button class="copybtn" id="copyBtn" style="display:none;">复制成功列表</button>
 </div>
 
 <script src="shared/gi-icons/icon-dict.js"></script>
 <script>
 'use strict';
 
-const PREFIX = 'https://api.lunaris.moe/data/assets/namecardpic/';
+const PREFIX = 'https://api.lunaris.moe/data/assets/namecardpic/UI_NameCardPic_';
 const SUFFIX = '_P.png';
-const TEST_URL = PREFIX + 'UI_NameCardPic_SkirkNew' + SUFFIX;
+const TEST_URL = PREFIX + 'SkirkNew' + SUFFIX;
 
 const diagIconDict = document.getElementById('diagIconDict');
 const diagCharTxt = document.getElementById('diagCharTxt');
@@ -67,6 +74,9 @@ const diagSingle = document.getElementById('diagSingle');
 const singleImgBox = document.getElementById('singleImgBox');
 const diagBatch = document.getElementById('diagBatch');
 const batchLog = document.getElementById('batchLog');
+const copyBtn = document.getElementById('copyBtn');
+
+const okList = [];
 
 function log(msg, cls) {
   const div = document.createElement('div');
@@ -75,7 +85,6 @@ function log(msg, cls) {
   batchLog.appendChild(div);
 }
 
-/* ① 检查 icon-dict */
 let dictOK = false;
 try {
   if (window.ICON_DICT && window.ICON_DICT.characters) {
@@ -84,15 +93,14 @@ try {
     diagIconDict.className = 'line ok';
     dictOK = true;
   } else {
-    diagIconDict.textContent = 'icon-dict.js：❌ 加载了但没有 characters 数据';
+    diagIconDict.textContent = 'icon-dict.js：❌ 没有 characters 数据';
     diagIconDict.className = 'line fail';
   }
 } catch (e) {
-  diagIconDict.textContent = 'icon-dict.js：❌ 异常 ' + e.message;
+  diagIconDict.textContent = 'icon-dict.js：❌ ' + e.message;
   diagIconDict.className = 'line fail';
 }
 
-/* ② 单张图测试 */
 function testSingleImage() {
   return new Promise(resolve => {
     diagSingle.textContent = '加载中…';
@@ -108,7 +116,7 @@ function testSingleImage() {
       resolve(true);
     };
     img.onerror = () => {
-      diagSingle.textContent = '❌ 加载失败（onerror 触发，耗时 ' + (Date.now() - t0) + 'ms）';
+      diagSingle.textContent = '❌ 加载失败（' + (Date.now() - t0) + 'ms）';
       diagSingle.className = 'line fail';
       resolve(false);
     };
@@ -116,7 +124,6 @@ function testSingleImage() {
   });
 }
 
-/* ③ 批量探测（用 Image） */
 function urlExists(url) {
   return new Promise(resolve => {
     const img = new Image();
@@ -178,6 +185,7 @@ async function runBatch(charList) {
     const exists = await urlExists(url);
     if (exists) {
       ok++;
+      okList.push({ order: item.order, name: item.name, url });
       log('✅ ' + item.order + ' ' + item.name + ' → ' + shortId, 'ok');
     } else {
       fail++;
@@ -189,9 +197,39 @@ async function runBatch(charList) {
 
   diagBatch.textContent = '完成：成功 ' + ok + '，失败 ' + fail;
   diagBatch.className = 'line ' + (fail === 0 ? 'ok' : 'fail');
+
+  if (okList.length) {
+    okList.sort((a, b) => b.order - a.order);
+    copyBtn.style.display = 'block';
+  }
 }
 
-/* 主流程 */
+function copyText(text, label) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => alert(label + '已复制'),
+      () => fallbackCopy(text, label)
+    );
+  } else {
+    fallbackCopy(text, label);
+  }
+}
+function fallbackCopy(text, label) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); alert(label + '已复制'); }
+  catch (e) { alert('复制失败，请手动选中复制'); }
+  ta.remove();
+}
+copyBtn.addEventListener('click', () => {
+  const text = okList.map(o => o.order + ' ' + o.name + ' ' + o.url).join('\n');
+  copyText(text, '成功列表');
+});
+
 (async function () {
   const singleOK = await testSingleImage();
   log('单张测试：' + (singleOK ? '✅ 通过' : '❌ 失败') + ' → ' + TEST_URL, singleOK ? 'ok' : 'fail');
