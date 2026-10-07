@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<!-- =========================================================================
+     原神一图流生成器 · index.html
+     =========================================================================
+     HTML 模块导航（搜索 “<!-- 【HTML 模块 N】 -->” 快速跳转）：
+       【HTML 模块 1】 head / 资源引用
+       【HTML 模块 2】 主容器 app-container
+       【HTML 模块 3】 预览区（工具栏 + 实时视口）
+       【HTML 模块 4】 右侧编辑区 / Tab 触发器
+       【HTML 模块 5】 Tab 内容容器
+         · 5.1 外观样式（角色信息 / 样式图 / 元素色 / 字体）
+         · 5.2 立绘区（立绘 / 元素图 / 大背景）
+         · 5.3 武器区
+         · 5.4 圣遗物区
+         · 5.5 天赋区
+         · 5.6 词条区
+         · 5.7 面板区
+         · 5.8 命座区
+         · 5.9 配队区
+       【HTML 模块 6】 移动端底部导出按钮
+       【HTML 模块 7】 Toast / Modal / Tab Sheet / Font Sheet
+       【HTML 模块 8】 JS 引用
+     ========================================================================= -->
+<head>
+<!-- 【HTML 模块 1】head / 资源引用 -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>原神一图流生成器</title>
+<link rel="stylesheet" href="../../shared-theme.css">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- 【HTML 模块 2】主容器 -->
+<main class="app-container">
+
+  <!-- 【HTML 模块 3】预览区 -->
+  <section class="preview-pane">
+    <div class="preview-card">
+      <!-- 3.1 浮动工具栏 -->
+      <div class="float-toolbar">
+        <button type="button" class="float-btn" id="floatExportBtn" onclick="App.exportConfig()" title="导出配置"></button>
+        <button type="button" class="float-btn" id="floatImportBtn" onclick="document.getElementById('importJsonInput').click()" title="导入配置"></button>
+        <button type="button" class="float-btn float-btn-danger" id="floatClearBtn" onclick="App.clearAllData()" title="清空全部数据"></button>
+        <input type="file" id="importJsonInput" accept=".json" onchange="App.importConfig(this)" style="display:none" />
+      </div>
+      <!-- 3.2 预览标题 + 桌面端导出按钮 -->
+      <div class="preview-header">
+        <span class="preview-title">实时卡片渲染视口</span>
+        <button class="ios-btn-fill btn-sm" onclick="App.exportPNG()" id="exportDesktopBtn">导出 4K PNG</button>
+      </div>
+      <!-- 3.3 SVG 挂载点 -->
+      <div class="preview-frame">
+        <div id="svgPreviewHost"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 【HTML 模块 4】右侧编辑区 / Tab 触发器 -->
+  <section class="inspector-pane">
+    <button type="button" class="tab-trigger" id="tabTrigger" onclick="App.openTabSheet()" aria-haspopup="true" aria-expanded="false">
+      <span class="tab-trigger-label" id="tabTriggerLabel">外观样式</span>
+      <svg class="tab-trigger-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </button>
+
+    <!-- 【HTML 模块 5】Tab 内容容器 -->
+    <div class="tabs-content">
+
+      <!-- 5.1 外观样式 -->
+      <div class="tab-panel active" id="tab-style">
+        <!-- 角色信息 -->
+        <div>
+          <div class="ios-section-header">角色信息</div>
+          <div class="ios-group">
+            <div class="field-grid">
+              <label class="ios-field">角色名称<input type="text" id="charName" oninput="App.setField('charName', this.value)" onblur="App.matchCharAvatar(this.value)" /></label>
+              <label class="ios-field">适用版本<input type="text" id="version" oninput="App.setField('version', this.value)" /></label>
+              <label class="ios-field">制作日期<input type="text" id="date" oninput="App.setField('date', this.value)" /></label>
+              <label class="ios-field">攻略作者<input type="text" id="author" oninput="App.setField('author', this.value)" /></label>
+            </div>
+          </div>
+        </div>
+        <!-- 样式图匹配 / 载入在线存档 -->
+        <div>
+          <div class="ios-section-header">样式图（立绘 / 元素 / 名片）</div>
+          <div class="ios-group">
+            <div class="ios-row" style="gap:6px;">
+              <button type="button" class="ios-btn-fill btn-sm" style="flex:1;height:38px;" id="btnMatchStyle" onclick="App.matchStyleImages()">
+                <span class="icon-only" id="btnMatchStyleIcon"></span>
+                匹配样式图
+              </button>
+              <button type="button" class="btn-sm" style="flex:1;height:38px;" id="btnLoadSave" onclick="App.loadSaveFromRepo()">
+                <span class="icon-only" id="btnLoadSaveIcon"></span>
+                载入在线存档
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- 元素主题色 -->
+        <div>
+          <div class="ios-section-header">元素主题色</div>
+          <div class="ios-group">
+            <div class="color-swatches" id="colorPicker"></div>
+          </div>
+        </div>
+        <!-- 嵌入字体 -->
+        <div>
+          <div class="ios-section-header">卡片嵌入字体（仅作用于图片导出，不影响网页）</div>
+          <div class="ios-group">
+            <div class="ios-row">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="labelCustomFont">默认标准字体</div>
+              </div>
+              <button type="button" class="ios-btn-fill btn-sm" onclick="App.openFontPicker()">选择字体</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.2 立绘区 -->
+      <div class="tab-panel" id="tab-base">
+        <div>
+          <div class="ios-section-header">图片素材（点击缩略图更换）</div>
+          <div class="ios-group">
+
+            <!-- 立绘 -->
+            <div class="ios-row">
+              <img id="thumbCharImg" class="clickable-thumb" onclick="App.onThumbClick('inputCharImg', 'charImg')" title="点击上传立绘" alt="" />
+              <div style="flex:1;cursor:pointer;" onclick="App.onThumbClick('inputCharImg', 'charImg')">
+                <div style="font-size:13px;font-weight:500;" id="labelCharImg">点击上传立绘</div>
+              </div>
+              <button class="btn-xs btn-danger" onclick="App.clearImage('charImg', 'thumbCharImg', 'labelCharImg')" title="删除立绘">
+                <span class="icon-only" id="btnDelCharImg"></span>
+                删除
+              </button>
+              <input type="file" id="inputCharImg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.charImg = v; State.data.charImgMeta = { w, h }; State.data.charImgDeleted = false; App.updateImgXHint(); App.updateThumb('thumbCharImg', 'labelCharImg', v, '已载入立绘（点击更换）'); })" />
+            </div>
+
+            <!-- 立绘左右偏移 -->
+            <div class="slider-box" style="padding-top:10px;">
+              <span id="imgXHint">立绘偏移（左右移动）</span>
+              <input type="range" min="-400" max="400" value="0" id="imgXSlider" oninput="App.setField('imgX', this.value)" />
+              <input type="number" id="imgX" value="0" oninput="App.setField('imgX', this.value)" />
+            </div>
+
+            <!-- 元素图 -->
+            <div class="ios-row">
+              <img id="thumbNameBg" class="clickable-thumb" onclick="App.onThumbClick('inputNameBg', 'nameBgImg')" title="点击上传元素图" alt="" />
+              <div style="flex:1;cursor:pointer;" onclick="App.onThumbClick('inputNameBg', 'nameBgImg')">
+                <div style="font-size:13px;font-weight:500;" id="labelNameBg">点击上传元素图</div>
+              </div>
+              <button class="btn-xs btn-danger" onclick="App.clearImage('nameBgImg', 'thumbNameBg', 'labelNameBg')" title="删除元素图">
+                <span class="icon-only" id="btnDelNameBg"></span>
+                删除
+              </button>
+              <input type="file" id="inputNameBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.nameBgImg = v; State.data.nameBgImgMeta = { w, h }; State.data.nameBgImgDeleted = false; App.updateThumb('thumbNameBg', 'labelNameBg', v, '已载入元素图（点击更换）'); })" />
+            </div>
+
+            <!-- 大背景 -->
+            <div class="ios-row">
+              <img id="thumbBg" class="clickable-thumb" onclick="App.onThumbClick('inputBg', 'bgImg')" title="点击上传大背景" alt="" />
+              <div style="flex:1;cursor:pointer;" onclick="App.onThumbClick('inputBg', 'bgImg')">
+                <div style="font-size:13px;font-weight:500;" id="labelBg">默认暗黑原力色</div>
+              </div>
+              <button class="btn-xs btn-danger" onclick="App.clearImage('bgImg', 'thumbBg', 'labelBg')" title="删除大背景">
+                <span class="icon-only" id="btnDelBg"></span>
+                删除
+              </button>
+              <input type="file" id="inputBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.bgImg = v; State.data.bgImgDeleted = false; App.updateThumb('thumbBg', 'labelBg', v, '已载入大背景（点击更换）'); })" />
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.3 武器区 -->
+      <div class="tab-panel" id="tab-weapon">
+        <div>
+          <div class="ios-section-header">武器推荐</div>
+          <div id="weaponEditor" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+
+      <!-- 5.4 圣遗物区 -->
+      <div class="tab-panel" id="tab-artifact">
+        <div>
+          <div class="ios-section-header" id="artifactSectionHead"></div>
+          <div id="artifactEditor" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+
+      <!-- 5.5 天赋区 -->
+      <div class="tab-panel" id="tab-talent">
+        <div>
+          <div class="ios-section-header">天赋加点优先级</div>
+          <div class="ios-group">
+            <div class="field-grid three">
+              <label class="ios-field">普通攻击<input type="text" id="talentA" oninput="App.setField('talentA', this.value)" /></label>
+              <label class="ios-field">元素战技<input type="text" id="talentE" oninput="App.setField('talentE', this.value)" /></label>
+              <label class="ios-field">元素爆发<input type="text" id="talentQ" oninput="App.setField('talentQ', this.value)" /></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.6 词条区 -->
+      <div class="tab-panel" id="tab-stats">
+        <div>
+          <div class="ios-section-header">主副词条推荐</div>
+          <div class="ios-group">
+            <div class="field-grid three">
+              <label class="ios-field">时之沙<input type="text" id="sandMain" oninput="App.setField('sandMain', this.value)" /></label>
+              <label class="ios-field">空之杯<input type="text" id="gobMain" oninput="App.setField('gobMain', this.value)" /></label>
+              <label class="ios-field">理之冠<input type="text" id="cirMain" oninput="App.setField('cirMain', this.value)" /></label>
+            </div>
+            <div style="padding:0 10px 10px 10px;">
+              <label class="ios-field">副词条优先顺序<input type="text" id="subStats" oninput="App.setField('subStats', this.value)" /></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.7 面板区 -->
+      <div class="tab-panel" id="tab-panel">
+        <div>
+          <div class="ios-section-header">主属性（三选一）</div>
+          <div class="ios-group">
+            <div class="ios-row" style="gap:10px;flex-wrap:wrap;">
+              <label class="ios-field" style="flex:1;min-width:130px;">属性类型
+                <select id="panelPrimaryKey" onchange="App.setPanelPrimaryKey(this.value)">
+                  <option value="hp">生命值</option>
+                  <option value="atk">攻击力</option>
+                  <option value="def">防御力</option>
+                </select>
+              </label>
+              <label class="ios-field" style="flex:1;min-width:130px;">数值
+                <input type="text" id="panelPrimaryValue" placeholder="留空显示「任意」" oninput="App.setPanelField('primaryValue', this.value)" />
+              </label>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="ios-section-header">副属性面板</div>
+          <div class="ios-group">
+            <div class="field-grid">
+              <label class="ios-field">暴击率<input type="text" id="panelCr" placeholder="留空显示「任意」" oninput="App.setPanelField('cr', this.value)" /></label>
+              <label class="ios-field">暴击伤害<input type="text" id="panelCd" placeholder="留空显示「任意」" oninput="App.setPanelField('cd', this.value)" /></label>
+              <label class="ios-field">元素精通<input type="text" id="panelEm" placeholder="留空显示「任意」" oninput="App.setPanelField('em', this.value)" /></label>
+              <label class="ios-field">充能效率<input type="text" id="panelEr" placeholder="留空显示「任意」" oninput="App.setPanelField('er', this.value)" /></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.8 命座区 -->
+      <div class="tab-panel" id="tab-cons">
+        <div>
+          <div class="ios-section-header">核心命座说明（点击圆圈点亮）</div>
+          <div class="ios-group">
+            <div class="cons-grid" id="constellationEditor"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.9 配队区 -->
+      <div class="tab-panel" id="tab-team">
+        <!-- 1 号位主角色头像 -->
+        <div>
+          <div class="ios-section-header">1号位主角色头像</div>
+          <div class="ios-group">
+            <div class="ios-row">
+              <img id="thumbTeamCore" class="clickable-thumb" onclick="App.triggerUpload('inputTeamCore')" title="点击上传1号位头像" alt="" />
+              <div style="flex:1;cursor:pointer;" onclick="App.triggerUpload('inputTeamCore')">
+                <div style="font-size:13px;font-weight:500;" id="labelTeamCore">主角色一号位头像（点击更换）</div>
+              </div>
+              <button class="btn-xs btn-danger" onclick="App.clearImage('teamCoreImg', 'thumbTeamCore', 'labelTeamCore')" title="删除头像">
+                <span class="icon-only" id="btnDelTeamCore"></span>
+                删除
+              </button>
+              <input type="file" id="inputTeamCore" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamCoreImg = v; App.updateThumb('thumbTeamCore', 'labelTeamCore', v, '已载入1号位头像（点击更换）'); })" />
+            </div>
+          </div>
+        </div>
+        <!-- 配队方案 -->
+        <div>
+          <div class="ios-section-header">
+            <span>配队参考方案（最多 3 组）</span>
+            <button class="ios-btn-fill btn-xs" style="margin-left:auto;" id="btnAddTeam" onclick="App.addTeam()">
+              <span class="icon-only" id="btnAddTeamIcon"></span>
+              添加
+            </button>
+          </div>
+          <div id="teamEditor" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- 【HTML 模块 6】移动端底部导出按钮 -->
+<div class="bottom-dock">
+  <button class="export-btn-main" onclick="App.exportPNG()" id="exportMobileBtn">生成并导出 4K PNG</button>
+</div>
+
+<!-- 【HTML 模块 7】Toast / Modal / Tab Sheet / Font Sheet -->
+<!-- 7.1 Toast 容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- 7.2 确认弹窗 -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">提示</div>
+    <div class="modal-message" id="modalMessage"></div>
+    <div class="modal-actions">
+      <button type="button" id="modalCancel">取消</button>
+      <button type="button" class="ios-btn-fill" id="modalConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 7.3 Tab 切换底部抽屉 -->
+<div class="tab-sheet-backdrop" id="tabSheetBackdrop" onclick="App.closeTabSheet()"></div>
+<div class="tab-sheet" id="tabSheet" role="dialog" aria-modal="true" aria-labelledby="tabSheetTitle">
+  <div class="tab-sheet-handle" aria-hidden="true"></div>
+  <div class="tab-sheet-header" id="tabSheetTitle">选择编辑区域</div>
+  <div class="tab-sheet-list" id="tabSheetList"></div>
+</div>
+
+<!-- 7.4 字体选择底部抽屉 -->
+<div class="tab-sheet-backdrop" id="fontSheetBackdrop" onclick="App.closeFontPicker()"></div>
+<div class="tab-sheet" id="fontSheet" role="dialog" aria-modal="true">
+  <div class="tab-sheet-handle" aria-hidden="true"></div>
+  <div class="tab-sheet-header">选择导出字体</div>
+  <div class="tab-sheet-list" id="fontSheetList"></div>
+</div>
+
+<!-- 【HTML 模块 8】JS 引用 -->
+<script src="../../icons.js"></script>
+<script src="../../icons/icon-loader.js"></script>
+<script src="../../icons/icon-dict.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
