@@ -324,6 +324,7 @@
       }
       var thumbImg = document.createElement("img");
       thumbImg.alt = "";
+      thumbImg.loading = "lazy";
       thumb.appendChild(thumbImg);
       line.appendChild(thumb);
       makeThumbFor(row, function (url) {
@@ -343,7 +344,7 @@
         row.name = name;
         if (currentTab === "characters") {
           if (name) {
-            var autoOrder = findOrderByName(name, row);
+            var autoOrder = findNameByOrder && findOrderByName(name, row);
             if (autoOrder) row.order = autoOrder;
           } else {
             row.order = 0;
