@@ -1205,7 +1205,7 @@ function renderTeamEditor() {
                       </div>
                       <div class="item-row">
                         <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_${ai}_img')" alt="" />
-                        <input type="text" value="${esc(a.name)}" oninput="App.setAltName(${ti},${ci},${ai},this.value)" style="flex:1;" />
+                        <input type="text" value="${esc(a.name)}" oninput="App.setAltName(${ti},${ci},${ai},this.value)" onblur="App.matchAltIcon(${ti},${ci},${ai},this.value)" style="flex:1;" />
                         <input type="file" id="t_${ti}_${ci}_${ai}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].alts[${ai}].img = v; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                       </div>
                     </div>`).join('')}
@@ -1725,6 +1725,25 @@ async function matchTeamCharIcon(ti, ci, name) {
     renderTeamEditor(); mountPreview(); debouncedSave();
   }
 }
+async function matchAltIcon(ti, ci, ai, name) {
+  if (!window.ICON_LIB) return;
+  const alt = State.data.teamData[ti]?.chars?.[ci]?.alts?.[ai];
+  if (!alt) return;
+  var trimmed = (name || '').trim();
+  if (!trimmed) {
+    alt.img = '';
+    renderTeamEditor(); mountPreview(); debouncedSave();
+    return;
+  }
+  try {
+    const r = await ICON_LIB.fromName('characters', trimmed);
+    alt.img = (r && r.dataURL) ? r.dataURL : '';
+    renderTeamEditor(); mountPreview(); debouncedSave();
+  } catch (e) {
+    alt.img = '';
+    renderTeamEditor(); mountPreview(); debouncedSave();
+  }
+}
 async function matchCharAvatar(name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
@@ -2070,7 +2089,7 @@ const App = {
   exportPNG, exportConfig, importConfig, clearAllData,
   matchWeaponIcon, matchArtifactIcon, matchArtifactDoubleIcon,
   setArtifactName1, setArtifactName2, setArtifactDisplayText,
-  matchTeamCharIcon, matchCharAvatar,
+  matchTeamCharIcon, matchAltIcon, matchCharAvatar,
   matchStyleImages, loadSaveFromRepo,
   openFontPicker, closeFontPicker, selectFont
 };
