@@ -20,8 +20,7 @@
  * 【JS 模块 1】状态
  * ========================================================================= */
 const collectionState = {
-  sizePreset: '2k',
-  W: 2560, H: 1440,
+  W: 2560, H: 1440,         /* 固定 2K */
   bg: '', bgLoadedImg: null,
   fontData: '', fontName: '', fontFileName: '',
   title: '', subtitle: ''
@@ -48,11 +47,6 @@ function downloadBlob(blob, filename) {
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-function collectionSizeValue(preset) {
-  if (preset === '1920') return [1920, 1080];
-  if (preset === '1280') return [1280, 720];
-  return [2560, 1440];
 }
 
 /* =========================================================================
@@ -306,7 +300,7 @@ async function exportCollection() {
   await drawCollectionCanvas(canvas);
   canvas.toBlob(blob => {
     if (!blob) return alert('导出失败');
-    if (blob.size > 5 * 1024 * 1024) { alert('超过 5MB，请换更低分辨率'); return; }
+    if (blob.size > 5 * 1024 * 1024) { alert('超过 5MB'); return; }
     const firstLine = (collectionState.title || '').split(/\r?\n/).find(l => l.trim()) || '合集封面';
     downloadBlob(blob, firstLine.trim() + '_' + getFormattedDateStr() + '.png');
   }, 'image/png');
@@ -332,8 +326,7 @@ function clearCollection() {
 function syncInputsFromState() {
   const map = {
     collectionTitle: collectionState.title,
-    collectionSubtitle: collectionState.subtitle,
-    collectionSize: collectionState.sizePreset
+    collectionSubtitle: collectionState.subtitle
   };
   Object.keys(map).forEach(id => {
     const el = document.getElementById(id);
@@ -385,10 +378,6 @@ function bindEvents() {
 const App = {
   setCollection(key, value) {
     collectionState[key] = value;
-    if (key === 'sizePreset') {
-      const [w, h] = collectionSizeValue(value);
-      collectionState.W = w; collectionState.H = h;
-    }
     renderCollection();
     persist();
   },
@@ -407,6 +396,10 @@ window.App = App;
   injectIcons();
   await loadFontList();
   await loadPersist();
+
+  /* 强制 W/H = 2K（防止旧 IDB 数据残留其他分辨率） */
+  collectionState.W = 2560;
+  collectionState.H = 1440;
 
   if (collectionState.fontData) await installFont();
 
