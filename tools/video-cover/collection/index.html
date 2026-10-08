@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F2EFEA">
+<title>合集封面</title>
+<link rel="stylesheet" href="../../../shared/theme.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="preview-sticky">
+  <div class="preview-frame" id="previewFrame">
+    <div id="collectionPreview"></div>
+    <div class="float-toolbar" id="floatToolbar">
+      <button type="button" class="float-btn float-btn-danger" id="btnClearCollection" title="清空"><span class="icon-slot" data-icon="trash"></span></button>
+    </div>
+  </div>
+</div>
+
+<main class="grid">
+  <!-- 画布 -->
+  <section>
+    <div class="ios-section-header">画布</div>
+    <div class="ios-group">
+      <div class="row2">
+        <label class="ios-field">输出分辨率
+          <select id="collectionSize" onchange="App.setCollection('sizePreset', this.value)">
+            <option value="2k" selected>2560 × 1440（2K 推荐）</option>
+            <option value="1920">1920 × 1080</option>
+            <option value="1280">1280 × 720</option>
+          </select>
+        </label>
+        <div>
+          <div class="ios-field">背景图</div>
+          <div class="file-picker">
+            <label class="file-btn">上传<input type="file" id="collectionBgFile" accept="image/*"></label>
+            <span class="file-picker-name" id="collectionBgName">未选择文件</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 字体 -->
+  <section>
+    <div class="ios-section-header">字体（仅作用于导出图片）</div>
+    <div class="ios-group">
+      <div class="ios-row">
+        <div class="font-label" id="labelCollectionFont">默认系统字体</div>
+        <button type="button" class="btn-sm ios-btn-fill" onclick="App.openFontPicker()">选择字体</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 文字内容 -->
+  <section>
+    <div class="ios-section-header">文字内容</div>
+    <div class="ios-group">
+      <label class="ios-field">主标题
+        <textarea rows="2" id="collectionTitle" placeholder="输入合集主标题" oninput="App.setCollection('title', this.value)"></textarea>
+      </label>
+      <label class="ios-field">副标题
+        <textarea rows="2" id="collectionSubtitle" placeholder="输入合集副标题" oninput="App.setCollection('subtitle', this.value)"></textarea>
+      </label>
+    </div>
+  </section>
+</main>
+
+<div class="bottom-dock">
+  <button class="export-btn-main" onclick="App.exportCollection()">导出合集封面 PNG</button>
+</div>
+
+<!-- 字体弹层 -->
+<div class="tab-sheet-backdrop" id="fontSheetBackdrop" onclick="App.closeFontPicker()"></div>
+<div class="tab-sheet" id="fontSheet">
+  <div class="tab-sheet-handle"></div>
+  <div class="tab-sheet-header">选择字体</div>
+  <div class="tab-sheet-list" id="fontSheetList"></div>
+</div>
+
+<script src="../../../shared/ui-icons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
