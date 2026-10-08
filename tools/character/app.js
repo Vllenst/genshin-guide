@@ -729,7 +729,8 @@ function panelRect(x, y, w, h, rx) {
 function buildSVG(scale = 1, forExport = false) {
   const d = State.data;
   const W = SVG_W * scale, H = SVG_H * scale;
-  const fontFace = (forExport && d.fontData) ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}` : '';
+  /* 字体：始终生成 SVG 内 @font-face，保证 SVG 里的 text 能命中自定义字体 */
+  const fontFace = d.fontData ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}` : '';
   const fontFamily = d.fontData ? FONT_FAMILY_CUSTOM : FONT_FAMILY_DEFAULT;
   const nameFs = fitSize(d.charName, 280, 50, 18);
   const imgX = Number(d.imgX) || 0;
@@ -843,7 +844,6 @@ function mountPreview() {
     });
   }
 }
-/* 拖动立绘时只更新 image 的 x 属性，不全量重绘 */
 function updateCharImgX() {
   if (!previewSvgEl) return;
   const el = previewSvgEl.querySelector('#charImgEl');
