@@ -563,10 +563,6 @@ function setGuideType(type) {
 /* =========================================================================
  * 【JS 模块 10】副标题输入处理
  * ========================================================================= */
-/* 第一行输入：
- *   角色模式 → 只读，忽略输入
- *   BOSS 模式 → BOSS 名，实时更新 sub1（增量）
- *   自定义 → 直接改 sub1 */
 function onSub1Input(v) {
   if (state.guideType === 'character') return;
   state.sub1 = v;
@@ -578,9 +574,6 @@ function onSub1Blur(v) {
   matchBossName(v);
 }
 
-/* 第二行输入：
- *   角色模式 → 角色名，实时更新 sub2（增量）
- *   BOSS / 自定义 → 直接改 sub2 */
 function onSub2Input(v) {
   state.sub2 = v;
   if (!updateFieldText('sub2', v)) mountPreview();
@@ -736,10 +729,10 @@ function renderFloatList() {
           <span style="font-size:11px; color:var(--text-secondary);">${o.w}×${o.h}</span>
         </div>
         <div class="float-item-head-actions">
-          <button class="btn-xs" onclick="App.moveFloat('${o.id}',-1)"><span class="icon-slot" data-icon="up"></span></button>
-          <button class="btn-xs" onclick="App.moveFloat('${o.id}',1)"><span class="icon-slot" data-icon="down"></span></button>
+          <button class="btn-xs" data-icon="up" onclick="App.moveFloat('${o.id}',-1)"></button>
+          <button class="btn-xs" data-icon="down" onclick="App.moveFloat('${o.id}',1)"></button>
           <label class="btn-xs" style="cursor:pointer;"><span class="icon-slot" data-icon="import"></span><input type="file" accept="image/*" style="display:none;" onchange="App.replaceFloat('${o.id}', this)"></label>
-          <button class="btn-xs btn-danger" onclick="App.removeFloat('${o.id}')"><span class="icon-slot" data-icon="trash"></span></button>
+          <button class="btn-xs btn-danger" data-icon="trash" onclick="App.removeFloat('${o.id}')"></button>
         </div>
       </div>
       <div class="control-item">
@@ -1029,19 +1022,29 @@ function bindEvents() {
     e.target.value = '';
   });
 
-  /* 浮动工具栏 */
+  /* 浮动工具栏：参考线 */
   document.getElementById('btnGuides').addEventListener('click', e => {
     e.stopPropagation();
     state.showGuides = !state.showGuides;
     mountPreview(); persist();
   });
+
+  /* 浮动工具栏：导出配置 */
   document.getElementById('btnExportVideo').addEventListener('click', e => {
     e.stopPropagation();
     exportConfig();
   });
+
+  /* 浮动工具栏：导入配置（点击触发文件选择） */
+  document.getElementById('btnImportVideo').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('importVideoInput').click();
+  });
   document.getElementById('importVideoInput').addEventListener('change', e => {
     importConfig(e.target);
   });
+
+  /* 浮动工具栏：清空 */
   document.getElementById('btnClearVideo').addEventListener('click', e => {
     e.stopPropagation();
     clearAll();
@@ -1052,7 +1055,6 @@ function bindEvents() {
   const toolbar = document.getElementById('floatToolbar');
   if (frame && toolbar) {
     frame.addEventListener('click', (ev) => {
-      // 点到工具栏内部不触发
       if (toolbar.contains(ev.target)) return;
       toolbar.classList.toggle('hidden');
     });
