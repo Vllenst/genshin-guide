@@ -4,18 +4,18 @@
  * 模块导航（搜索 "【JS 模块 N】" 快速跳转）：
  *   【JS 模块 1】 常量
  *   【JS 模块 2】 状态
- *   【JS 模块 3】 数据字典（characters / character-art / namecards / logos）
+ *   【JS 模块 3】 数据字典
  *   【JS 模块 4】 工具函数
  *   【JS 模块 5】 图标注入
  *   【JS 模块 6】 SVG 生成
  *   【JS 模块 7】 浮动图层收集
  *   【JS 模块 8】 预览挂载 + 增量更新
  *   【JS 模块 9】 模式切换
- *   【JS 模块 10】角色匹配 / BOSS 匹配
+ *   【JS 模块 10】副标题输入处理（角色名 / BOSS 名）
  *   【JS 模块 11】浮动素材
  *   【JS 模块 12】字体
  *   【JS 模块 13】IndexedDB 持久化
- *   【JS 模块 14】导出 PNG / 导出配置 / 导入配置 / 清空
+ *   【JS 模块 14】导出 / 导入 / 清空
  *   【JS 模块 15】UI 同步
  *   【JS 模块 16】事件绑定
  *   【JS 模块 17】App 接口
@@ -34,7 +34,6 @@ const BOSS_BASE_URL = '../../../shared/assets/video-cover/boss-base.png';
 const LOGO_BASE_URL = '../../../shared/assets/video-cover/';
 const DEFAULT_LOGO_FILE = 'gi-logo.png';
 
-/* Logo 固定参数 */
 const LOGO_SIZE_FIXED = 200;
 const LOGO_ROUNDED_FIXED = 50;
 
@@ -47,6 +46,11 @@ const MODE_CAP_TEXT = {
   character: '攻略',
   boss: '攻略'
 };
+
+/* character-art.txt 里的相对路径是从 tools/character/ 出发的
+ * 但 video 页面在 tools/video-cover/video/，要换成 ../../../ */
+const ART_PATH_PREFIX_OLD = '../../shared/';
+const ART_PATH_PREFIX_NEW = '../../../shared/';
 
 /* =========================================================================
  * 【JS 模块 2】状态
@@ -68,9 +72,7 @@ const state = {
   sigX: 550, sigY: 1980, sigSize: 100, sigStarBoost: 15, sigColor: '#ffffff',
   fontData: '', fontName: '', fontFileName: '',
   guideType: 'character',
-  bossNameInput: '',
   bossAvatar: null,
-  characterNameInput: '',
   characterArt: null,
   characterX: 2650,
   floatImg: []
@@ -105,7 +107,7 @@ async function loadDataFiles() {
     }
   } catch (e) { console.warn('characters.txt 加载失败', e); }
 
-  // 立绘字典（URL 可空）
+  // 立绘字典（URL 可空；本地路径要修正前缀）
   try {
     const res = await fetch('../../../shared/data/character-art.txt?t=' + Date.now());
     if (res.ok) {
@@ -115,7 +117,12 @@ async function loadDataFiles() {
         if (!line || line.startsWith('#')) return;
         const m = line.match(/^(\d+)\s+(\S+)\s*(.*)$/);
         if (!m) return;
-        ART_DICT[m[2]] = (m[3] || '').trim();
+        let url = (m[3] || '').trim();
+        // 修正本地路径：../../shared/... → ../../../shared/...
+        if (url.startsWith(ART_PATH_PREFIX_OLD)) {
+          url = ART_PATH_PREFIX_NEW + url.slice(ART_PATH_PREFIX_OLD.length);
+        }
+        ART_DICT[m[2]] = url;
       });
     }
   } catch (e) { console.warn('character-art.txt 加载失败', e); }
@@ -181,11 +188,9 @@ function downloadBlob(blob, filename) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
-/* 剥「（元素）」后缀 → 基础名 */
 function stripElementSuffix(name) {
   return String(name || '').replace(/[（(][^）)]*[）)]\s*$/, '').trim();
 }
-/* 补零到三位 */
 function padOrder(n) { return String(n).padStart(3, '0'); }
 
 /* =========================================================================
@@ -420,7 +425,6 @@ function collectFloats() {
  * 【JS 模块 8】预览挂载 + 增量更新
  * ========================================================================= */
 let previewSvgEl = null;
-let renderTimer = null;
 
 function mountPreview() {
   const host = document.getElementById('svgPreviewHost');
@@ -429,7 +433,6 @@ function mountPreview() {
   previewSvgEl = host.querySelector('svg');
 }
 
-/* 拖动立绘 X 轴时只更新 image 的 x 属性，不全量重绘 */
 function updateCharImgX() {
   if (!previewSvgEl) return;
   const el = previewSvgEl.querySelector('[data-float-id="character-art"]');
@@ -440,7 +443,6 @@ function updateCharImgX() {
   el.setAttribute('x', state.characterX - imgW / 2);
 }
 
-/* 只更新 SVG 里某个 data-field 的文本，不重绘 */
 function updateFieldText(field, text) {
   if (!previewSvgEl) return false;
   const els = previewSvgEl.querySelectorAll(`[data-field="${field}"]`);
@@ -452,12 +454,10 @@ function updateFieldText(field, text) {
 /* =========================================================================
  * 【JS 模块 9】模式切换
  * ========================================================================= */
-/* 应用模式相关 UI（面板显隐、字号行显隐、section 显隐等），不动 state */
 function applyModeUI() {
   const type = state.guideType;
 
   document.getElementById('characterPanel').style.display = type === 'character' ? 'block' : 'none';
-  document.getElementById('bossPanel').style.display = type === 'boss' ? 'block' : 'none';
   document.getElementById('customPanel').style.display = type === 'custom' ? 'block' : 'none';
 
   document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(b => {
@@ -476,13 +476,6 @@ function applyModeUI() {
   if (mainSection) mainSection.style.display = type === 'custom' ? '' : 'none';
   if (capSection) capSection.style.display = type === 'custom' ? '' : 'none';
 
-  /* 副标题第一行在角色模式下只读 */
-  const sub1Input = document.getElementById('sub1Input');
-  if (sub1Input) {
-    sub1Input.readOnly = (type === 'character');
-    sub1Input.placeholder = type === 'character' ? '自动生成' : '第一行文字';
-  }
-
   /* 副标题 label 动态提示 */
   const sub1Label = document.getElementById('sub1Label');
   const sub2Label = document.getElementById('sub2Label');
@@ -497,13 +490,19 @@ function applyModeUI() {
       type === 'character' ? '第二行（角色名）' :
       '第二行';
   }
+
+  /* sub1 在角色模式下只读（自动编号） */
+  const sub1Input = document.getElementById('sub1Input');
+  if (sub1Input) {
+    sub1Input.readOnly = (type === 'character');
+    sub1Input.placeholder = type === 'character' ? '自动生成' : '第一行文字';
+  }
 }
 
-/* 用户点击模式按钮 → 强制覆盖文案 + 清空编辑内容 */
 function setGuideType(type) {
   state.guideType = type;
 
-  /* 主标题 */
+  /* 主标题 / 标签 */
   if (type === 'character' || type === 'boss') {
     state.mainText = MODE_MAIN_TEXTS[type];
     state.capText = MODE_CAP_TEXT[type];
@@ -516,27 +515,24 @@ function setGuideType(type) {
   state.sub1 = '';
   state.sub2 = '';
 
-  /* 字号按模式固定 */
+  /* 字号跟模式 */
   if (type === 'character') {
-    state.sub1Size = 200;  // 小
-    state.sub2Size = 250;  // 大
+    state.sub1Size = 200;
+    state.sub2Size = 250;
   } else if (type === 'boss') {
-    state.sub1Size = 250;  // 大
-    state.sub2Size = 200;  // 小
+    state.sub1Size = 250;
+    state.sub2Size = 200;
   }
-  /* custom 保留当前值 */
 
-  /* 清空另一模式的关联状态 */
+  /* 背景清空 */
+  state.bg = '';
+
+  /* 关联状态清空 */
   if (type !== 'character') {
     state.characterArt = null;
-    state.characterNameInput = '';
   }
   if (type !== 'boss') {
     state.bossAvatar = null;
-    state.bossNameInput = '';
-  }
-  if (type !== 'custom') {
-    /* 自定义的浮动素材保留，不删 */
   }
 
   /* 同步输入框 */
@@ -548,10 +544,10 @@ function setGuideType(type) {
   if (sub1Input) sub1Input.value = '';
   const sub2Input = document.getElementById('sub2Input');
   if (sub2Input) sub2Input.value = '';
-  const charNameInput = document.getElementById('characterNameInput');
-  if (charNameInput) charNameInput.value = '';
-  const bossNameInput = document.getElementById('bossNameInput');
-  if (bossNameInput) bossNameInput.value = '';
+  const bgNameEl = document.getElementById('bgFileName');
+  if (bgNameEl) bgNameEl.textContent = '未选择文件';
+  const bgFileInput = document.getElementById('bgFile');
+  if (bgFileInput) bgFileInput.value = '';
 
   /* 同步字号下拉 */
   const s1 = document.getElementById('sub1Select');
@@ -565,18 +561,42 @@ function setGuideType(type) {
 }
 
 /* =========================================================================
- * 【JS 模块 10】角色匹配 / BOSS 匹配
+ * 【JS 模块 10】副标题输入处理
  * ========================================================================= */
+/* 第一行输入：
+ *   角色模式 → 只读，忽略输入
+ *   BOSS 模式 → BOSS 名，实时更新 sub1（增量）
+ *   自定义 → 直接改 sub1 */
+function onSub1Input(v) {
+  if (state.guideType === 'character') return;
+  state.sub1 = v;
+  if (!updateFieldText('sub1', v)) mountPreview();
+  persist();
+}
+function onSub1Blur(v) {
+  if (state.guideType !== 'boss') return;
+  matchBossName(v);
+}
+
+/* 第二行输入：
+ *   角色模式 → 角色名，实时更新 sub2（增量）
+ *   BOSS / 自定义 → 直接改 sub2 */
+function onSub2Input(v) {
+  state.sub2 = v;
+  if (!updateFieldText('sub2', v)) mountPreview();
+  persist();
+}
+function onSub2Blur(v) {
+  if (state.guideType !== 'character') return;
+  matchCharacterName(v);
+}
+
+/* 角色匹配：编号 / 立绘 / 名片图 */
 async function matchCharacterName(name) {
   name = (name || '').trim();
-  state.characterNameInput = name;
   state.sub2 = name;
-
-  /* 同步两个输入框 + 副标题第二行 */
-  const el1 = document.getElementById('characterNameInput');
-  const el2 = document.getElementById('sub2Input');
-  if (el1 && document.activeElement !== el1) el1.value = name;
-  if (el2 && document.activeElement !== el2) el2.value = name;
+  const sub2Input = document.getElementById('sub2Input');
+  if (sub2Input && document.activeElement !== sub2Input) sub2Input.value = name;
 
   if (!name) {
     state.characterArt = null;
@@ -586,24 +606,19 @@ async function matchCharacterName(name) {
     if (sub1Input) sub1Input.value = '';
     const bgNameEl = document.getElementById('bgFileName');
     if (bgNameEl) bgNameEl.textContent = '未选择文件';
-    mountPreview();
-    persist();
+    mountPreview(); persist();
     return;
   }
 
   const baseName = stripElementSuffix(name);
 
-  /* 编号：查 characters.txt，先查全名再查基础名 */
+  /* 编号 */
   const order = CHAR_NAME_TO_ORDER[name] || CHAR_NAME_TO_ORDER[baseName];
-  if (order) {
-    state.sub1 = 'No.' + padOrder(order);
-  } else {
-    state.sub1 = '';
-  }
+  state.sub1 = order ? ('No.' + padOrder(order)) : '';
   const sub1Input = document.getElementById('sub1Input');
   if (sub1Input) sub1Input.value = state.sub1;
 
-  /* 立绘：查 character-art.txt，先查全名再查基础名 */
+  /* 立绘 */
   let artUrl = '';
   if (ART_DICT[name] !== undefined && ART_DICT[name] !== '') artUrl = ART_DICT[name];
   else if (ART_DICT[baseName] !== undefined && ART_DICT[baseName] !== '') artUrl = ART_DICT[baseName];
@@ -620,7 +635,7 @@ async function matchCharacterName(name) {
     state.characterArt = null;
   }
 
-  /* 名片图：查 namecards.txt，先查全名再查基础名 */
+  /* 名片图 */
   let namecardUrl = '';
   if (NAMECARD_DICT[name]) namecardUrl = NAMECARD_DICT[name];
   else if (NAMECARD_DICT[baseName]) namecardUrl = NAMECARD_DICT[baseName];
@@ -639,21 +654,16 @@ async function matchCharacterName(name) {
   persist();
 }
 
+/* BOSS 匹配：头像 */
 async function matchBossName(name) {
   name = (name || '').trim();
-  state.bossNameInput = name;
   state.sub1 = name;
-
-  /* 同步两个输入框 + 副标题第一行 */
-  const el1 = document.getElementById('bossNameInput');
-  const el2 = document.getElementById('sub1Input');
-  if (el1 && document.activeElement !== el1) el1.value = name;
-  if (el2 && document.activeElement !== el2) el2.value = name;
+  const sub1Input = document.getElementById('sub1Input');
+  if (sub1Input && document.activeElement !== sub1Input) sub1Input.value = name;
 
   if (!name) {
     state.bossAvatar = null;
-    mountPreview();
-    persist();
+    mountPreview(); persist();
     return;
   }
 
@@ -969,9 +979,7 @@ function syncInputsFromState() {
     midBlur: state.midBlur,
     midBlurInput: state.midBlur,
     characterX: state.characterX,
-    characterXInput: state.characterX,
-    bossNameInput: state.bossNameInput,
-    characterNameInput: state.characterNameInput
+    characterXInput: state.characterX
   };
   Object.keys(map).forEach(id => {
     const el = document.getElementById(id);
@@ -986,7 +994,6 @@ function syncInputsFromState() {
   const lv = document.getElementById('labelVideoFont');
   if (lv) lv.textContent = state.fontName ? '当前：' + state.fontName : '默认系统字体';
 
-  /* Logo 下拉框当前值 */
   const logoSelect = document.getElementById('logoSelect');
   if (logoSelect && state.capLogo) {
     const file = state.capLogo.replace(LOGO_BASE_URL, '');
@@ -1022,62 +1029,32 @@ function bindEvents() {
     e.target.value = '';
   });
 
-  /* 角色名输入（两个输入框双向同步） */
-  const charInput = document.getElementById('characterNameInput');
-  const sub2Input = document.getElementById('sub2Input');
-  function onCharNameInput(v) {
-    state.characterNameInput = v;
-    state.sub2 = v;
-    const a = document.getElementById('characterNameInput');
-    const b = document.getElementById('sub2Input');
-    if (a && document.activeElement !== a) a.value = v;
-    if (b && document.activeElement !== b) b.value = v;
-    /* 增量更新副标题第二行文字（存在性不变时） */
-    const subCount = (state.sub1 ? 1 : 0) + (v ? 1 : 0);
-    const prevCount = (state.sub1 ? 1 : 0) + ((sub2Input?.value || '').trim() ? 1 : 0);
-    if (!updateFieldText('sub2', v) || subCount !== prevCount) {
-      /* 更新失败或行数变化 → 全量重绘 */
-      /* 注意：这里 state.sub2 已更新，subCount 用的是新值 */
-    }
-    persist();
-  }
-  function onCharNameBlur(v) { matchCharacterName(v); }
+  /* 浮动工具栏 */
+  document.getElementById('btnGuides').addEventListener('click', e => {
+    e.stopPropagation();
+    state.showGuides = !state.showGuides;
+    mountPreview(); persist();
+  });
+  document.getElementById('btnExportVideo').addEventListener('click', e => {
+    e.stopPropagation();
+    exportConfig();
+  });
+  document.getElementById('importVideoInput').addEventListener('change', e => {
+    importConfig(e.target);
+  });
+  document.getElementById('btnClearVideo').addEventListener('click', e => {
+    e.stopPropagation();
+    clearAll();
+  });
 
-  if (charInput) {
-    charInput.addEventListener('input', e => onCharNameInput(e.target.value));
-    charInput.addEventListener('blur', e => onCharNameBlur(e.target.value));
-  }
-  if (sub2Input) {
-    sub2Input.addEventListener('input', e => onCharNameInput(e.target.value));
-    sub2Input.addEventListener('blur', e => onCharNameBlur(e.target.value));
-  }
-
-  /* BOSS 名输入（两个输入框双向同步） */
-  const bossInput = document.getElementById('bossNameInput');
-  const sub1InputEl = document.getElementById('sub1Input');
-  function onBossNameInput(v) {
-    state.bossNameInput = v;
-    state.sub1 = v;
-    const a = document.getElementById('bossNameInput');
-    const b = document.getElementById('sub1Input');
-    if (a && document.activeElement !== a) a.value = v;
-    if (b && document.activeElement !== b) b.value = v;
-    if (!updateFieldText('sub1', v)) mountPreview();
-    persist();
-  }
-  function onBossNameBlur(v) { matchBossName(v); }
-
-  if (bossInput) {
-    bossInput.addEventListener('input', e => onBossNameInput(e.target.value));
-    bossInput.addEventListener('blur', e => onBossNameBlur(e.target.value));
-  }
-  if (sub1InputEl) {
-    /* sub1Input 在角色模式下是只读的，忽略输入 */
-    sub1InputEl.addEventListener('input', e => {
-      if (state.guideType === 'boss') onBossNameInput(e.target.value);
-    });
-    sub1InputEl.addEventListener('blur', e => {
-      if (state.guideType === 'boss') onBossNameBlur(e.target.value);
+  /* 点击预览切换浮动按钮显隐 */
+  const frame = document.getElementById('previewFrame');
+  const toolbar = document.getElementById('floatToolbar');
+  if (frame && toolbar) {
+    frame.addEventListener('click', (ev) => {
+      // 点到工具栏内部不触发
+      if (toolbar.contains(ev.target)) return;
+      toolbar.classList.toggle('hidden');
     });
   }
 
@@ -1091,14 +1068,7 @@ function bindEvents() {
     mountPreview(); persist();
   });
 
-  /* 浮动工具栏 */
-  document.getElementById('btnGuides').addEventListener('click', () => {
-    state.showGuides = !state.showGuides;
-    mountPreview(); persist();
-  });
-  document.getElementById('btnExportVideo').addEventListener('click', exportConfig);
-  document.getElementById('importVideoInput').addEventListener('change', e => importConfig(e.target));
-  document.getElementById('btnClearVideo').addEventListener('click', clearAll);
+  /* capTextBrightness 走 App.syncVal（内联 oninput） */
 }
 
 /* =========================================================================
@@ -1119,7 +1089,6 @@ const App = {
     if (document.activeElement !== slider && slider) slider.value = val;
     if (document.activeElement !== input && input) input.value = val;
 
-    /* 立绘 X 拖动：只更新 image 的 x，不全量重绘 */
     if (key === 'characterX') {
       updateCharImgX();
     } else {
@@ -1136,6 +1105,10 @@ const App = {
   setGuideType,
   matchCharacterName,
   matchBossName,
+  onSub1Input,
+  onSub1Blur,
+  onSub2Input,
+  onSub2Blur,
 
   addFloat,
   setFloat(id, key, value) {
@@ -1203,8 +1176,15 @@ window.App = App;
     logoSelect.innerHTML = LOGO_LIST.map(l =>
       '<option value="' + esc(l.file) + '">' + esc(l.name) + '</option>'
     ).join('');
-    if (!state.capLogo) state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
-    logoSelect.value = LOGO_LIST[0].file;
+
+    /* 校验 capLogo：如果不是当前 LOGO_BASE_URL 下的，重置为字典第一个 */
+    const validCapLogo = state.capLogo && state.capLogo.startsWith(LOGO_BASE_URL);
+    if (!validCapLogo) {
+      state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
+    }
+    const curFile = state.capLogo.replace(LOGO_BASE_URL, '');
+    logoSelect.value = curFile;
+
     logoSelect.addEventListener('change', function () {
       state.capLogo = LOGO_BASE_URL + this.value;
       const t = document.getElementById('logoThumb');
@@ -1224,7 +1204,7 @@ window.App = App;
 })();
 
 /* =========================================================================
- * 主题同步（父页面切换主题时通知）
+ * 主题同步
  * ========================================================================= */
 window.addEventListener('message', function (e) {
   if (e.data && e.data.type === 'theme') {
