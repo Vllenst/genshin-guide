@@ -1348,38 +1348,17 @@ function closeFontPicker() {
 }
 let loadedFontFace = null;
 
-/* 生成 / 刷新当前会话用的字体 blob URL */
-function refreshFontBlobUrl() {
+/* 生成 / 刷新当前会话用的字体 blob URL（短 URL，避免 dataURL 超长导致字体加载失败） */
+async function refreshFontBlobUrl() {
   if (_fontBlobUrl) {
     try { URL.revokeObjectURL(_fontBlobUrl); } catch (e) {}
     _fontBlobUrl = '';
   }
   if (!State.data.fontData) return;
   try {
-    const dataURL = State.data.fontData;
-    const commaIdx = dataURL.indexOf(',');
-    if (commaIdx < 0) return;
-    const meta = dataURL.slice(0, commaIdx);
-    const b64 = dataURL.slice(commaIdx + 1);
-    const isBase64 = /;base64$/i.test(meta);
-    let mime = 'font/ttf';
-    const mimeMatch = /^data:([^;,]+)/.exec(meta);
-    if (mimeMatch) mime = mimeMatch[1];
-    let binary;
-    if (isBase64) {
-      const raw = atob(b64);
-      const len = raw.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
-      binary = bytes;
-    } else {
-      const txt = decodeURIComponent(b64);
-      const len = txt.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = txt.charCodeAt(i);
-      binary = bytes;
-    }
-    const blob = new Blob([binary], { type: mime });
+    // 利用 fetch 交给浏览器底层解码 Base64 为 Blob，避开 atob 引起的大内存分配和超出调用栈错误
+    const res = await fetch(State.data.fontData);
+    const blob = await res.blob();
     _fontBlobUrl = URL.createObjectURL(blob);
   } catch (e) {
     console.warn('生成字体 blob URL 失败：', e.message);
@@ -1426,7 +1405,7 @@ async function selectFont(index) {
     const oldStyle = document.getElementById('card-preview-font-style');
     if (oldStyle) oldStyle.remove();
     if (labelEl) labelEl.textContent = '默认标准字体';
-    refreshFontBlobUrl();
+    await refreshFontBlobUrl();
     mountPreview(); debouncedSave();
     return;
   }
@@ -1451,7 +1430,7 @@ async function selectFont(index) {
     State.data.fontData = dataURL;
     State.data.fontFileName = f.file;
     State.data.fontName = f.name;
-    refreshFontBlobUrl();
+    await refreshFontBlobUrl();
     const ok = await installPreviewFont();
     if (labelEl) labelEl.textContent = (ok ? '当前：' : '加载失败：') + f.name;
     mountPreview(); debouncedSave();
@@ -1621,7 +1600,7 @@ async function loadSaveFromRepo() {
     const ok = await showConfirm('发现存档', '是否载入「' + name + '」的存档？当前编辑内容会被覆盖。');
     if (!ok) return;
     State.data = normalizeState(json);
-    refreshFontBlobUrl();
+    await refreshFontBlobUrl();
     await installPreviewFont();
     initThumbnails();
     renderEditorsByKey();
@@ -1850,7 +1829,7 @@ function importConfig(input) {
     try {
       const data = JSON.parse(e.target.result);
       State.data = normalizeState(data);
-      refreshFontBlobUrl();
+      await refreshFontBlobUrl();
       await installPreviewFont();
       initThumbnails();
       renderEditorsByKey();
@@ -2077,7 +2056,7 @@ async function init() {
   await loadNamecards();
   await loadArtDict();
   await loadFontList();
-  refreshFontBlobUrl();
+  await refreshFontBlobUrl();
   await installPreviewFont();
   initThumbnails();
   syncInputs();
