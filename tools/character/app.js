@@ -726,10 +726,10 @@ function panelRect(x, y, w, h, rx) {
   const theme = State.data.theme || '#939393';
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="rgba(0,0,0,.5)" stroke="${theme}" stroke-width="2" filter="url(#glowTheme)"/>`;
 }
-function buildSVG(scale = 1) {
+function buildSVG(scale = 1, forExport = false) {
   const d = State.data;
   const W = SVG_W * scale, H = SVG_H * scale;
-  const fontFace = d.fontData ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}` : '';
+  const fontFace = (forExport && d.fontData) ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}` : '';
   const fontFamily = d.fontData ? FONT_FAMILY_CUSTOM : FONT_FAMILY_DEFAULT;
   const nameFs = fitSize(d.charName, 280, 50, 18);
   const imgX = Number(d.imgX) || 0;
@@ -1350,7 +1350,9 @@ async function installPreviewFont() {
     document.fonts.add(loaded);
     loadedFontFace = loaded;
     await document.fonts.ready;
-  } catch (e) {}
+  } catch (e) {
+    console.warn('字体加载失败：', e.message);
+  }
 }
 async function selectFont(index) {
   closeFontPicker();
@@ -1425,7 +1427,6 @@ async function loadNamecards() {
     text.split(/\r?\n/).forEach(function (line) {
       line = line.trim();
       if (!line || line.startsWith('#')) return;
-      // 格式：编号 空格 角色名 空格 URL
       const m = line.match(/^(\d+)\s+(\S+)\s+(https?:\/\/\S+)$/);
       if (!m) return;
       NAMECARD_DICT[m[2]] = m[3];
@@ -1445,7 +1446,6 @@ async function loadArtDict() {
     text.split(/\r?\n/).forEach(function (line) {
       line = line.trim();
       if (!line || line.startsWith('#')) return;
-      // 格式：编号 空格 角色名 空格 URL（URL 可空，空则记为 ''）
       const m = line.match(/^(\d+)\s+(\S+)\s*(.*)$/);
       if (!m) return;
       const name = m[2];
@@ -1472,8 +1472,6 @@ async function matchStyleImages() {
   const order = CHAR_NAME_TO_ORDER[name];
   const elementName = themeToElementName();
 
-  // === 立绘：查 character-art.txt ===
-  // 先查「名字（元素）」，再查「名字」
   const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
   let artUrl = '';
   if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
@@ -1505,7 +1503,6 @@ async function matchStyleImages() {
     }
   }
 
-  // === 元素图：本地目录 ===
   let elementUrl = '';
   if (elementName) {
     const ghUrl = '../../shared/assets/characters/element/' + elementName + '.png';
@@ -1521,7 +1518,6 @@ async function matchStyleImages() {
     resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
   }
 
-  // === 名片图：查 namecards.txt ===
   const namecardUrl = NAMECARD_DICT[name] || '';
   if (namecardUrl) {
     State.data.bgImg = namecardUrl;
@@ -1739,7 +1735,7 @@ async function exportPNG() {
   btns.forEach(b => { b.el.disabled = true; b.el.textContent = '正在导出...'; });
   try {
     if (document.fonts) await document.fonts.ready;
-    const svg = buildSVG(EXPORT_SCALE);
+    const svg = buildSVG(EXPORT_SCALE, true);
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     try {
