@@ -15,7 +15,7 @@
  *   【JS 模块 9】    UI 编辑器渲染
  *   【JS 模块 10】   图片上传
  *   【JS 模块 10.3】 字体库
- *   【JS 模块 10.4】 characters.txt / namecards.txt 读取
+ *   【JS 模块 10.4】 characters.txt / namecards.txt / character-art.txt 读取
  *   【JS 模块 10.5】 样式图匹配 + 在线存档
  *   【JS 模块 10.6】 图标库匹配
  *   【JS 模块 11】   数据归一化
@@ -120,6 +120,7 @@ let currentTab = 'style';
 
 let CHAR_NAME_TO_ORDER = {};
 let NAMECARD_DICT = {};
+let ART_DICT = {};
 
 /* =========================================================================
  * 【JS 模块 3】State 与持久化
@@ -271,6 +272,15 @@ async function urlExists(url) {
     try { var res3 = await fetch(url); return res3.ok; } catch (e2) { return false; }
   }
 }
+function loadImageMeta(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
 
 /* =========================================================================
  * 【JS 模块 5.5】图标 viewBox 收紧
@@ -361,8 +371,8 @@ function text(x, y, content, size, opts = {}) {
 function rect(x, y, w, h, fill, stroke = '', sw = 0, rx = 8, opacity = 1, clip = '') {
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" opacity="${opacity}" ${stroke ? `stroke="${stroke}" stroke-width="${sw}"` : ''}${clip ? ` clip-path="url(#${clip})"` : ''}/>`;
 }
-function image(href, x, y, w, h, fit = 'xMidYMid slice', clip = '') {
-  return `<image href="${href}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${fit}" ${clip}/>`;
+function image(href, x, y, w, h, fit = 'xMidYMid slice', extra = '') {
+  return `<image href="${href}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${fit}" ${extra}/>`;
 }
 function wrapTextLines(content, maxW, size, maxLines) {
   const chars = Array.from(String(content || ''));
@@ -791,7 +801,7 @@ function buildSVG(scale = 1) {
     ${d.bgImg ? image(d.bgImg, 0, 0, SVG_W, SVG_H) : ''}
     <rect width="${SVG_W}" height="${SVG_H}" fill="rgba(0,0,0,0.25)"/>
     ${rect(leftX, leftY, leftW, leftH, 'rgba(0,0,0,.5)', '', 0, LAYOUT.radius.panel)}
-    ${d.charImg ? image(d.charImg, charDrawX, charDrawY, charDrawW, charDrawH, 'xMidYMid meet', 'clip-path="url(#leftClip)"') : ''}
+    ${d.charImg ? image(d.charImg, charDrawX, charDrawY, charDrawW, charDrawH, 'xMidYMid meet', 'clip-path="url(#leftClip)" id="charImgEl"') : ''}
     ${info}
     ${d.nameBgImg ? image(d.nameBgImg, elemBgX, elemBgY, elemBgW, elemBgH, 'xMidYMid meet', 'opacity="0.75"') : ''}
     ${text(nameElemCenterX, nameElemCenterY, d.charName, nameFs, { anchor: 'middle', weight: 400, field: 'charName', fit: { maxW: 280, base: 50, min: 18 }, extra: 'filter="drop-shadow(0 3px 5px rgba(0,0,0,.9))"' })}
@@ -832,6 +842,21 @@ function mountPreview() {
       previewIndex.get(f).push(el);
     });
   }
+}
+/* 拖动立绘时只更新 image 的 x 属性，不全量重绘 */
+function updateCharImgX() {
+  if (!previewSvgEl) return;
+  const el = previewSvgEl.querySelector('#charImgEl');
+  if (!el) return;
+  const d = State.data;
+  const imgX = Number(d.imgX) || 0;
+  const leftX = LAYOUT.left.x, leftW = LAYOUT.left.w, leftH = LAYOUT.left.h;
+  const imgMeta = d.charImgMeta || {};
+  const imgIW = Number(imgMeta.w) || 0;
+  const imgIH = Number(imgMeta.h) || 0;
+  const charDrawW = (imgIW > 0 && imgIH > 0) ? Math.round(leftH * imgIW / imgIH) : leftW;
+  const newX = leftX + (leftW - charDrawW) / 2 + imgX;
+  el.setAttribute('x', newX);
 }
 function applyTextFieldUpdate(el, textValue, fill) {
   el.textContent = textValue == null ? '' : String(textValue);
@@ -1367,7 +1392,7 @@ async function selectFont(index) {
 }
 
 /* =========================================================================
- * 【JS 模块 10.4】characters.txt / namecards.txt 读取
+ * 【JS 模块 10.4】characters.txt / namecards.txt / character-art.txt 读取
  * ========================================================================= */
 async function loadCharOrderTxt() {
   try {
@@ -1411,6 +1436,28 @@ async function loadNamecards() {
   }
 }
 
+async function loadArtDict() {
+  try {
+    const res = await fetch('../../shared/data/character-art.txt?t=' + Date.now());
+    if (!res.ok) { console.warn('character-art.txt HTTP ' + res.status); return; }
+    const text = await res.text();
+    ART_DICT = {};
+    text.split(/\r?\n/).forEach(function (line) {
+      line = line.trim();
+      if (!line || line.startsWith('#')) return;
+      // 格式：编号 空格 角色名 空格 URL（URL 可空，空则记为 ''）
+      const m = line.match(/^(\d+)\s+(\S+)\s*(.*)$/);
+      if (!m) return;
+      const name = m[2];
+      const url = (m[3] || '').trim();
+      ART_DICT[name] = url;
+    });
+    console.log('character-art.txt 加载成功，共 ' + Object.keys(ART_DICT).length + ' 条');
+  } catch (e) {
+    console.warn('character-art.txt 加载失败：', e.message);
+  }
+}
+
 /* =========================================================================
  * 【JS 模块 10.5】样式图匹配 + 在线存档载入
  * ========================================================================= */
@@ -1421,27 +1468,44 @@ async function matchStyleImages() {
   State.data.nameBgImgDeleted = false;
   State.data.bgImgDeleted = false;
   showToast('正在匹配样式图…', 'info');
-  const results = { standing: false, element: false, namecard: false };
+  const results = { standing: false, element: false, namecard: false, standingError: '' };
   const order = CHAR_NAME_TO_ORDER[name];
+  const elementName = themeToElementName();
 
-  // 立绘：本地目录 + urlExists 探测
-  let standingUrl = '';
-  if (order) {
-    const ghUrl = '../../shared/assets/characters/standing/' + padOrder(order) + '.' + name + '.png';
-    if (await urlExists(ghUrl)) standingUrl = ghUrl;
+  // === 立绘：查 character-art.txt ===
+  // 先查「名字（元素）」，再查「名字」
+  const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
+  let artUrl = '';
+  if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
+    artUrl = ART_DICT[artKeyWithEle];
+  } else if (ART_DICT[name] !== undefined && ART_DICT[name] !== '') {
+    artUrl = ART_DICT[name];
   }
-  if (standingUrl) {
-    State.data.charImg = standingUrl;
-    State.data.charImgMeta = null;
-    updateThumb('thumbCharImg', 'labelCharImg', standingUrl, '已匹配立绘');
-    results.standing = true;
+  if (artUrl) {
+    const meta = await loadImageMeta(artUrl);
+    if (meta) {
+      State.data.charImg = artUrl;
+      State.data.charImgMeta = meta;
+      updateThumb('thumbCharImg', 'labelCharImg', artUrl, '已匹配立绘');
+      results.standing = true;
+    } else {
+      State.data.charImg = '';
+      State.data.charImgMeta = null;
+      resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
+      results.standingError = '链接加载失败';
+    }
   } else {
     State.data.charImg = '';
+    State.data.charImgMeta = null;
     resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
+    if (ART_DICT[name] === undefined && ART_DICT[artKeyWithEle] === undefined) {
+      results.standingError = '字典无此角色';
+    } else {
+      results.standingError = '暂无立绘链接';
+    }
   }
 
-  // 元素图：本地目录 + urlExists 探测
-  const elementName = themeToElementName();
+  // === 元素图：本地目录 ===
   let elementUrl = '';
   if (elementName) {
     const ghUrl = '../../shared/assets/characters/element/' + elementName + '.png';
@@ -1457,7 +1521,7 @@ async function matchStyleImages() {
     resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
   }
 
-  // 名片图：查 namecards.txt 字典，不探测
+  // === 名片图：查 namecards.txt ===
   const namecardUrl = NAMECARD_DICT[name] || '';
   if (namecardUrl) {
     State.data.bgImg = namecardUrl;
@@ -1469,10 +1533,9 @@ async function matchStyleImages() {
   }
 
   const failed = [];
-  if (order && !results.standing) failed.push('立绘');
+  if (!results.standing) failed.push('立绘（' + (results.standingError || '未匹配') + '）');
   if (elementName && !results.element) failed.push('元素图');
   if (!results.namecard) failed.push('名片图（字典无此角色）');
-  if (!order) failed.push('立绘（characters.txt 无此角色）');
   if (!elementName) failed.push('元素图（未选元素色）');
   if (failed.length) showToast('未找到：' + failed.join('、'), 'error');
   else showToast('全部匹配成功', 'success');
@@ -1762,7 +1825,7 @@ function setField(key, value) {
   if (key === 'imgX') {
     const s = document.getElementById('imgXSlider');
     if (s && document.activeElement !== s) s.value = value;
-    mountPreview();
+    updateCharImgX();
   } else if (key === 'subStats') {
     mountPreview();
   } else if (FIELD_MAP[key]) {
@@ -1945,6 +2008,7 @@ async function init() {
   State.data = normalizeState(saved || {});
   await loadCharOrderTxt();
   await loadNamecards();
+  await loadArtDict();
   await loadFontList();
   await installPreviewFont();
   initThumbnails();
