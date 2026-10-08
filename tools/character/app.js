@@ -1824,7 +1824,9 @@ function setField(key, value) {
   State.data[key] = value;
   if (key === 'imgX') {
     const s = document.getElementById('imgXSlider');
+    const n = document.getElementById('imgX');
     if (s && document.activeElement !== s) s.value = value;
+    if (n && document.activeElement !== n) n.value = value;
     updateCharImgX();
   } else if (key === 'subStats') {
     mountPreview();
