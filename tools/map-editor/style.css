@@ -1,12 +1,14 @@
 /* =========================================================================
  * 图标字典编辑器 · style.css
  * =========================================================================
- * 通用控件已抽到 shared/theme.css，本文件只保留：
+ * 通用控件（按钮 / 输入框 / 下拉 / 缩略图 / 弹窗 / 图标 / iOS 容器）已抽到
+ * shared/theme.css
+ * 本文件只保留：
  *   【CSS 模块 1】 页面级布局
  *   【CSS 模块 2】 sticky 头部 + 操作按钮组
- *   【CSS 模块 3】 条目行（编号 / 缩略图 / 名字 / 星级 / 删除 一行排布）
+ *   【CSS 模块 3】 条目行
  *   【CSS 模块 4】 空状态
- *   【CSS 模块 5】 粘贴弹窗
+ *   【CSS 模块 5】 粘贴弹窗（特化）
  *   【CSS 模块 6】 状态栏
  * ========================================================================= */
 
@@ -82,25 +84,25 @@ select.star-select {
 .empty-tip .big-icon { font-size: 36px; opacity: 0.4; margin-bottom: 8px; display: block; }
 
 /* =========================================================================
- * 【CSS 模块 5】粘贴弹窗
+ * 【CSS 模块 5】粘贴弹窗（特化）
+ *   基础样式从 theme.css 模块 21 拿（.modal-backdrop / .modal-box / .modal-title /
+ *   .modal-hint / .modal-actions），这里只做 map-editor 的特化
+ *   兼容：.modal 是旧类名，下批 HTML 会改成 .modal-box
  * ========================================================================= */
-.modal-backdrop { padding: 20px; z-index: 100; }
-.modal {
-  background: var(--bg-base); border-radius: var(--radius-lg);
-  width: 100%; max-width: 480px; padding: 16px;
-  display: flex; flex-direction: column; gap: 12px; max-height: 80vh;
-  box-shadow: 0 20px 60px rgba(31, 29, 26, 0.25);
+.modal,
+.modal-box {
+  /* 用 --bg-base 而不是 --bg-surface（视觉更沉，跟页面底色接近） */
+  background: var(--bg-base);
+  padding: 16px;
 }
-.modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-.modal textarea {
+.modal textarea,
+.modal-box textarea {
   width: 100%; height: 180px; padding: 10px;
   border: 1px solid var(--border-default); border-radius: var(--radius-sm);
   background: var(--bg-sunken); color: var(--text-primary);
-  font-family: inherit; font-size: 12px; resize: vertical; outline: none; line-height: 1.6;
+  font-family: inherit; font-size: 12px;
+  resize: vertical; outline: none; line-height: 1.6;
 }
-.modal-hint { font-size: 11.5px; color: var(--text-tertiary); line-height: 1.6; }
-.modal-actions { display: flex; gap: 8px; }
-.modal-actions button { flex: 1; height: 40px; }
 
 /* =========================================================================
  * 【CSS 模块 6】状态栏
