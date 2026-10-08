@@ -145,17 +145,17 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 .icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 .icon-flip-y { display: inline-flex; align-items: center; transform: rotate(180deg); }
 
-/* 有文字按钮：图标 = 字号 + 2px */
+/* 有文字按钮：图标 = 字号 + 5px */
 button svg, .btn svg, .btn-sm svg, .btn-xs svg,
 .ios-btn-fill svg, .file-btn svg, .icon-only svg, .btn-icon svg {
-  width: calc(1em + 2px);
-  height: calc(1em + 2px);
+  width: calc(1em + 5px);
+  height: calc(1em + 5px);
   display: inline-block; vertical-align: middle; flex-shrink: 0;
 }
 .icon-only { display: inline-flex; align-items: center; justify-content: center; }
 .btn-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-/* 无文字按钮（只有 svg 子元素）：图标 = 容器 × 80% */
+/* 无文字按钮（只有 svg 子元素）：图标 = 容器 × 60% */
 button:has(> svg:only-child) {
   padding: 0;
   display: inline-flex;
@@ -163,8 +163,8 @@ button:has(> svg:only-child) {
   justify-content: center;
 }
 button:has(> svg:only-child) svg {
-  width: 80%;
-  height: 80%;
+  width: 60%;
+  height: 60%;
   display: block;
   flex-shrink: 0;
 }
