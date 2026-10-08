@@ -80,7 +80,7 @@ window.ICON_DICT = {
     "UI_AvatarIcon_Freminet": { name: "菲米尼", star: 4, order: 70 },
     "UI_AvatarIcon_Neuvillette": { name: "那维莱特", star: 5, order: 71 },
     "UI_AvatarIcon_Wriothesley": { name: "莱欧斯利", star: 5, order: 72 },
-    "UI_AvatarIcon_Charlotte": { name: "夏洛蒂", star: 4, order: 73 },
+    "UI_AvatarIcon_Charlotte": { name: "夏洛蒂", star: 4, order: 73, url: "https://gi.yatta.moe/assets/UI/UI_AvatarIcon_Charlotte.png" },
     "UI_AvatarIcon_Furina": { name: "芙宁娜", star: 5, order: 74 },
     "UI_AvatarIcon_Navia": { name: "娜维娅", star: 5, order: 75 },
     "UI_AvatarIcon_Chevreuse": { name: "夏沃蕾", star: 4, order: 76 },
