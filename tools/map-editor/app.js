@@ -238,12 +238,21 @@
     return "id";
   }
 
-  function resolveUrl(type, key, mode) {
-    if (!key) return "";
-    if (mode === "local") return LOCAL_IMG_BASE + key;
-    if (mode === "url") return key;
-    var cfg = config[type];
-    return cfg.prefix + key + (cfg.ext || "");
+  /**
+   * 解析条目最终 URL。优先级：
+   *   1. local: true   → 仓库本地文件（LOCAL_IMG_BASE + key）
+   *   2. url: "..."    → 单条指定链接
+   *   3. key 是 http   → 直接用
+   *   4. 拼接          → prefix + key + ext
+   */
+  function resolveUrl(type, row) {
+    if (!row || !row.key) return "";
+    if (row.local) return LOCAL_IMG_BASE + row.key;
+    if (row.url) return row.url;
+    if (/^https?:\/\//i.test(row.key)) return row.key;
+    var cfg = config[type] || {};
+    if (cfg.prefix) return cfg.prefix + row.key + (cfg.ext || "");
+    return "";
   }
 
   function extractIconFullName(input) {
@@ -254,9 +263,7 @@
   }
 
   function makeThumbFor(row, cb) {
-    var mode = detectMode(row.key);
-    var src = resolveUrl(currentTab, row.key, mode);
-    cb(src);
+    cb(resolveUrl(currentTab, row));
   }
 
   function esc(s) {
@@ -389,54 +396,73 @@
 
   /* ---------------------------------------------------------------------
    * 【JS 模块 10】粘贴 URL 解析
+   * -------------------------------------------------------------------
+   * 语义：给某个图标 key 指定源。
+   *   1. 从 URL 取文件名（去后缀）当作 key
+   *   2. 判断 URL 是否严格符合 config 规则（=== prefix + key + ext）
+   *        符合 → 不加 url，走拼接
+   *        不符合 → 保留完整 URL 到 url 字段
+   *   3. 按 key 找已有条目
+   *        找到 → 只更新 url 字段，不动 order、不新增、不改中文名
+   *        没找到 → 新建条目（order: 0），查 Amber 补中文名
    * ------------------------------------------------------------------- */
   async function parsePastedUrls(text) {
     var lines = String(text || "").split(/\r?\n/);
     var urls = lines.map(function (l) { return l.trim(); }).filter(function (l) { return /^https?:\/\//i.test(l); });
     if (!urls.length) { setStatus("未识别到有效链接", "err"); return; }
 
-    setStatus("正在加载 Amber 数据…");
-    var amberReady = false;
-    try { await loadAmberData(currentTab); amberReady = true; } catch (e) { amberReady = false; }
-
+    var cfg = config[currentTab] || { prefix: "", ext: "" };
     var list = editorData[currentTab];
-    var maxOrder = list.reduce(function (m, r) { return Math.max(m, r.order || 0); }, 0);
 
-    var newRows = [];
+    var byKey = {};
+    list.forEach(function (row) { if (row.key) byKey[row.key] = row; });
+
+    var updated = [];
+    var created = [];
+
     urls.forEach(function (url) {
-      maxOrder++;
-      var fullName = extractIconFullName(url);
-      if (!fullName) return;
-      var row = { order: maxOrder, key: fullName, name: "", star: 5 };
-      if (currentTab === "monsters") row.star = null;
+      var key = extractIconFullName(url);
+      if (!key) return;
 
-      list.push(row);
-      newRows.push({ row: row, fullName: fullName });
+      var isConfig = !!(cfg.prefix && url === (cfg.prefix + key + (cfg.ext || "")));
+      var customUrl = isConfig ? "" : url;
+
+      var existing = byKey[key];
+      if (existing) {
+        if (customUrl) existing.url = customUrl;
+        else delete existing.url;
+        updated.push(existing);
+      } else {
+        var row = { key: key, name: "", order: 0 };
+        if (currentTab === "monsters") row.star = null;
+        else row.star = 5;
+        if (customUrl) row.url = customUrl;
+        list.push(row);
+        byKey[key] = row;
+        created.push(row);
+      }
     });
 
     saveLocal(); render();
-    setStatus("已添加 " + newRows.length + " 条，正在查询中文名…");
 
-    for (var i = 0; i < newRows.length; i++) {
-      var item = newRows[i];
-      if (!amberReady) break;
-      var name = await lookupAmberName(currentTab, item.fullName);
-      if (name) {
-        item.row.name = name;
-        if (currentTab === "characters") {
-          var autoOrder = findOrderByName(name, item.row);
-          if (autoOrder) item.row.order = autoOrder;
+    if (created.length) {
+      setStatus("正在查询中文名…");
+      var amberReady = false;
+      try { await loadAmberData(currentTab); amberReady = true; } catch (e) { amberReady = false; }
+      if (amberReady) {
+        for (var i = 0; i < created.length; i++) {
+          var r = created[i];
+          var name = await lookupAmberName(currentTab, r.key);
+          if (name) r.name = name;
+          saveLocal(); render();
         }
       }
-      saveLocal(); render();
     }
 
-    if (!amberReady) {
-      setStatus("Amber 加载失败，中文名请手动填", "err");
-    } else {
-      var filled = newRows.filter(function (it) { return it.row.name; }).length;
-      setStatus("完成 · 自动填充 " + filled + " / " + newRows.length + " 条", "ok");
-    }
+    var msg = [];
+    if (updated.length) msg.push("更新 " + updated.length + " 条");
+    if (created.length) msg.push("新增 " + created.length + " 条");
+    setStatus(msg.length ? msg.join(" · ") : "无变化", "ok");
     saveLocal(); render();
   }
 
@@ -505,11 +531,12 @@
 
     config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
-    var localByName = {};
+    /* 备份编辑器里带"自定义来源"的条目（local 或 url），按名字索引 */
+    var customByName = {};
     ALL_TYPES.forEach(function (type) {
-      localByName[type] = {};
+      customByName[type] = {};
       (editorData[type] || []).forEach(function (row) {
-        if (row.local && row.name) localByName[type][row.name] = row;
+        if ((row.local || row.url) && row.name) customByName[type][row.name] = row;
       });
     });
 
@@ -529,44 +556,42 @@
     setStatus("正在合并数据…");
     ALL_TYPES.forEach(function (type) {
       var merged = {};
-      var localMap = localByName[type] || {};
+      var customMap = customByName[type] || {};
+      var customNames = {};
+      Object.keys(customMap).forEach(function (name) { customNames[name] = true; });
 
-      var localNames = {};
-      Object.keys(localMap).forEach(function (name) { localNames[name] = true; });
-
-      /* 3.1 先放本地图 */
-      Object.keys(localMap).forEach(function (name) {
-        var row = localMap[name];
-        merged[row.key] = {
-          name: row.name, star: row.star, order: row.order, local: true
-        };
+      /* 3.1 先放自定义来源条目（local / url），保持原样 */
+      Object.keys(customMap).forEach(function (name) {
+        var row = customMap[name];
+        var out = { name: row.name, star: row.star, order: row.order };
+        if (row.local) out.local = true;
+        if (row.url) out.url = row.url;
+        merged[row.key] = out;
       });
 
-      /* 3.2 Amber 里的条目：名字被本地图占用则跳过 */
+      /* 3.2 Amber 里的条目：名字被自定义来源占用则跳过 */
       var amberItems = amberResult[type] || {};
       var amberNames = {};
       Object.keys(amberItems).forEach(function (key) {
         var item = amberItems[key];
-        if (localNames[item.name]) return;
+        if (customNames[item.name]) return;
         amberNames[item.name] = true;
         merged[key] = item;
       });
 
-      /* 3.3 现有条目里 Amber 没有、也不是本地图的 → 保留 */
+      /* 3.3 现有条目里 Amber 没有、也不是自定义来源的 → 保留（含 url 字段） */
       var existingByName = {};
       (editorData[type] || []).forEach(function (row) {
         if (row.name) existingByName[row.name] = row;
       });
       Object.keys(existingByName).forEach(function (name) {
         if (amberNames[name]) return;
-        if (localNames[name]) return;
+        if (customNames[name]) return;
         var row = existingByName[name];
-        merged[row.key] = {
-          name: row.name,
-          star: row.star,
-          order: row.order,
-          local: row.local || false
-        };
+        var out = { name: row.name, star: row.star, order: row.order };
+        if (row.local) out.local = true;
+        if (row.url) out.url = row.url;
+        merged[row.key] = out;
       });
 
       /* 3.4 转成数组 */
@@ -575,6 +600,7 @@
         var out = { key: k, name: r.name, order: r.order };
         if (r.star != null) out.star = r.star;
         if (r.local) out.local = true;
+        if (r.url) out.url = r.url;
         return out;
       });
     });
@@ -618,6 +644,7 @@
             var out = { key: k, name: item.name || "", order: item.order || 0 };
             if (item.star != null) out.star = item.star;
             if (item.local) out.local = true;
+            if (item.url) out.url = item.url;
             return out;
           });
         });
@@ -655,6 +682,7 @@
         if (item.star != null) parts.push("star: " + item.star);
         parts.push("order: " + (item.order || 0));
         if (item.local) parts.push("local: true");
+        if (item.url) parts.push('url: "' + esc(item.url) + '"');
         var line = '    "' + esc(item.key) + '": { ' + parts.join(", ") + " }";
         if (i < list.length - 1) line += ",";
         lines.push(line);
