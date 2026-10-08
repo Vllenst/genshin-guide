@@ -541,15 +541,16 @@ function statBox(x, y, w, h, iconKey, title, value, field) {
   const textX = startX + iconSize + gap;
   const iconElem = renderArtifactIcon(iconKey, iconCx, centerY, iconSize);
   const valueAreaTop = y + 32, valueAreaH = h - 36;
-  const valueMidY = valueAreaTop + valueAreaH / 2;
   const maxW = w - boxRx * 2;
-  const opts = { fill: '#fff', anchor: 'middle' };
-  if (field) { opts.field = field; opts.fit = { maxW, base: 12, min: 6 }; }
+  /* 主词条先换行、行数放不下才缩字号（多行无 data-field，靠全量重绘更新） */
+  const valueSvg = value
+    ? wrappedCenteredText(x + boxRx, valueAreaTop, maxW, valueAreaH, value, maxW, 12, 6, '#fff')
+    : '';
   return `
     ${rect(x, y, w, h, LAYOUT.innerBoxFill, '', 0, boxRx)}
     ${iconElem}
     ${text(textX, centerY, title, labelFs, { fill: LAYOUT.labelColor, weight: 500 })}
-    ${text(x + w / 2, valueMidY, value || '', fitSize(value, maxW, 12, 6), opts)}`;
+    ${valueSvg}`;
 }
 function buildStats() {
   const layer = LAYOUT.layers.mid.stat;
@@ -1929,6 +1930,9 @@ function setField(key, value) {
     if (n && document.activeElement !== n) n.value = value;
     updateCharImgX();
   } else if (key === 'subStats') {
+    mountPreview();
+  } else if (key === 'sandMain' || key === 'gobMain' || key === 'cirMain') {
+    /* 主词条渲染成多行 SVG，无 data-field，走全量重绘 */
     mountPreview();
   } else if (FIELD_MAP[key]) {
     updatePreviewField(FIELD_MAP[key]);
