@@ -1,0 +1,194 @@
+/* =========================================================================
+ * 视频封面 · style.css
+ * =========================================================================
+ * 通用控件（按钮 / 输入框 / 下拉 / 滑块 / iOS 容器 / 缩略图 / 浮动按钮 /
+ *          字体抽屉 / 图标）已抽到 shared/theme.css
+ * 本文件只保留 video-cover 专属布局
+ *   【CSS 模块 1】页面基础
+ *   【CSS 模块 2】预览区（sticky）
+ *   【CSS 模块 3】浮动工具栏容器
+ *   【CSS 模块 4】表单布局
+ *   【CSS 模块 5】文件选择器
+ *   【CSS 模块 6】分段控件
+ *   【CSS 模块 7】滑块 + 数值框（video 专属尺寸）
+ *   【CSS 模块 8】浮动素材卡片
+ *   【CSS 模块 9】底部 Dock
+ * ========================================================================= */
+
+/* =========================================================================
+ * 【CSS 模块 1】页面基础
+ * ========================================================================= */
+body {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+}
+
+/* =========================================================================
+ * 【CSS 模块 2】预览区（sticky）
+ * ========================================================================= */
+.preview-sticky {
+  position: sticky; top: 0; z-index: 35;
+  background: var(--bg-base);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-frame {
+  max-width: 900px; margin: 0 auto; position: relative;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); padding: 6px;
+  display: flex; justify-content: center;
+  box-shadow: var(--shadow-card);
+}
+#svgPreviewHost {
+  display: block; background: #1c1c22; width: 100%; height: auto;
+  aspect-ratio: 16 / 9; border-radius: 6px;
+}
+#svgPreviewHost > svg { width: 100%; height: 100%; display: block; }
+
+/* =========================================================================
+ * 【CSS 模块 3】浮动工具栏容器（按钮样式在 theme.css）
+ * ========================================================================= */
+.float-toolbar {
+  position: absolute; top: 12px; right: 12px;
+  display: flex; gap: 4px; z-index: 15;
+}
+
+/* =========================================================================
+ * 【CSS 模块 4】表单布局
+ * ========================================================================= */
+.grid {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 14px; max-width: 900px; margin: 0 auto; width: 100%;
+}
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } }
+
+/* 提示小字 */
+.hint { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
+
+/* 字体标签（一行里 flex 撑满 + 省略号） */
+.font-label {
+  flex: 1; min-width: 0; font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* 自定义面板头部 */
+.custom-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.custom-head-label { font-size: 12px; color: var(--text-secondary); }
+.float-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* =========================================================================
+ * 【CSS 模块 5】文件选择器
+ * ========================================================================= */
+.file-picker {
+  display: flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 8px 0 4px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-2);
+}
+.file-picker .file-btn {
+  height: 30px; padding: 0 12px; font-size: 12px; border-radius: var(--radius-sm);
+}
+.file-picker-name {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: 12px; color: var(--text-tertiary);
+}
+
+/* =========================================================================
+ * 【CSS 模块 6】分段控件
+ * ========================================================================= */
+.seg-control {
+  display: flex; background: var(--bg-sunken); padding: 3px;
+  border-radius: var(--radius-md); gap: 2px;
+  border: 1px solid var(--border-subtle);
+}
+.seg-btn {
+  min-width: 0; height: 32px;
+  background: transparent; border: 0; border-radius: 9px;
+  color: var(--text-secondary);
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.seg-btn.active {
+  background: var(--bg-surface); color: var(--text-primary);
+  font-weight: 600; box-shadow: 0 1px 3px rgba(31,29,26,.08);
+}
+
+/* =========================================================================
+ * 【CSS 模块 7】滑块 + 数值框（video 专属尺寸，比默认宽一点）
+ * ========================================================================= */
+.control-item { display: flex; flex-direction: column; gap: 5px; }
+.control-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text-secondary);
+}
+.slider-row { display: flex; align-items: center; gap: 8px; }
+.slider-row input[type="range"] { flex: 1; }
+
+.num-box {
+  display: inline-flex; align-items: center; padding: 0 8px;
+  height: 32px; width: 82px; flex-shrink: 0;
+  background: var(--bg-sunken); border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+.num-box input[type="number"] {
+  width: 100%; height: 100%;
+  border: none !important; background: transparent !important;
+  padding: 0 !important; text-align: right; font-size: 12px;
+  box-shadow: none !important; outline: none !important;
+}
+.num-box .unit-tag {
+  font-size: 11px; color: var(--text-tertiary);
+  margin-left: 3px; flex-shrink: 0;
+}
+
+/* =========================================================================
+ * 【CSS 模块 8】浮动素材卡片
+ * ========================================================================= */
+.float-item {
+  background: var(--bg-surface-2); border: 1px solid var(--border-subtle);
+  border-radius: 10px; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.float-item-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.float-item-head-thumb {
+  display: flex; align-items: center; gap: 6px;
+}
+.float-thumb {
+  width: 44px; height: 32px; object-fit: cover;
+  border-radius: 6px; border: 1px solid var(--border-subtle);
+}
+.float-item-head-actions { display: flex; gap: 3px; }
+
+/* 浮动素材里的 checkbox 行 */
+.float-item label.under-middle-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+}
+
+/* =========================================================================
+ * 【CSS 模块 9】底部 Dock
+ * ========================================================================= */
+.bottom-dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  background: var(--bg-base);
+  border-top: 1px solid var(--border-subtle);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: center;
+}
+.export-btn-main {
+  width: 100%; max-width: 480px; height: 46px;
+  font-size: 15px; font-weight: 600;
+  background: var(--text-primary); color: var(--bg-base);
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 16px rgba(31,29,26,.18);
+  cursor: pointer; font-family: inherit;
+}
+.export-btn-main:active:not(:disabled) { background: var(--accent-dark); }
