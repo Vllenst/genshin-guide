@@ -10,6 +10,41 @@
 
 ## 2026-10-08
 
+### UI 统一 + 字典改造
+
+**shared/theme.css 扩展：**
+- 从「只有主题变量」扩展成「变量 + 通用控件」
+- 新增模块：全局重置、图标通用、表单控件、按钮、iOS 容器、滑块框、缩略图、条目卡片、浮动按钮、横向 Tab、确认弹窗
+- 拖动条改回原生渲染（`accent-color`），与图片处理风格一致
+
+**角色一图流（tools/character/）：**
+- 横向胶囊 Tab 替换原来的底部弹窗抽屉
+- 浮动按钮改正方形（34×34，对齐父页面 nav-btn）
+- 点预览图可隐藏浮动按钮（手机端）；桌面端 hover 恢复
+- 立绘从本地目录探测改成走 `character-art.txt` 字典
+  - 匹配逻辑：先查「名字（元素）」再查「名字」
+  - 空白 URL 报「暂无链接」
+  - 名字带全角括号（如 `旅行者（冰）`）
+- 名片图从 icon-dict 拼 URL 改成查 `namecards.txt` 字典
+- 立绘 x 轴拖动只更新 image 的 x 属性（不全量重绘）
+- 拖动条与右侧数值框双向联动修复
+- `character/style.css` 精简（控件已抽到 theme.css）
+
+**图标字典编辑器（tools/map-editor/）：**
+- 三文件统一到新风格（theme.css 控件 + 一行布局）
+- Tab 从分段控件改成胶囊
+- 按钮、输入框、下拉框风格统一
+- 条目改成一行布局：编号 / 头像 / 名字 / 星级 / 删除
+
+**新增数据文件：**
+- `shared/data/namecards.txt`（122 条名片图 URL，按编号倒序）
+- `shared/data/character-art.txt`（122 条立绘 URL，空白保留）
+- `shared/assets/portrait/`（本地立绘：旅行者、旅行者（冰）、沃雅妮莎）
+
+**删除：**
+- `shared/assets/characters/standing/`（迁移到 `portrait/`）
+- `temp-namecard-check.html`（临时探测页）
+
 ### favicon 更换
 
 - 图标从内联 SVG 改为外部文件 `favicon.png`
@@ -99,14 +134,16 @@
 | 内容 | 路径 |
 |---|---|
 | 主页 | `index.html` |
+| 共享主题 + 通用控件 | `shared/theme.css` |
 | 共享 UI 图标 | `shared/ui-icons.js` |
-| 共享主题 | `shared/theme.css` |
 | 游戏图标 | `shared/gi-icons/` |
 | 图标映射表 | `shared/gi-icons/icon-dict.js` |
 | 图标加载器 | `shared/gi-icons/icon-loader.js` |
 | 角色编号 | `shared/data/characters.txt` |
+| 名片图字典 | `shared/data/namecards.txt` |
+| 立绘字典 | `shared/data/character-art.txt` |
 | 字体库 | `shared/fonts/` |
-| 立绘素材 | `shared/assets/characters/standing/` |
+| 本地立绘 | `shared/assets/portrait/` |
 | 元素图 | `shared/assets/characters/element/` |
 | 在线存档 | `shared/saves/characters/` |
 | 图标来源 | Phosphor（ui/nav/app）+ Solar（element/artifact） |
@@ -128,7 +165,7 @@
    - 或**无痕模式**测试
 
 4. **当前进度**
-   - 已完成：拆 character、map-editor、主页交互、图标库、字典 key 改造
+   - 已完成：拆 character、map-editor、主页交互、图标库、字典 key 改造、UI 统一、字典改造
    - 待办：拆 video-cover、image-tools、chart
 
 ---
@@ -136,7 +173,10 @@
 ## 待办
 
 - [ ] 拆 `tools/video-cover.html` → `tools/video-cover/{video,collection}/`
-  - 注意：里面有 `CHAR_SHORTID` 表，逻辑类似 `findShortIdByName`，要一起改
+  - BOSS 模式改用 `ICON_LIB.fromName('monsters', ...)`
+  - 角色模式立绘走 `character-art.txt`
+  - 角色模式背景走 `namecards.txt`
+  - 删 `subtools` 上报
 - [ ] 拆 `tools/image-tools.html` → `tools/image-tools/{7 个子工具}/`
 - [ ] 拆 `tools/chart.html` → `tools/chart/{radar,bar}/`
 - [ ] `tools/tier.html` 是否拆待定
