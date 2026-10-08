@@ -14,12 +14,12 @@
  *   【JS 模块 8.5】  横向 Tab 栏
  *   【JS 模块 9】    UI 编辑器渲染
  *   【JS 模块 10】   图片上传
- *   【JS 模块 10.3】 字体库 (内存直读终极版)
- *   【JS 模块 10.4】 characters.txt / namecards.txt / character-art.txt 读取
+ *   【JS 模块 10.3】 字体库
+ *   【JS 模块 10.4】 数据字典读取
  *   【JS 模块 10.5】 样式图匹配 + 在线存档
  *   【JS 模块 10.6】 图标库匹配
  *   【JS 模块 11】   数据归一化
- *   【JS 模块 12】   导出 / 导入 / 清空
+ *   【JS 模块 12】   导出 / 导入 / 清空（含图片剥离与自动重匹配）
  *   【JS 模块 13】   UI 交互（字段 / 增删改 / 移动）
  *   【JS 模块 14】   App 接口
  *   【JS 模块 15】   初始化
@@ -128,9 +128,9 @@ const State = {
   data: {
     charName: '', version: '', date: '', author: '烤吃虎鱼LW',
     imgX: 0, theme: '#939393',
-    charImg: '', charImgMeta: null, charImgDeleted: false,
-    bgImg: '', bgImgDeleted: false,
-    nameBgImg: '', nameBgImgMeta: null, nameBgImgDeleted: false,
+    charImg: '', charImgMeta: null, charImgDeleted: false, charImgManual: false,
+    bgImg: '', bgImgDeleted: false, bgImgManual: false,
+    nameBgImg: '', nameBgImgMeta: null, nameBgImgDeleted: false, nameBgImgManual: false,
     fontData: '', fontName: '', fontFileName: '',
     weaponData: { graduate: [], optional: [], newbie: [] },
     artifactData: [],
@@ -138,7 +138,7 @@ const State = {
     sandMain: '', gobMain: '', cirMain: '', subStats: '',
     talentA: '', talentE: '', talentQ: '',
     panel: { primaryKey: 'hp', primaryValue: '', cr: '', cd: '', em: '', er: '' },
-    teamCoreImg: '', teamData: []
+    teamCoreImg: '', teamCoreImgManual: false, teamData: []
   }
 };
 
@@ -729,8 +729,6 @@ function panelRect(x, y, w, h, rx) {
 function buildSVG(scale = 1, forExport = false) {
   const d = State.data;
   const W = SVG_W * scale, H = SVG_H * scale;
-  /* 字体：仅导出时把 @font-face 内嵌进 SVG（用 dataURL）
-   * 预览时不放 @font-face，让 SVG 里的 text 直接走 document 字体（已在 document 注册） */
   const fontFace = (forExport && d.fontData)
     ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}`
     : '';
@@ -985,11 +983,6 @@ function selectTab(tabId) {
  * ========================================================================= */
 const collapseState = {};
 
-/**
- * 切换展开/收起状态。
- * 只操作 DOM（不重绘），以保留箭头的 CSS 旋转过渡。
- * 需要更新列表内容时由各 add / remove / move 方法重新调用 render*。
- */
 function toggleCollapse(key) {
   collapseState[key] = !collapseState[key];
   const collapsed = collapseState[key];
@@ -1066,7 +1059,7 @@ function renderWeaponEditor() {
         <div class="item-row">
           <img src="${w.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('w_img_${type}_${i}')" alt="" />
           <input type="text" value="${esc(w.name)}" oninput="App.setWeaponName('${type}',${i},this.value)" onblur="App.matchWeaponIcon('${type}',${i},this.value)" style="flex:1;" />
-          <input type="file" id="w_img_${type}_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.weaponData['${type}'][${i}].img = v; App.renderWeaponEditor(); App.mountPreview(); App.debouncedSave(); })" />
+          <input type="file" id="w_img_${type}_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.weaponData['${type}'][${i}].img = v; State.data.weaponData['${type}'][${i}].imgManual = true; App.renderWeaponEditor(); App.mountPreview(); App.debouncedSave(); })" />
         </div>
       </div>`;
     }).join('');
@@ -1119,12 +1112,12 @@ function renderArtifactEditor() {
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
             <img src="${a.img1 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img1_${i}')" alt="" />
             <input type="text" value="${esc(a.name1)}" placeholder="圣遗物1" oninput="App.setArtifactName1(${i},this.value)" onblur="App.matchArtifactDoubleIcon(${i},1,this.value)" style="flex:1;min-width:0;" />
-            <input type="file" id="a_img1_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img1 = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
+            <input type="file" id="a_img1_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img1 = v; State.data.artifactData[${i}].img1Manual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
             <img src="${a.img2 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img2_${i}')" alt="" />
             <input type="text" value="${esc(a.name2)}" placeholder="圣遗物2" oninput="App.setArtifactName2(${i},this.value)" onblur="App.matchArtifactDoubleIcon(${i},2,this.value)" style="flex:1;min-width:0;" />
-            <input type="file" id="a_img2_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img2 = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
+            <input type="file" id="a_img2_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img2 = v; State.data.artifactData[${i}].img2Manual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
         </div>
       </div>`;
@@ -1141,7 +1134,7 @@ function renderArtifactEditor() {
       <div class="item-row">
         <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img_${i}')" alt="" />
         <input type="text" value="${esc(a.name)}" oninput="App.setArtifactName(${i},this.value)" onblur="App.matchArtifactIcon(${i},this.value)" style="flex:1;" />
-        <input type="file" id="a_img_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img = v; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
+        <input type="file" id="a_img_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img = v; State.data.artifactData[${i}].imgManual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
       </div>
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂无圣遗物</div>';
@@ -1186,7 +1179,7 @@ function renderTeamEditor() {
                 <div class="item-row">
                   <img src="${c.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_img')" alt="" />
                   <input type="text" value="${esc(c.name)}" oninput="App.setTeamCharName(${ti},${ci},this.value)" onblur="App.matchTeamCharIcon(${ti},${ci},this.value)" style="flex:1;" />
-                  <input type="file" id="t_${ti}_${ci}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].img = v; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
+                  <input type="file" id="t_${ti}_${ci}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].img = v; State.data.teamData[${ti}].chars[${ci}].imgManual = true; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                 </div>
                 <div style="margin-left:8px;padding-left:8px;border-left:2px solid var(--border-subtle);display:flex;flex-direction:column;gap:6px;margin-top:4px;">
                   <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -1206,7 +1199,7 @@ function renderTeamEditor() {
                       <div class="item-row">
                         <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_${ai}_img')" alt="" />
                         <input type="text" value="${esc(a.name)}" oninput="App.setAltName(${ti},${ci},${ai},this.value)" onblur="App.matchAltIcon(${ti},${ci},${ai},this.value)" style="flex:1;" />
-                        <input type="file" id="t_${ti}_${ci}_${ai}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].alts[${ai}].img = v; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
+                        <input type="file" id="t_${ti}_${ci}_${ai}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].alts[${ai}].img = v; State.data.teamData[${ti}].chars[${ci}].alts[${ai}].imgManual = true; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                       </div>
                     </div>`).join('')}
                   ${!c.alts.length ? `<input type="text" value="${esc(c.emptyAltText || '暂无备选')}" oninput="App.setEmptyAltText(${ti},${ci},this.value)" />` : ''}
@@ -1259,6 +1252,7 @@ function initThumbnails() {
 function clearImage(stateKey, thumbId, labelId) {
   State.data[stateKey] = '';
   State.data[stateKey + 'Deleted'] = true;
+  State.data[stateKey + 'Manual'] = false;
   if (stateKey === 'charImg') State.data.charImgMeta = null;
   if (stateKey === 'nameBgImg') State.data.nameBgImgMeta = null;
   resetThumb(thumbId, labelId, '点击上传图片');
@@ -1313,7 +1307,7 @@ function updateImgXHint() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.3】字体库 (内存直读终极版)
+ * 【JS 模块 10.3】字体库
  * ========================================================================= */
 let FONT_LIST = [];
 let fontSheetOpen = false;
@@ -1367,9 +1361,6 @@ function closeFontPicker() {
   document.getElementById('fontSheet').classList.remove('show');
 }
 
-/**
- * 将 DataURL 解析为浏览器的 ArrayBuffer，并绕过 blob，直接加载字体！
- */
 async function installPreviewFont() {
   if (!State.data.fontData || !window.FontFace) return false;
   try {
@@ -1377,15 +1368,11 @@ async function installPreviewFont() {
       try { document.fonts.delete(loadedFontFace); } catch (e) {}
       loadedFontFace = null;
     }
-
-    // [绝招] 步骤1：直接把 Base64 解成纯纯的内存二进制（ArrayBuffer）
     let buffer;
     try {
-      // 首选使用 fetch 极速提取底层数据（如果支持）
       const res = await fetch(State.data.fontData);
       buffer = await res.arrayBuffer();
     } catch (e) {
-      // 退路：如果严格模式不让 fetch dataURL，手动切分压进 Uint8Array
       const arr = State.data.fontData.split(',');
       const raw = atob(arr[1]);
       buffer = new Uint8Array(raw.length);
@@ -1393,13 +1380,10 @@ async function installPreviewFont() {
         buffer[i] = raw.charCodeAt(i);
       }
     }
-
-    // [绝招] 步骤2：不使用任何 URL，把内存数据（Buffer）直接递给浏览器字体引擎
     const ff = new FontFace('CardCustomFont', buffer);
     const loaded = await ff.load();
     document.fonts.add(loaded);
     loadedFontFace = loaded;
-
     return true;
   } catch (e) {
     console.error('字体解析异常：', e);
@@ -1407,9 +1391,6 @@ async function installPreviewFont() {
   }
 }
 
-/**
- * 字体选择主逻辑（带完整的防断点、防崩溃安全锁）
- */
 async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelCustomFont');
@@ -1430,7 +1411,6 @@ async function selectFont(index) {
   }
 
   try {
-    // ================== 阶段 1：下载内存流 ==================
     if (labelEl) labelEl.textContent = `[1/3] 正在下载二进制流...`;
     let res;
     try {
@@ -1448,8 +1428,6 @@ async function selectFont(index) {
     
     const buf = await res.arrayBuffer();
 
-    // ================== 阶段 2：内核级硬解析 (核心突破口) ==================
-    // 提前直接测试 ArrayBuffer。如果这一步爆了，说明文件本身坏了或者格式不支持！
     if (labelEl) labelEl.textContent = `[2/3] 正在注入字体渲染引擎...`;
     try {
       const ff = new FontFace('CardCustomFont', buf);
@@ -1461,8 +1439,6 @@ async function selectFont(index) {
       throw new Error(`该格式无法识别或文件损坏 (${fontErr.message || 'Font Engine Refused'})`);
     }
 
-    // ================== 阶段 3：固化存档 ==================
-    // 引擎已经吃下了字体，现在才把它变成 Base64 保存，确保万无一失
     if (labelEl) labelEl.textContent = `[3/3] 正在固化存档数据...`;
     
     let ext = f.file.split('.').pop().toLowerCase();
@@ -1499,7 +1475,7 @@ async function selectFont(index) {
 }
 
 /* =========================================================================
- * 【JS 模块 10.4】characters.txt / namecards.txt / character-art.txt 读取
+ * 【JS 模块 10.4】数据字典读取
  * ========================================================================= */
 async function loadCharOrderTxt() {
   try {
@@ -1564,84 +1540,101 @@ async function loadArtDict() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.5】样式图匹配 + 在线存档载入
+ * 【JS 模块 10.5】样式图匹配 + 在线存档
  * ========================================================================= */
-async function matchStyleImages() {
+async function matchStyleImages(onlyEmpty) {
   const name = (State.data.charName || '').trim();
-  if (!name) { showToast('请先填写角色名', 'error'); return; }
+  if (!name) { if (!onlyEmpty) showToast('请先填写角色名', 'error'); return; }
   State.data.charImgDeleted = false;
   State.data.nameBgImgDeleted = false;
   State.data.bgImgDeleted = false;
-  showToast('正在匹配样式图…', 'info');
+  if (!onlyEmpty) showToast('正在匹配样式图…', 'info');
   const results = { standing: false, element: false, namecard: false, standingError: '' };
-  const order = CHAR_NAME_TO_ORDER[name];
   const elementName = themeToElementName();
 
-  const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
-  let artUrl = '';
-  if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
-    artUrl = ART_DICT[artKeyWithEle];
-  } else if (ART_DICT[name] !== undefined && ART_DICT[name] !== '') {
-    artUrl = ART_DICT[name];
-  }
-  if (artUrl) {
-    const meta = await loadImageMeta(artUrl);
-    if (meta) {
-      State.data.charImg = artUrl;
-      State.data.charImgMeta = meta;
-      updateThumb('thumbCharImg', 'labelCharImg', artUrl, '已匹配立绘');
-      results.standing = true;
+  /* 立绘 */
+  if (!onlyEmpty || !State.data.charImg) {
+    const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
+    let artUrl = '';
+    if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
+      artUrl = ART_DICT[artKeyWithEle];
+    } else if (ART_DICT[name] !== undefined && ART_DICT[name] !== '') {
+      artUrl = ART_DICT[name];
+    }
+    if (artUrl) {
+      const meta = await loadImageMeta(artUrl);
+      if (meta) {
+        State.data.charImg = artUrl;
+        State.data.charImgMeta = meta;
+        State.data.charImgManual = false;
+        updateThumb('thumbCharImg', 'labelCharImg', artUrl, '已匹配立绘');
+        results.standing = true;
+      } else {
+        State.data.charImg = '';
+        State.data.charImgMeta = null;
+        State.data.charImgManual = false;
+        resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
+        results.standingError = '链接加载失败';
+      }
     } else {
       State.data.charImg = '';
       State.data.charImgMeta = null;
+      State.data.charImgManual = false;
       resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
-      results.standingError = '链接加载失败';
+      if (ART_DICT[name] === undefined && ART_DICT[artKeyWithEle] === undefined) {
+        results.standingError = '字典无此角色';
+      } else {
+        results.standingError = '暂无立绘链接';
+      }
     }
-  } else {
-    State.data.charImg = '';
-    State.data.charImgMeta = null;
-    resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
-    if (ART_DICT[name] === undefined && ART_DICT[artKeyWithEle] === undefined) {
-      results.standingError = '字典无此角色';
+  }
+
+  /* 元素图 */
+  if (!onlyEmpty || !State.data.nameBgImg) {
+    let elementUrl = '';
+    if (elementName) {
+      const ghUrl = '../../shared/assets/characters/element/' + elementName + '.png';
+      if (await urlExists(ghUrl)) elementUrl = ghUrl;
+    }
+    if (elementUrl) {
+      State.data.nameBgImg = elementUrl;
+      State.data.nameBgImgMeta = null;
+      State.data.nameBgImgManual = false;
+      updateThumb('thumbNameBg', 'labelNameBg', elementUrl, '已匹配元素图：' + elementName);
+      results.element = true;
     } else {
-      results.standingError = '暂无立绘链接';
+      State.data.nameBgImg = '';
+      State.data.nameBgImgManual = false;
+      resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
     }
   }
 
-  let elementUrl = '';
-  if (elementName) {
-    const ghUrl = '../../shared/assets/characters/element/' + elementName + '.png';
-    if (await urlExists(ghUrl)) elementUrl = ghUrl;
-  }
-  if (elementUrl) {
-    State.data.nameBgImg = elementUrl;
-    State.data.nameBgImgMeta = null;
-    updateThumb('thumbNameBg', 'labelNameBg', elementUrl, '已匹配元素图：' + elementName);
-    results.element = true;
-  } else {
-    State.data.nameBgImg = '';
-    resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
-  }
-
-  const namecardUrl = NAMECARD_DICT[name] || '';
-  if (namecardUrl) {
-    State.data.bgImg = namecardUrl;
-    updateThumb('thumbBg', 'labelBg', namecardUrl, '已匹配名片图');
-    results.namecard = true;
-  } else {
-    State.data.bgImg = '';
-    resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
+  /* 名片图 */
+  if (!onlyEmpty || !State.data.bgImg) {
+    const namecardUrl = NAMECARD_DICT[name] || '';
+    if (namecardUrl) {
+      State.data.bgImg = namecardUrl;
+      State.data.bgImgManual = false;
+      updateThumb('thumbBg', 'labelBg', namecardUrl, '已匹配名片图');
+      results.namecard = true;
+    } else {
+      State.data.bgImg = '';
+      State.data.bgImgManual = false;
+      resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
+    }
   }
 
-  const failed = [];
-  if (!results.standing) failed.push('立绘（' + (results.standingError || '未匹配') + '）');
-  if (elementName && !results.element) failed.push('元素图');
-  if (!results.namecard) failed.push('名片图（字典无此角色）');
-  if (!elementName) failed.push('元素图（未选元素色）');
-  if (failed.length) showToast('未找到：' + failed.join('、'), 'error');
-  else showToast('全部匹配成功', 'success');
-  updateImgXHint();
-  mountPreview(); debouncedSave();
+  if (!onlyEmpty) {
+    const failed = [];
+    if (!results.standing) failed.push('立绘（' + (results.standingError || '未匹配') + '）');
+    if (elementName && !results.element) failed.push('元素图');
+    if (!results.namecard) failed.push('名片图（字典无此角色）');
+    if (!elementName) failed.push('元素图（未选元素色）');
+    if (failed.length) showToast('未找到：' + failed.join('、'), 'error');
+    else showToast('全部匹配成功', 'success');
+    updateImgXHint();
+    mountPreview(); debouncedSave();
+  }
 }
 
 async function loadSaveFromRepo() {
@@ -1658,11 +1651,7 @@ async function loadSaveFromRepo() {
     const json = await res.json();
     const ok = await showConfirm('发现存档', '是否载入「' + name + '」的存档？当前编辑内容会被覆盖。');
     if (!ok) return;
-    State.data = normalizeState(json);
-    await installPreviewFont();
-    initThumbnails();
-    renderEditorsByKey();
-    scheduleRender();
+    await applyImportedData(json);
     showToast('存档载入成功', 'success');
   } catch (e) {
     showToast('存档读取失败：' + e.message, 'error');
@@ -1675,26 +1664,30 @@ async function loadSaveFromRepo() {
 async function matchWeaponIcon(type, i, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) { State.data.weaponData[type][i].img = ''; renderWeaponEditor(); mountPreview(); debouncedSave(); return; }
+  if (!trimmed) { State.data.weaponData[type][i].img = ''; State.data.weaponData[type][i].imgManual = false; renderWeaponEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('weapons', trimmed);
     State.data.weaponData[type][i].img = (r && r.dataURL) ? r.dataURL : '';
+    State.data.weaponData[type][i].imgManual = false;
     renderWeaponEditor(); mountPreview(); debouncedSave();
   } catch (e) {
     State.data.weaponData[type][i].img = '';
+    State.data.weaponData[type][i].imgManual = false;
     renderWeaponEditor(); mountPreview(); debouncedSave();
   }
 }
 async function matchArtifactIcon(i, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) { State.data.artifactData[i].img = ''; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
+  if (!trimmed) { State.data.artifactData[i].img = ''; State.data.artifactData[i].imgManual = false; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('artifacts', trimmed);
     State.data.artifactData[i].img = (r && r.dataURL) ? r.dataURL : '';
+    State.data.artifactData[i].imgManual = false;
     renderArtifactEditor(); mountPreview(); debouncedSave();
   } catch (e) {
     State.data.artifactData[i].img = '';
+    State.data.artifactData[i].imgManual = false;
     renderArtifactEditor(); mountPreview(); debouncedSave();
   }
 }
@@ -1702,11 +1695,13 @@ async function matchArtifactDoubleIcon(i, part, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
   var imgKey = part === 1 ? 'img1' : 'img2';
-  if (!trimmed) { State.data.artifactData[i][imgKey] = ''; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
+  var manualKey = part === 1 ? 'img1Manual' : 'img2Manual';
+  if (!trimmed) { State.data.artifactData[i][imgKey] = ''; State.data.artifactData[i][manualKey] = false; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('artifacts', trimmed);
     State.data.artifactData[i][imgKey] = (r && r.dataURL) ? r.dataURL : '';
   } catch (e) { State.data.artifactData[i][imgKey] = ''; }
+  State.data.artifactData[i][manualKey] = false;
   renderArtifactEditor(); mountPreview(); debouncedSave();
 }
 function setArtifactName1(i, v) { State.data.artifactData[i].name1 = v; mountPreview(); debouncedSave(); }
@@ -1715,13 +1710,15 @@ function setArtifactDisplayText(i, v) { State.data.artifactData[i].displayText =
 async function matchTeamCharIcon(ti, ci, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) { State.data.teamData[ti].chars[ci].img = ''; renderTeamEditor(); mountPreview(); debouncedSave(); return; }
+  if (!trimmed) { State.data.teamData[ti].chars[ci].img = ''; State.data.teamData[ti].chars[ci].imgManual = false; renderTeamEditor(); mountPreview(); debouncedSave(); return; }
   try {
     const r = await ICON_LIB.fromName('characters', trimmed);
     State.data.teamData[ti].chars[ci].img = (r && r.dataURL) ? r.dataURL : '';
+    State.data.teamData[ti].chars[ci].imgManual = false;
     renderTeamEditor(); mountPreview(); debouncedSave();
   } catch (e) {
     State.data.teamData[ti].chars[ci].img = '';
+    State.data.teamData[ti].chars[ci].imgManual = false;
     renderTeamEditor(); mountPreview(); debouncedSave();
   }
 }
@@ -1732,15 +1729,18 @@ async function matchAltIcon(ti, ci, ai, name) {
   var trimmed = (name || '').trim();
   if (!trimmed) {
     alt.img = '';
+    alt.imgManual = false;
     renderTeamEditor(); mountPreview(); debouncedSave();
     return;
   }
   try {
     const r = await ICON_LIB.fromName('characters', trimmed);
     alt.img = (r && r.dataURL) ? r.dataURL : '';
+    alt.imgManual = false;
     renderTeamEditor(); mountPreview(); debouncedSave();
   } catch (e) {
     alt.img = '';
+    alt.imgManual = false;
     renderTeamEditor(); mountPreview(); debouncedSave();
   }
 }
@@ -1749,6 +1749,7 @@ async function matchCharAvatar(name) {
   var trimmed = (name || '').trim();
   if (!trimmed) {
     State.data.teamCoreImg = '';
+    State.data.teamCoreImgManual = false;
     resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
     mountPreview(); debouncedSave(); return;
   }
@@ -1756,14 +1757,17 @@ async function matchCharAvatar(name) {
     const r = await ICON_LIB.fromName('characters', trimmed);
     if (r && r.dataURL) {
       State.data.teamCoreImg = r.dataURL;
+      State.data.teamCoreImgManual = false;
       updateThumb('thumbTeamCore', 'labelTeamCore', r.dataURL, '已载入1号位头像（点击更换）');
     } else {
       State.data.teamCoreImg = '';
+      State.data.teamCoreImgManual = false;
       resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
     }
     mountPreview(); debouncedSave();
   } catch (e) {
     State.data.teamCoreImg = '';
+    State.data.teamCoreImgManual = false;
     resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
     mountPreview(); debouncedSave();
   }
@@ -1773,7 +1777,11 @@ async function matchCharAvatar(name) {
  * 【JS 模块 11】数据归一化
  * ========================================================================= */
 function normalizeWeaponList(list) {
-  return Array.isArray(list) ? list.map(w => ({ name: String(w?.name ?? ''), img: String(w?.img ?? '') })) : [];
+  return Array.isArray(list) ? list.map(w => ({
+    name: String(w?.name ?? ''),
+    img: String(w?.img ?? ''),
+    imgManual: !!w?.imgManual
+  })) : [];
 }
 function normalizeArtifactList(list) {
   return Array.isArray(list) ? list.map(a => {
@@ -1783,21 +1791,25 @@ function normalizeArtifactList(list) {
         name1: String(a?.name1 ?? a?.name ?? ''),
         name2: String(a?.name2 ?? ''),
         displayText: String(a?.displayText ?? ''),
-        img1: String(a?.img1 ?? ''),
-        img2: String(a?.img2 ?? '')
+        img1: String(a?.img1 ?? ''), img1Manual: !!a?.img1Manual,
+        img2: String(a?.img2 ?? ''), img2Manual: !!a?.img2Manual
       };
     }
-    return { type: 'single', name: String(a?.name ?? ''), img: String(a?.img ?? '') };
+    return { type: 'single', name: String(a?.name ?? ''), img: String(a?.img ?? ''), imgManual: !!a?.imgManual };
   }) : [];
 }
 function normalizeAlts(list) {
-  return Array.isArray(list) ? list.map(a => ({ name: String(a?.name ?? ''), img: String(a?.img ?? '') })) : [];
+  return Array.isArray(list) ? list.map(a => ({
+    name: String(a?.name ?? ''),
+    img: String(a?.img ?? ''),
+    imgManual: !!a?.imgManual
+  })) : [];
 }
 function normalizeTeamChars(chars) {
   return Array.from({ length: 4 }, (_, i) => {
     const c = chars?.[i] || {};
     return {
-      name: String(c.name ?? ''), img: String(c.img ?? ''),
+      name: String(c.name ?? ''), img: String(c.img ?? ''), imgManual: !!c.imgManual,
       emptyAltText: String(c.emptyAltText ?? '暂无备选'),
       alts: normalizeAlts(c.alts)
     };
@@ -1816,10 +1828,14 @@ function normalizeState(data = {}) {
     ...State.data, ...data,
     charImg: data.charImg || '', charImgMeta: data.charImgMeta || null,
     charImgDeleted: !!data.charImgDeleted,
+    charImgManual: !!data.charImgManual,
     bgImg: data.bgImg || '', bgImgDeleted: !!data.bgImgDeleted,
+    bgImgManual: !!data.bgImgManual,
     nameBgImg: data.nameBgImg || '', nameBgImgMeta: data.nameBgImgMeta || null,
     nameBgImgDeleted: !!data.nameBgImgDeleted,
+    nameBgImgManual: !!data.nameBgImgManual,
     teamCoreImg: data.teamCoreImg || '',
+    teamCoreImgManual: !!data.teamCoreImgManual,
     fontData: data.fontData || '',
     fontName: data.fontName || '',
     fontFileName: data.fontFileName || '',
@@ -1840,8 +1856,46 @@ function normalizeState(data = {}) {
 }
 
 /* =========================================================================
- * 【JS 模块 12】导出与导入
+ * 【JS 模块 12】导出 / 导入 / 清空
  * ========================================================================= */
+
+/**
+ * 导出前剥离：非手动的图（字典匹配来的）+ 字体 base64。
+ * 手动上传的图保留。
+ */
+function buildExportPayload(data) {
+  var out = JSON.parse(JSON.stringify(data));
+  /* 字体：只留名字 */
+  out.fontData = '';
+  /* 顶层图片 */
+  if (!out.charImgManual) { out.charImg = ''; out.charImgMeta = null; }
+  if (!out.bgImgManual) out.bgImg = '';
+  if (!out.nameBgImgManual) { out.nameBgImg = ''; out.nameBgImgMeta = null; }
+  if (!out.teamCoreImgManual) out.teamCoreImg = '';
+  /* 武器 */
+  WEAPON_ORDER.forEach(function (type) {
+    (out.weaponData[type] || []).forEach(function (w) {
+      if (!w.imgManual) w.img = '';
+    });
+  });
+  /* 圣遗物 */
+  (out.artifactData || []).forEach(function (a) {
+    if (!a.imgManual) a.img = '';
+    if (!a.img1Manual) a.img1 = '';
+    if (!a.img2Manual) a.img2 = '';
+  });
+  /* 配队 */
+  (out.teamData || []).forEach(function (t) {
+    (t.chars || []).forEach(function (c) {
+      if (!c.imgManual) c.img = '';
+      (c.alts || []).forEach(function (a) {
+        if (!a.imgManual) a.img = '';
+      });
+    });
+  });
+  return out;
+}
+
 function downloadBlob(blob, filename) {
   const a = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -1849,6 +1903,7 @@ function downloadBlob(blob, filename) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+
 async function exportPNG() {
   const bd = document.getElementById('exportDesktopBtn');
   const bm = document.getElementById('exportMobileBtn');
@@ -1890,26 +1945,140 @@ async function exportPNG() {
     btns.forEach(b => { b.el.disabled = false; b.el.textContent = b.text; });
   }
 }
+
 function exportConfig() {
   var name = State.data.charName || '角色';
   var order = CHAR_NAME_TO_ORDER[name];
   var filename = order ? (padOrder(order) + '.' + name + '.json') : (name + '.json');
+  var payload = buildExportPayload(State.data);
   downloadBlob(
-    new Blob([JSON.stringify(State.data, null, 2)], { type: 'application/json' }),
+    new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
     filename
   );
 }
+
+/** 静默匹配单个图标（用于导入后自动重匹配） */
+async function silentFromName(type, name) {
+  if (!window.ICON_LIB) return '';
+  var trimmed = String(name || '').trim();
+  if (!trimmed) return '';
+  try {
+    var r = await ICON_LIB.fromName(type, trimmed);
+    return (r && r.dataURL) ? r.dataURL : '';
+  } catch (e) { return ''; }
+}
+
+/** 导入后自动重匹配所有空图 */
+async function autoRematchAll() {
+  var d = State.data;
+  var pending = 0;
+
+  /* 1. 样式图（只补空字段） */
+  if (d.charName && (!d.charImg || !d.nameBgImg || !d.bgImg)) {
+    await matchStyleImages(true);
+  }
+
+  /* 2. 武器 */
+  for (const type of WEAPON_ORDER) {
+    const list = d.weaponData[type] || [];
+    for (let i = 0; i < list.length; i++) {
+      const w = list[i];
+      if (w.name && !w.img) {
+        pending++;
+        const url = await silentFromName('weapons', w.name);
+        if (url) w.img = url;
+      }
+    }
+  }
+
+  /* 3. 圣遗物 */
+  const arts = d.artifactData || [];
+  for (let i = 0; i < arts.length; i++) {
+    const a = arts[i];
+    if (a.type === 'double') {
+      if (a.name1 && !a.img1) {
+        pending++;
+        const u1 = await silentFromName('artifacts', a.name1);
+        if (u1) a.img1 = u1;
+      }
+      if (a.name2 && !a.img2) {
+        pending++;
+        const u2 = await silentFromName('artifacts', a.name2);
+        if (u2) a.img2 = u2;
+      }
+    } else {
+      if (a.name && !a.img) {
+        pending++;
+        const u = await silentFromName('artifacts', a.name);
+        if (u) a.img = u;
+      }
+    }
+  }
+
+  /* 4. 配队（主角色头像 + 备选） */
+  const teams = d.teamData || [];
+  for (const team of teams) {
+    for (const c of (team.chars || [])) {
+      if (c.name && !c.img) {
+        pending++;
+        const u = await silentFromName('characters', c.name);
+        if (u) c.img = u;
+      }
+      for (const alt of (c.alts || [])) {
+        if (alt.name && !alt.img) {
+          pending++;
+          const u = await silentFromName('characters', alt.name);
+          if (u) alt.img = u;
+        }
+      }
+    }
+  }
+
+  /* 5. 1 号位主角色头像 */
+  if (d.charName && !d.teamCoreImg) {
+    pending++;
+    const u = await silentFromName('characters', d.charName);
+    if (u) d.teamCoreImg = u;
+  }
+
+  return pending;
+}
+
+/** 导入后处理：字体重载 + 图片重匹配 */
+async function applyImportedData(data) {
+  State.data = normalizeState(data);
+  showToast('正在恢复字体与图片…', 'info');
+
+  /* 1. 字体重载（按 fontFileName 找） */
+  if (State.data.fontFileName) {
+    if (!FONT_LIST.length) await loadFontList();
+    var idx = FONT_LIST.findIndex(x => x.file === State.data.fontFileName);
+    if (idx >= 0) {
+      /* selectFont 会下载并设置 fontData */
+      await selectFont(idx);
+    }
+  } else {
+    if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
+  }
+
+  /* 2. 图片重匹配 */
+  await autoRematchAll();
+
+  /* 3. 刷新 UI */
+  initThumbnails();
+  renderEditorsByKey();
+  syncInputs();
+  mountPreview();
+  debouncedSave();
+}
+
 function importConfig(input) {
   if (!input.files || !input.files[0]) return;
   const reader = new FileReader();
   reader.onload = async e => {
     try {
       const data = JSON.parse(e.target.result);
-      State.data = normalizeState(data);
-      await installPreviewFont();
-      initThumbnails();
-      renderEditorsByKey();
-      scheduleRender();
+      await applyImportedData(data);
       showToast('配置导入成功', 'success');
     } catch (err) {
       showToast('配置解析失败', 'error');
@@ -1918,6 +2087,7 @@ function importConfig(input) {
   };
   reader.readAsText(input.files[0]);
 }
+
 async function clearAllData() {
   const ok = await showConfirm('清空全部数据', '确定清空所有角色配置与图片数据吗？此操作不可撤销。');
   if (!ok) return;
@@ -1926,7 +2096,7 @@ async function clearAllData() {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     store.clear();
-    store.put({ author: State.data.author, fontData: State.data.fontData }, 'current_state');
+    store.put({ author: State.data.author }, 'current_state');
   } catch (e) {}
   location.reload();
 }
@@ -2004,14 +2174,16 @@ function moveWeapon(type, i, dir) {
 function addWeapon(type) {
   const list = State.data.weaponData[type];
   if (list.length >= WEAPON_MAX) return showToast(`「${WEAPON_LABELS[type]}」区最多 ${WEAPON_MAX} 个`, 'error');
-  list.push({ name: '', img: '' });
+  list.push({ name: '', img: '', imgManual: false });
   collapseState[`weapon_${type}`] = false;
   renderWeaponEditor(); mountPreview(); debouncedSave();
 }
 function removeWeapon(type, i) { State.data.weaponData[type].splice(i, 1); renderWeaponEditor(); mountPreview(); debouncedSave(); }
 function setWeaponName(type, i, v) { State.data.weaponData[type][i].name = v; updatePreviewField(`weapon.${type}.${i}.name`); debouncedSave(); }
 function addArtifact(type) {
-  State.data.artifactData.push(type === 'double' ? { type, name1: '', name2: '', displayText: '', img1: '', img2: '' } : { type, name: '', img: '' });
+  State.data.artifactData.push(type === 'double'
+    ? { type, name1: '', name2: '', displayText: '', img1: '', img1Manual: false, img2: '', img2Manual: false }
+    : { type, name: '', img: '', imgManual: false });
   collapseState['artifact_section'] = false;
   renderArtifactEditor(); mountPreview(); debouncedSave();
 }
@@ -2022,7 +2194,7 @@ function addTeam() {
   if (State.data.teamData.length >= 3) return showToast('最多支持 3 组队伍', 'error');
   State.data.teamData.push({
     name: '',
-    chars: Array.from({ length: 4 }, () => ({ name: '', img: '', alts: [], emptyAltText: '暂无备选' }))
+    chars: Array.from({ length: 4 }, () => ({ name: '', img: '', imgManual: false, alts: [], emptyAltText: '暂无备选' }))
   });
   collapseState[`team_${State.data.teamData.length - 1}`] = false;
   renderTeamEditor(); mountPreview(); debouncedSave();
@@ -2047,7 +2219,7 @@ function addAlt(ti, ci) {
   const alts = State.data.teamData[ti]?.chars?.[ci]?.alts;
   if (!alts) return;
   if (alts.length >= 4) return showToast('每位角色最多 4 个备选', 'error');
-  alts.push({ name: '', img: '' });
+  alts.push({ name: '', img: '', imgManual: false });
   renderTeamEditor(); mountPreview(); debouncedSave();
 }
 function removeAlt(ti, ci, ai) {
@@ -2136,7 +2308,6 @@ async function init() {
   await loadArtDict();
   await loadFontList();
   
-  // 恢复之前持久化的字体，如果有的话
   try { await installPreviewFont(); } catch(e) {}
   
   initThumbnails();
