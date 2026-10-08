@@ -137,10 +137,12 @@
             </div>
 
             <!-- 立绘左右偏移 -->
-            <div class="slider-box" style="padding-top:10px;">
-              <span id="imgXHint">立绘偏移（左右移动）</span>
-              <input type="range" min="-400" max="400" value="0" id="imgXSlider" oninput="App.setField('imgX', this.value)" />
-              <input type="number" id="imgX" value="0" oninput="App.setField('imgX', this.value)" />
+            <div class="control-item" style="padding:10px;">
+              <div class="control-header"><span id="imgXHint">立绘偏移（左右移动）</span></div>
+              <div class="slider-row">
+                <input type="range" min="-400" max="400" value="0" id="imgXSlider" oninput="App.setField('imgX', this.value)" />
+                <div class="num-box"><input type="number" id="imgX" value="0" oninput="App.setField('imgX', this.value)" /><span class="unit-tag">px</span></div>
+              </div>
             </div>
 
             <!-- 元素图 -->
