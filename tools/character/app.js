@@ -122,7 +122,7 @@ let CHAR_NAME_TO_ORDER = {};
 let NAMECARD_DICT = {};
 let ART_DICT = {};
 
-/* 当前会话用的字体 blob URL（避免 SVG 内 @font-face 因 dataURL 过长而失败） */
+/* 当前会话用的字体 blob URL（短 URL，避免 dataURL 超长导致字体加载失败） */
 let _fontBlobUrl = '';
 
 /* =========================================================================
@@ -729,12 +729,14 @@ function panelRect(x, y, w, h, rx) {
   const theme = State.data.theme || '#939393';
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="rgba(0,0,0,.5)" stroke="${theme}" stroke-width="2" filter="url(#glowTheme)"/>`;
 }
-function buildSVG(scale = 1) {
+function buildSVG(scale = 1, forExport = false) {
   const d = State.data;
   const W = SVG_W * scale, H = SVG_H * scale;
-  /* 字体：优先用 blob URL（短，避免 dataURL 过长导致 SVG 解析失败），fallback 到 dataURL */
-  const fontSrc = _fontBlobUrl || d.fontData;
-  const fontFace = d.fontData ? `@font-face{font-family:CardCustomFont;src:url("${fontSrc}");font-display:block}` : '';
+  /* 字体：仅导出时把 @font-face 内嵌进 SVG（用 dataURL）
+   * 预览时不放 @font-face，让 SVG 里的 text 直接走 document 字体（已在 document 注册） */
+  const fontFace = (forExport && d.fontData)
+    ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}`
+    : '';
   const fontFamily = d.fontData ? FONT_FAMILY_CUSTOM : FONT_FAMILY_DEFAULT;
   const nameFs = fitSize(d.charName, 280, 50, 18);
   const imgX = Number(d.imgX) || 0;
@@ -1346,7 +1348,7 @@ function closeFontPicker() {
 }
 let loadedFontFace = null;
 
-/* 生成 / 刷新当前会话用的字体 blob URL（避免 SVG 内 @font-face 引用超长 dataURL 失败） */
+/* 生成 / 刷新当前会话用的字体 blob URL */
 function refreshFontBlobUrl() {
   if (_fontBlobUrl) {
     try { URL.revokeObjectURL(_fontBlobUrl); } catch (e) {}
@@ -1385,25 +1387,44 @@ function refreshFontBlobUrl() {
   }
 }
 
+/* 用 blob URL 注册字体（document 级），并同步 document head 的 @font-face */
 async function installPreviewFont() {
-  if (!State.data.fontData || !window.FontFace) return;
+  const src = _fontBlobUrl || State.data.fontData;
+  if (!src || !window.FontFace) return false;
   try {
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
-    const ff = new FontFace('CardCustomFont', `url("${State.data.fontData}")`);
+
+    /* 1. FontFace API 注册 */
+    const ff = new FontFace('CardCustomFont', `url("${src}")`);
     const loaded = await ff.load();
     document.fonts.add(loaded);
     loadedFontFace = loaded;
+
+    /* 2. document head 里的 @font-face（双保险，让 SVG 里的 text 也能引用） */
+    let styleEl = document.getElementById('card-preview-font-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'card-preview-font-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@font-face{font-family:'CardCustomFont';src:url("${src}");font-display:block}`;
+
     await document.fonts.ready;
+    return true;
   } catch (e) {
     console.warn('字体加载失败：', e.message);
+    return false;
   }
 }
+
 async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelCustomFont');
   if (index === -1) {
     State.data.fontData = ''; State.data.fontFileName = ''; State.data.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
+    const oldStyle = document.getElementById('card-preview-font-style');
+    if (oldStyle) oldStyle.remove();
     if (labelEl) labelEl.textContent = '默认标准字体';
     refreshFontBlobUrl();
     mountPreview(); debouncedSave();
@@ -1431,8 +1452,8 @@ async function selectFont(index) {
     State.data.fontFileName = f.file;
     State.data.fontName = f.name;
     refreshFontBlobUrl();
-    await installPreviewFont();
-    if (labelEl) labelEl.textContent = '当前：' + f.name;
+    const ok = await installPreviewFont();
+    if (labelEl) labelEl.textContent = (ok ? '当前：' : '加载失败：') + f.name;
     mountPreview(); debouncedSave();
   } catch (e) {
     if (labelEl) labelEl.textContent = '字体加载失败：' + e.message;
@@ -1782,7 +1803,7 @@ async function exportPNG() {
   btns.forEach(b => { b.el.disabled = true; b.el.textContent = '正在导出...'; });
   try {
     if (document.fonts) await document.fonts.ready;
-    const svg = buildSVG(EXPORT_SCALE);
+    const svg = buildSVG(EXPORT_SCALE, true);
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     try {
