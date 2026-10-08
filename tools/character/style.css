@@ -1,61 +1,19 @@
 /* =========================================================================
  * 原神一图流生成器 · style.css
  * =========================================================================
- * CSS 模块导航（搜索 “【CSS 模块 N】” 快速跳转）：
- *   【CSS 模块 1】  全局重置与字体
- *   【CSS 模块 2】  图标通用样式
- *   【CSS 模块 3】  主容器布局（响应式栅格）
- *   【CSS 模块 4】  预览区（preview-pane / preview-card / preview-frame）
- *   【CSS 模块 5】  浮动工具栏
- *   【CSS 模块 6】  右侧编辑区容器
- *   【CSS 模块 7】  横向 Tab 栏
- *   【CSS 模块 8】  Tab 内容与面板显示
- *   【CSS 模块 9】  字体选择抽屉
- *   【CSS 模块 10】 iOS 风格分组与字段
- *   【CSS 模块 11】 表单控件（输入框 / 下拉 / 滑块）
- *   【CSS 模块 12】 按钮（基础 / 尺寸变体 / 危险 / 主按钮）
- *   【CSS 模块 13】 缩略图
- *   【CSS 模块 14】 条目卡片
- *   【CSS 模块 15】 命座网格
- *   【CSS 模块 16】 元素主题色选择
- *   【CSS 模块 17】 移动端底部 Dock
- *   【CSS 模块 18】 Toast 提示
- *   【CSS 模块 19】 确认弹窗 Modal
+ * 已抽到 shared/theme.css 的通用控件：
+ *   - 全局重置、图标、表单控件、按钮、iOS 容器、滑块框
+ *   - 缩略图、条目卡片、浮动按钮、横向 Tab、确认弹窗
+ * 本文件只保留：布局 / 预览区 / Tab 内容 / 抽屉 / 底部 Dock / Toast
+ *        色彩选择 / 命座网格
  * ========================================================================= */
 
-/* =========================================================================
- * 【CSS 模块 1】全局重置与字体
- * ========================================================================= */
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body, input, button, select, textarea {
-  font-family: var(--std-font); font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-}
-body { background: var(--bg-base); color: var(--text-primary); font-size: 13px; min-height: 100vh; overflow-x: hidden; letter-spacing: -0.2px; }
-button, input[type="button"], input[type="submit"] { -webkit-appearance: none; appearance: none; }
-
-/* =========================================================================
- * 【CSS 模块 2】图标通用样式
- * ========================================================================= */
-.icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
-.icon-flip-y { display: inline-flex; align-items: center; transform: rotate(180deg); }
-
-button svg, .btn svg, .btn-sm svg, .btn-xs svg,
-.ios-btn-fill svg, .file-btn svg, .icon-only svg {
-  width: 1em; height: 1em; display: inline-block; vertical-align: middle; flex-shrink: 0;
-}
-.icon-only { display: inline-flex; align-items: center; justify-content: center; }
-
-/* =========================================================================
- * 【CSS 模块 3】主容器布局
- * ========================================================================= */
+/* 【CSS 模块 1】主容器布局 */
 .app-container {
   max-width: 1400px; margin: 0 auto; padding: 12px 14px;
   display: grid; grid-template-columns: 1fr; gap: 14px;
   padding-bottom: calc(88px + env(safe-area-inset-bottom));
 }
-/* 手机 / 平板：上下两段，全屏不滚动 */
 @media (max-width: 1023px) {
   body { overflow: hidden; }
   .app-container {
@@ -64,7 +22,6 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
     gap: 0; overflow: hidden;
   }
 }
-/* 桌面：左右两栏 */
 @media (min-width: 1024px) {
   .app-container {
     grid-template-columns: minmax(480px, 1.2fr) minmax(440px, 1fr);
@@ -72,9 +29,7 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
   }
 }
 
-/* =========================================================================
- * 【CSS 模块 4】预览区
- * ========================================================================= */
+/* 【CSS 模块 2】预览区 */
 .preview-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 @media (max-width: 1023px) {
   .preview-pane {
@@ -119,87 +74,26 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
 #svgPreviewHost { width: 100%; height: 100%; }
 #svgPreviewHost > svg { width: 100%; height: 100%; display: block; }
 
-/* =========================================================================
- * 【CSS 模块 5】浮动工具栏
- * ========================================================================= */
+/* 【CSS 模块 3】浮动工具栏（容器，按钮样式在 theme.css） */
 .float-toolbar {
   position: absolute; top: 8px; right: 8px;
   display: flex; gap: 4px; z-index: 15;
   transition: opacity 0.25s ease;
 }
 @media (max-width: 1023px) { .float-toolbar { top: 6px; right: 6px; } }
-/* 点击预览 → 添加 hidden 类隐藏；再点恢复 */
 .float-toolbar.hidden { opacity: 0; pointer-events: none; }
-/* 桌面端：鼠标悬停在预览卡片上时，即使 hidden 也临时显示 */
 @media (min-width: 1024px) {
   .preview-card:hover .float-toolbar.hidden { opacity: 1; pointer-events: auto; }
 }
-.float-btn {
-  width: 34px; height: 34px; min-width: 0; padding: 0;
-  border-radius: 8px;
-  background: var(--bg-surface); border: 1px solid var(--border-default);
-  color: var(--text-primary);
-  font-family: inherit; font-size: 12px; font-weight: 500;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow-btn);
-  -webkit-appearance: none; appearance: none;
-  transition: background 0.15s, transform 0.1s;
-}
-.float-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
-.float-btn:active { transform: scale(.92); }
-.float-btn svg { width: 18px; height: 18px; display: block; }
-.float-btn-danger { color: var(--danger); border-color: var(--danger-border); }
-.float-btn-danger:hover { background: var(--danger-bg); }
 
-/* =========================================================================
- * 【CSS 模块 6】右侧编辑区容器
- * ========================================================================= */
+/* 【CSS 模块 4】编辑区容器 */
 .inspector-pane { display: flex; flex-direction: column; gap: 12px; overflow: hidden; min-width: 0; }
 @media (min-width: 1024px) { .inspector-pane { height: 100%; } }
 @media (max-width: 1023px) {
   .inspector-pane { overflow: hidden; padding-top: 5px; gap: 5px; min-height: 0; }
 }
 
-/* =========================================================================
- * 【CSS 模块 7】横向 Tab 栏
- * ========================================================================= */
-.tab-bar {
-  display: flex; gap: 6px;
-  overflow-x: auto; overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 2px 0;
-  flex-shrink: 0;
-}
-.tab-bar::-webkit-scrollbar { display: none; }
-.tab-btn {
-  flex-shrink: 0;
-  height: 34px; padding: 0 14px;
-  border-radius: 999px;
-  background: var(--bg-surface); border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-family: inherit; font-size: 13px; font-weight: 500;
-  cursor: pointer; white-space: nowrap;
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
-  -webkit-appearance: none; appearance: none;
-}
-/* 未选中时才有 hover 效果，避免手机点完后的 hover 残留覆盖 active */
-.tab-btn:hover:not(.active) { background: var(--bg-hover); }
-.tab-btn:active { transform: scale(0.96); }
-/* 选中：反色填充（浅色主题 → 深底浅字；暗色主题 → 浅底深字） */
-.tab-btn.active,
-.tab-btn.active:hover {
-  background: var(--text-primary) !important;
-  color: var(--bg-base) !important;
-  border-color: var(--text-primary) !important;
-  font-weight: 600;
-}
-
-/* =========================================================================
- * 【CSS 模块 8】Tab 内容与面板显示
- * ========================================================================= */
+/* 【CSS 模块 5】Tab 内容与面板显示 */
 .tabs-content { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; min-height: 0; }
 @media (max-width: 1023px) {
   .tabs-content { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
@@ -207,9 +101,7 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
 .tab-panel { display: none; flex-direction: column; gap: 12px; }
 .tab-panel.active { display: flex; }
 
-/* =========================================================================
- * 【CSS 模块 9】字体选择抽屉
- * ========================================================================= */
+/* 【CSS 模块 6】字体选择抽屉（底部 / 居中） */
 .tab-sheet-backdrop {
   position: fixed; inset: 0; z-index: 200;
   background: var(--mask);
@@ -229,7 +121,6 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
   will-change: transform;
 }
 .tab-sheet.show { transform: translateY(0); }
-/* 桌面：居中弹窗风格 */
 @media (min-width: 1024px) {
   .tab-sheet {
     left: 50%; right: auto; bottom: auto; top: 50%; width: 340px; max-height: 70vh;
@@ -260,130 +151,7 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
 .tab-sheet-item-check { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; opacity: 0; }
 .tab-sheet-item.active .tab-sheet-item-check { opacity: 1; }
 
-/* =========================================================================
- * 【CSS 模块 10】iOS 风格分组与字段
- * ========================================================================= */
-.ios-section-header {
-  font-size: 12px; font-weight: 600; color: var(--text-tertiary);
-  text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px 6px 8px;
-  display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
-}
-.ios-group {
-  background: var(--bg-surface); border-radius: var(--radius-md); overflow: hidden;
-  border: 1px solid var(--border-subtle); display: flex; flex-direction: column;
-  box-shadow: var(--shadow-card);
-}
-.ios-row { padding: 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-subtle); }
-.ios-row:last-child { border-bottom: 0; }
-.field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; }
-.field-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 640px) { .field-grid, .field-grid.three { grid-template-columns: 1fr; } }
-label.ios-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-secondary); font-weight: 500; }
-
-/* =========================================================================
- * 【CSS 模块 11】表单控件
- * ========================================================================= */
-input[type="text"], input[type="number"], select {
-  width: 100%; height: var(--ctl-h);
-  background: var(--bg-sunken); border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm); color: var(--text-primary);
-  font-size: 13px; padding: 0 12px; outline: none;
-}
-input[type="text"]:focus, input[type="number"]:focus, select:focus {
-  background: var(--bg-surface); border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-/* 自定义下拉箭头 */
-select {
-  -webkit-appearance: none; appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236B655C' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 12px center;
-  background-size: 11px 7px; padding-right: 34px;
-}
-
-/* 滑块 */
-.slider-box { display: flex; align-items: center; gap: 10px; padding: 0 10px 10px 10px; }
-.slider-box > span:first-child { font-size: 11px; color: var(--text-secondary); flex: 1; }
-input[type="range"] {
-  -webkit-appearance: none; appearance: none;
-  background: transparent; height: 28px; flex: 1; cursor: pointer; margin: 0; outline: none;
-}
-input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--bg-sunken); }
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
-  width: 20px; height: 20px; margin-top: -8px; border-radius: 50%;
-  background: #ffffff; border: none;
-  box-shadow: 0 1px 3px rgba(31, 29, 26, 0.2), 0 0 0 0.5px rgba(31, 29, 26, 0.08);
-  cursor: grab;
-}
-input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.06); cursor: grabbing; }
-input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--bg-sunken); border: none; }
-input[type="range"]::-moz-range-thumb {
-  width: 20px; height: 20px; border-radius: 50%; background: #ffffff; border: none;
-  box-shadow: 0 1px 3px rgba(31, 29, 26, 0.2), 0 0 0 0.5px rgba(31, 29, 26, 0.08);
-  cursor: grab;
-}
-.slider-box input[type="number"] { width: 68px; height: 32px; text-align: center; padding: 0 6px; font-size: 12px; border-radius: 8px; }
-
-/* =========================================================================
- * 【CSS 模块 12】按钮
- * ========================================================================= */
-button, .file-btn {
-  font-family: inherit; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
-  height: var(--ctl-h); padding: 0 14px; font-size: 13px; font-weight: 500; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  white-space: nowrap; flex-shrink: 0; background: var(--bg-surface);
-  color: var(--text-primary); box-shadow: var(--shadow-btn);
-  -webkit-appearance: none; appearance: none; user-select: none;
-}
-button:hover:not(:disabled), .file-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
-button:active:not(:disabled), .file-btn:active { transform: scale(0.97); box-shadow: var(--shadow-btn); }
-button:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* 尺寸变体 */
-.btn-sm { height: 32px; padding: 0 10px; font-size: 12px; gap: 4px; }
-.btn-xs { height: 26px; padding: 0 8px; font-size: 11px; gap: 4px; border-radius: 8px; font-weight: 500; }
-
-/* 危险按钮 */
-.btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
-.btn-danger:hover:not(:disabled) { background: var(--danger-hover); box-shadow: var(--shadow-btn-hover); }
-
-/* 主按钮（深色填充） */
-.ios-btn-fill {
-  background: var(--text-primary); border-color: var(--text-primary);
-  color: var(--bg-base); box-shadow: 0 2px 6px rgba(31, 29, 26, 0.15);
-}
-.ios-btn-fill:hover:not(:disabled) { background: var(--accent-dark); box-shadow: 0 3px 10px rgba(31, 29, 26, 0.2); }
-.ios-btn-fill:active:not(:disabled) { background: var(--accent); transform: scale(0.97); }
-
-/* 隐藏 file input 的按钮 */
-.file-btn input[type="file"] { display: none !important; }
-
-/* =========================================================================
- * 【CSS 模块 13】缩略图
- * ========================================================================= */
-.clickable-thumb {
-  width: var(--ctl-h); height: var(--ctl-h); border-radius: var(--radius-sm);
-  background: var(--bg-sunken); border: 1px solid var(--border-default);
-  object-fit: cover; flex-shrink: 0; cursor: pointer;
-}
-.clickable-thumb:hover { filter: brightness(0.94); border-color: var(--accent); }
-.clickable-thumb:active { transform: scale(0.92); }
-
-/* =========================================================================
- * 【CSS 模块 14】条目卡片
- * ========================================================================= */
-.item-card {
-  background: var(--bg-surface-2); border-radius: var(--radius-md); padding: 10px;
-  display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-subtle);
-}
-.item-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
-.item-actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
-.item-row { display: flex; align-items: center; gap: 8px; }
-
-/* =========================================================================
- * 【CSS 模块 15】命座网格
- * ========================================================================= */
+/* 【CSS 模块 7】命座网格 */
 .cons-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 8px; }
 @media (max-width: 600px) { .cons-grid { grid-template-columns: 1fr; } }
 .cons-item {
@@ -405,9 +173,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 .cons-item.active .cons-badge { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* =========================================================================
- * 【CSS 模块 16】元素主题色选择
- * ========================================================================= */
+/* 【CSS 模块 8】元素主题色选择 */
 .color-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; }
 .swatch-btn {
   display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -419,9 +185,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .swatch-btn.active { border-color: currentColor; box-shadow: 0 0 0 1.5px currentColor; background: var(--bg-surface); }
 .swatch-icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 
-/* =========================================================================
- * 【CSS 模块 17】移动端底部 Dock
- * ========================================================================= */
+/* 【CSS 模块 9】移动端底部 Dock */
 .bottom-dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
   background: var(--bg-base);
@@ -442,9 +206,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 .export-btn-main:active:not(:disabled) { background: var(--accent-dark); }
 
-/* =========================================================================
- * 【CSS 模块 18】Toast 提示
- * ========================================================================= */
+/* 【CSS 模块 10】Toast 提示 */
 .toast-container {
   position: fixed; top: 64px; right: 16px; z-index: 9999;
   display: flex; flex-direction: column; gap: 8px; pointer-events: none;
@@ -460,27 +222,3 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .toast.show { opacity: 1; transform: translateX(0); }
 .toast.toast-error { border-color: var(--danger-border); color: var(--danger); }
 .toast.toast-success { border-color: rgba(48, 209, 88, 0.4); }
-
-/* =========================================================================
- * 【CSS 模块 19】确认弹窗 Modal
- * ========================================================================= */
-.modal-backdrop {
-  position: fixed; inset: 0; z-index: 9998;
-  background: var(--mask);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
-}
-.modal-backdrop.show { opacity: 1; pointer-events: auto; }
-.modal-box {
-  background: var(--bg-surface); border-radius: var(--radius-lg);
-  padding: 20px; max-width: 320px; width: calc(100% - 32px);
-  box-shadow: 0 20px 60px rgba(31, 29, 26, 0.25);
-  transform: scale(0.94);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.modal-backdrop.show .modal-box { transform: scale(1); }
-.modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; text-align: center; }
-.modal-message { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; text-align: center; }
-.modal-actions { display: flex; gap: 8px; }
-.modal-actions button { flex: 1; height: 42px; font-size: 14px; font-weight: 600; border-radius: var(--radius-pill); }
