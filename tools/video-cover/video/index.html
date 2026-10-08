@@ -11,9 +11,9 @@
 <body>
 
 <div class="preview-sticky">
-  <div class="preview-frame">
+  <div class="preview-frame" id="previewFrame">
     <div id="svgPreviewHost"></div>
-    <div class="float-toolbar">
+    <div class="float-toolbar" id="floatToolbar">
       <button type="button" class="float-btn" id="btnGuides" title="参考线"><span class="icon-slot" data-icon="guides"></span></button>
       <button type="button" class="float-btn" id="btnExportVideo" title="导出配置"><span class="icon-slot" data-icon="export"></span></button>
       <label class="float-btn" title="导入配置"><span class="icon-slot" data-icon="import"></span><input type="file" id="importVideoInput" accept=".json" style="display:none"></label>
@@ -82,12 +82,8 @@
         <button type="button" class="seg-btn" data-type="custom" style="flex:1;">自定义</button>
       </div>
 
-      <!-- 角色攻略面板 -->
+      <!-- 角色模式面板（立绘 X） -->
       <div id="characterPanel">
-        <label class="ios-field">角色名称
-          <input type="text" id="characterNameInput" placeholder="如：达达利亚" oninput="App.onCharacterNameInput(this.value)" onblur="App.matchCharacterName(this.value)">
-        </label>
-        <div class="hint">立绘查 character-art.txt，名片图查 namecards.txt</div>
         <div class="control-item">
           <div class="control-header"><span>立绘 X 位置</span></div>
           <div class="slider-row">
@@ -95,14 +91,6 @@
             <div class="num-box"><input type="number" id="characterXInput" min="0" max="3840" value="2650" oninput="App.syncVal('characterX', this.value)"><span class="unit-tag">px</span></div>
           </div>
         </div>
-      </div>
-
-      <!-- BOSS 攻略面板 -->
-      <div id="bossPanel" style="display:none;">
-        <label class="ios-field">BOSS 名称
-          <input type="text" id="bossNameInput" placeholder="如：游雪的护刃" oninput="App.onBossNameInput(this.value)" onblur="App.matchBossName(this.value)">
-        </label>
-        <div class="hint">在 icon-dict.js 的 monsters 字典中查找头像</div>
       </div>
 
       <!-- 自定义面板 -->
@@ -149,7 +137,7 @@
     <div class="ios-group">
       <div class="row2">
         <label class="ios-field"><span id="sub1Label">第一行</span>
-          <input type="text" id="sub1Input" placeholder="第一行文字" oninput="App.set('sub1', this.value)">
+          <input type="text" id="sub1Input" placeholder="第一行文字" oninput="App.onSub1Input(this.value)" onblur="App.onSub1Blur(this.value)">
         </label>
         <label class="ios-field" id="sub1SizeRow">字号
           <select id="sub1Select" onchange="App.setSubSize(1, this.value)">
@@ -160,7 +148,7 @@
       </div>
       <div class="row2">
         <label class="ios-field"><span id="sub2Label">第二行</span>
-          <input type="text" id="sub2Input" placeholder="第二行文字" oninput="App.set('sub2', this.value)">
+          <input type="text" id="sub2Input" placeholder="第二行文字" oninput="App.onSub2Input(this.value)" onblur="App.onSub2Blur(this.value)">
         </label>
         <label class="ios-field" id="sub2SizeRow">字号
           <select id="sub2Select" onchange="App.setSubSize(2, this.value)">
