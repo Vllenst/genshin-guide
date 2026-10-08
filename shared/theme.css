@@ -17,13 +17,13 @@
  *   【CSS 模块 12】 浮动按钮
  *   【CSS 模块 13】 横向 Tab
  *   【CSS 模块 14】 确认弹窗
+ *   【CSS 模块 15】 底部 / 居中抽屉（选字体等）
  * ============================================================ */
 
 /* ============================================================
  * 【CSS 模块 1】变量 - 浅色模式
  * ============================================================ */
 :root {
-  /* 背景层 */
   --bg-base: #F2EFEA;
   --bg-surface: #FFFFFF;
   --bg-surface-2: #FAF8F5;
@@ -31,48 +31,39 @@
   --bg-hover: #F5F2ED;
   --bg-seg-track: #EFEAE3;
 
-  /* 边框 */
   --border-subtle: #EBE6DF;
   --border-default: #DDD6CC;
   --border-strong: #C6BEB2;
 
-  /* 文字 */
   --text-primary: #1F1D1A;
   --text-secondary: #6B655C;
   --text-tertiary: #9C958A;
 
-  /* 强调色 */
   --accent: #8B7355;
   --accent-dark: #75604A;
   --accent-hover: #75604A;
   --accent-soft: rgba(139,115,85,.10);
 
-  /* 功能色 */
   --ios-blue: #0A84FF;
   --danger: #DC4C3E;
   --danger-bg: #FCEAE8;
   --danger-hover: #F8DCD8;
   --danger-border: rgba(220,76,62,.22);
 
-  /* 圆角 */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-pill: 999px;
 
-  /* 尺寸 */
   --ctl-h: 38px;
 
-  /* 阴影 */
   --shadow-btn: 0 1px 2px rgba(31,29,26,.04);
   --shadow-btn-hover: 0 2px 6px rgba(31,29,26,.08);
   --shadow-card: 0 1px 2px rgba(31,29,26,.03);
   --shadow-nav: rgba(31,29,26,.06);
 
-  /* 遮罩 */
   --mask: rgba(31,29,26,.35);
 
-  /* 字体 */
   --std-font: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
 
   color-scheme: light;
@@ -183,14 +174,12 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
   background: var(--bg-surface); border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
-/* 自定义下拉箭头 */
 select {
   -webkit-appearance: none; appearance: none;
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236B655C' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
   background-size: 11px 7px; padding-right: 34px;
 }
-/* 拖动条：保留原生轨道 + 主题色填充 */
 input[type="range"] {
   accent-color: var(--accent);
   cursor: pointer;
@@ -214,15 +203,12 @@ button:hover:not(:disabled), .file-btn:hover { background: var(--bg-hover); box-
 button:active:not(:disabled), .file-btn:active { transform: scale(0.97); box-shadow: var(--shadow-btn); }
 button:disabled { opacity: 0.35; cursor: not-allowed; }
 
-/* 尺寸变体 */
 .btn-sm { height: 32px; padding: 0 10px; font-size: 12px; gap: 4px; }
 .btn-xs { height: 26px; padding: 0 8px; font-size: 11px; gap: 4px; border-radius: 8px; font-weight: 500; }
 
-/* 危险按钮 */
 .btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
 .btn-danger:hover:not(:disabled) { background: var(--danger-hover); box-shadow: var(--shadow-btn-hover); }
 
-/* 主按钮（深色填充） */
 .ios-btn-fill {
   background: var(--text-primary); border-color: var(--text-primary);
   color: var(--bg-base); box-shadow: 0 2px 6px rgba(31, 29, 26, 0.15);
@@ -230,7 +216,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .ios-btn-fill:hover:not(:disabled) { background: var(--accent-dark); box-shadow: 0 3px 10px rgba(31, 29, 26, 0.2); }
 .ios-btn-fill:active:not(:disabled) { background: var(--accent); transform: scale(0.97); }
 
-/* 隐藏 file input 的按钮 */
 .file-btn input[type="file"] { display: none !important; }
 
 /* ============================================================
@@ -300,7 +285,6 @@ label.ios-field { display: flex; flex-direction: column; gap: 4px; font-size: 11
 }
 .float-btn:hover { background: var(--bg-hover); box-shadow: var(--shadow-btn-hover); }
 .float-btn:active { transform: scale(.92); }
-/* 图标尺寸由【CSS 模块 5】的「无文字按钮」规则统一处理 */
 .float-btn-danger { color: var(--danger); border-color: var(--danger-border); }
 .float-btn-danger:hover { background: var(--danger-bg); }
 
@@ -362,3 +346,55 @@ label.ios-field { display: flex; flex-direction: column; gap: 4px; font-size: 11
 .modal-hint { font-size: 11.5px; color: var(--text-tertiary); line-height: 1.6; margin-bottom: 12px; }
 .modal-actions { display: flex; gap: 8px; }
 .modal-actions button { flex: 1; height: 42px; font-size: 14px; font-weight: 600; border-radius: var(--radius-pill); }
+
+/* ============================================================
+ * 【CSS 模块 15】底部 / 居中抽屉（选字体等）
+ * ============================================================ */
+.tab-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--mask);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+}
+.tab-sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+.tab-sheet {
+  position: fixed; z-index: 201; background: var(--bg-surface); overflow-y: auto;
+  overscroll-behavior: contain; font-family: inherit;
+  left: 0; right: 0; bottom: 0;
+  border-radius: 16px 16px 0 0; max-height: 80dvh;
+  padding: 6px 0 calc(10px + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -12px 40px rgba(31, 29, 26, 0.14);
+  will-change: transform;
+}
+.tab-sheet.show { transform: translateY(0); }
+@media (min-width: 1024px) {
+  .tab-sheet {
+    left: 50%; right: auto; bottom: auto; top: 50%; width: 340px; max-height: 70vh;
+    border-radius: 16px; padding: 8px 0 10px;
+    transform: translate(-50%, -48%) scale(0.96); opacity: 0;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+    box-shadow: 0 24px 60px rgba(31, 29, 26, 0.24);
+  }
+  .tab-sheet.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.tab-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 6px auto 4px; opacity: 0.55; }
+@media (min-width: 1024px) { .tab-sheet-handle { display: none; } }
+.tab-sheet-header { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.6px; padding: 8px 22px 8px; }
+@media (min-width: 1024px) { .tab-sheet-header { padding: 10px 20px 8px; } }
+.tab-sheet-list { display: flex; flex-direction: column; padding: 0 8px; }
+.tab-sheet-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; height: 50px; padding: 0 14px;
+  background: transparent; border: 0; border-radius: 10px;
+  font-family: inherit; font-size: 15px; font-weight: 500;
+  color: var(--text-primary); text-align: left; cursor: pointer;
+  letter-spacing: -0.2px;
+  -webkit-appearance: none; appearance: none;
+}
+.tab-sheet-item:hover { background: var(--bg-hover); }
+.tab-sheet-item:active { background: var(--bg-sunken); }
+.tab-sheet-item.active { color: var(--accent); font-weight: 600; }
+.tab-sheet-item-check { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; opacity: 0; }
+.tab-sheet-item.active .tab-sheet-item-check { opacity: 1; }
