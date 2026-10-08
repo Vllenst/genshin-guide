@@ -154,6 +154,13 @@ button, input[type="button"], input[type="submit"] { -webkit-appearance: none; a
 
 /* ============================================================
  * 【CSS 模块 5】图标通用
+ * ============================================================
+ * 规则约定：
+ *   · 有文字按钮 → 图标 = 字号 + 5px（图标+文字组合）
+ *   · 纯图标按钮 → 图标 = 容器 × 60%（如浮动按钮）
+ *   · 图标插槽 .icon-only / .btn-icon → 用 1em 容器包裹 svg
+ * 注意：不使用 :has(> svg:only-child) —— 它只统计元素节点，
+ *       会把「图标 + 文本」按钮误判为纯图标按钮。
  * ============================================================ */
 .icon { width: 1em; height: 1em; fill: currentColor; flex-shrink: 0; display: block; }
 .icon-flip-y { display: inline-flex; align-items: center; transform: rotate(180deg); }
@@ -185,14 +192,14 @@ button svg, .btn svg, .btn-sm svg, .btn-xs svg,
 .icon-only { display: inline-flex; align-items: center; justify-content: center; }
 .btn-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-/* 无文字按钮（唯一子元素是 svg）：图标 = 容器 × 60% */
-button:has(> svg:only-child) {
+/* 纯图标按钮（浮动按钮等）：图标 = 容器 × 60% */
+.float-btn {
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
-button:has(> svg:only-child) svg {
+.float-btn > svg {
   width: 60% !important;
   height: 60% !important;
   display: block !important;
