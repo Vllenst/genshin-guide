@@ -13,7 +13,7 @@
  *   【JS 模块 9】 模式切换
  *   【JS 模块 10】副标题输入处理（角色名 / BOSS 名）
  *   【JS 模块 11】浮动素材
- *   【JS 模块 12】字体
+ *   【JS 模块 12】字体 (内存直读终极版)
  *   【JS 模块 13】IndexedDB 持久化
  *   【JS 模块 14】导出 / 导入 / 清空
  *   【JS 模块 15】UI 同步
@@ -749,7 +749,7 @@ function renderFloatList() {
 }
 
 /* =========================================================================
- * 【JS 模块 12】字体
+ * 【JS 模块 12】字体 (内存直读终极版)
  * ========================================================================= */
 async function loadFontList() {
   try {
@@ -761,16 +761,52 @@ async function loadFontList() {
   } catch (e) {}
 }
 
+/**
+ * 将 DataURL 解析为浏览器的 ArrayBuffer，并绕过 blob，直接加载字体！
+ */
 async function installFont() {
-  if (!state.fontData || !window.FontFace) return;
+  if (!state.fontData || !window.FontFace) return false;
   try {
-    if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} }
-    const ff = new FontFace(state.fontName, `url("${state.fontData}")`);
+    if (loadedFontFace) {
+      try { document.fonts.delete(loadedFontFace); } catch (e) {}
+      loadedFontFace = null;
+    }
+
+    // [绝招] 步骤1：直接把 Base64 解成纯纯的内存二进制（ArrayBuffer）
+    let buffer;
+    try {
+      // 首选使用 fetch 极速提取底层数据（如果支持）
+      const res = await fetch(state.fontData);
+      buffer = await res.arrayBuffer();
+    } catch (e) {
+      // 退路：如果严格模式不让 fetch dataURL，手动切分压进 Uint8Array
+      const arr = state.fontData.split(',');
+      const raw = atob(arr[1]);
+      buffer = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) {
+        buffer[i] = raw.charCodeAt(i);
+      }
+    }
+
+    // [绝招] 步骤2：不使用任何 URL，把内存数据（Buffer）直接递给浏览器字体引擎
+    const ff = new FontFace(state.fontName, buffer);
     const loaded = await ff.load();
     document.fonts.add(loaded);
     loadedFontFace = loaded;
+
+    // 为保证 SVG 内的文字不受环境影响，强行注入一份 @font-face 在 document.head
+    let styleEl = document.getElementById('video-preview-font-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'video-preview-font-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@font-face{font-family:'${state.fontName}';src:url("${state.fontData}");font-display:block}`;
+
+    return true;
   } catch (e) {
-    console.warn('字体加载失败：', e.message);
+    console.error('字体解析异常：', e);
+    return false;
   }
 }
 
@@ -799,37 +835,102 @@ function closeFontPicker() {
   document.getElementById('fontSheet').classList.remove('show');
 }
 
+/**
+ * 字体选择主逻辑（带完整的防断点、防崩溃安全锁）
+ */
 async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelVideoFont');
+  
   if (index === -1) {
     state.fontData = ''; state.fontFileName = ''; state.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
+    const oldStyle = document.getElementById('video-preview-font-style');
+    if (oldStyle) oldStyle.remove();
     if (labelEl) labelEl.textContent = '默认系统字体';
     mountPreview(); persist();
     return;
   }
+  
   const f = FONT_LIST[index];
   if (!f) return;
-  if (labelEl) labelEl.textContent = '正在加载…';
+  if (state.fontFileName === f.file && state.fontData) {
+    if (labelEl) labelEl.textContent = '当前：' + f.name;
+    return;
+  }
+
   try {
-    const res = await fetch('../../../shared/fonts/' + encodeURIComponent(f.file));
+    // ================== 阶段 1：下载内存流 ==================
+    if (labelEl) labelEl.textContent = `[1/3] 正在下载二进制流...`;
+    let res;
+    try {
+      res = await fetch('../../../shared/fonts/' + encodeURIComponent(f.file));
+    } catch (netErr) {
+      throw new Error(`跨域或网络受阻 (${netErr.message})`);
+    }
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status} 文件未找到`);
+    
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      throw new Error('服务器返回网页而非字体(可能是404)');
+    }
+    
     const buf = await res.arrayBuffer();
-    const blob = new Blob([buf]);
+
+    // ================== 阶段 2：内核级硬解析 ==================
+    if (labelEl) labelEl.textContent = `[2/3] 正在注入字体渲染引擎...`;
+    try {
+      const ff = new FontFace(f.name, buf);
+      const loaded = await ff.load();
+      if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch(e){} }
+      document.fonts.add(loaded);
+      loadedFontFace = loaded;
+    } catch (fontErr) {
+      throw new Error(`该格式无法识别或文件损坏 (${fontErr.message || 'Font Engine Refused'})`);
+    }
+
+    // ================== 阶段 3：固化存档 ==================
+    if (labelEl) labelEl.textContent = `[3/3] 正在固化存档数据...`;
+    
+    let ext = f.file.split('.').pop().toLowerCase();
+    let mime = 'font/ttf';
+    if (ext === 'otf') mime = 'font/otf';
+    else if (ext === 'woff2') mime = 'font/woff2';
+    else if (ext === 'woff') mime = 'font/woff';
+
+    const blob = new Blob([buf], { type: mime });
     const dataURL = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
+      reader.onerror = () => reject(new Error('数据过大序列化失败'));
       reader.readAsDataURL(blob);
     });
+
     state.fontData = dataURL;
     state.fontFileName = f.file;
     state.fontName = f.name;
-    await installFont();
+    
+    let styleEl = document.getElementById('video-preview-font-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'video-preview-font-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@font-face{font-family:'${state.fontName}';src:url("${state.fontData}");font-display:block}`;
+
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     mountPreview(); persist();
-  } catch (e) {
-    if (labelEl) labelEl.textContent = '字体加载失败';
+    
+  } catch (err) {
+    console.error(`[字体加载失败] ${f.name}:`, err);
+    if (labelEl) labelEl.textContent = `异常卡住: ${err.message}`;
+    alert(`字体 [${f.name}] 加载失败: ${err.message}`);
+    
+    state.fontData = ''; 
+    state.fontFileName = ''; 
+    state.fontName = '';
+    persist();
   }
 }
 
@@ -1145,7 +1246,8 @@ window.App = App;
   await loadFontList();
   await loadPersist();
 
-  if (state.fontData) await installFont();
+  // 初始化恢复上次选择的字体
+  try { await installFont(); } catch(e) {}
 
   const logoSelect = document.getElementById('logoSelect');
   if (logoSelect) {
