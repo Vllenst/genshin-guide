@@ -50,14 +50,24 @@ body { padding: 0 0 60px; min-height: 100vh; }
 }
 .entry-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-/* 序号输入框：继承 input[type=number] 基础，只扩展宽度和居中 */
-.entry-order { width: 60px; flex-shrink: 0; text-align: center; padding: 0 4px; font-weight: 600; }
+/* 序号输入框：继承 input[type=number] 基础，只扩展宽度和居中
+ * 注意：用 input.entry-order 提高特异性，避免被 theme.css 里的
+ *      input[type="number"] { width: 100% } 覆盖 */
+input.entry-order {
+  width: 60px; flex-shrink: 0; text-align: center; padding: 0 4px;
+  font-weight: 600;
+  -moz-appearance: textfield;
+}
+input.entry-order::-webkit-outer-spin-button,
+input.entry-order::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* 名字输入框：继承 input[type=text] 基础，只扩展 flex */
-.entry-name { flex: 1; min-width: 0; }
+input.entry-name { flex: 1; min-width: 0; }
 
-/* 星级下拉：继承 select 基础，只限制宽度 */
-.star-select { width: 80px; flex-shrink: 0; }
+/* 星级下拉：继承 select 基础，只限制宽度
+ * 注意：用 select.star-select 提高特异性，避免被 theme.css 里的
+ *      select { width: 100% } 覆盖 */
+select.star-select { width: 80px; flex-shrink: 0; }
 
 /* 删除按钮：继承 button + btn-xs + btn-danger，覆盖为正方形 */
 .entry-del { width: 34px; height: 34px; padding: 0; flex-shrink: 0; }
