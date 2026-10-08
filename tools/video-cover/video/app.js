@@ -118,7 +118,6 @@ async function loadDataFiles() {
         const m = line.match(/^(\d+)\s+(\S+)\s*(.*)$/);
         if (!m) return;
         let url = (m[3] || '').trim();
-        // 修正本地路径：../../shared/... → ../../../shared/...
         if (url.startsWith(ART_PATH_PREFIX_OLD)) {
           url = ART_PATH_PREFIX_NEW + url.slice(ART_PATH_PREFIX_OLD.length);
         }
@@ -253,10 +252,10 @@ function getFloatGeom(o) {
   return { x: o.x - imgW / 2, y: (SVG_H - imgH) / 2, imgW, imgH };
 }
 
-function buildSVG(showGuides) {
+function buildSVG(showGuides, forExport = false) {
   const s = state;
   const font = getFontFamily();
-  const fontFace = s.fontData ? `@font-face{font-family:'${s.fontName}';src:url("${s.fontData}");font-display:block}` : '';
+  const fontFace = (forExport && s.fontData) ? `@font-face{font-family:'${s.fontName}';src:url("${s.fontData}");font-display:block}` : '';
 
   const cap = getCapsuleGeometry();
   const logoX = cap.logoX, logoY = cap.logoY;
@@ -464,19 +463,16 @@ function applyModeUI() {
     b.classList.toggle('active', b.dataset.type === type);
   });
 
-  /* 字号选择行：仅自定义模式显示 */
   const sub1SizeRow = document.getElementById('sub1SizeRow');
   const sub2SizeRow = document.getElementById('sub2SizeRow');
   if (sub1SizeRow) sub1SizeRow.style.display = type === 'custom' ? '' : 'none';
   if (sub2SizeRow) sub2SizeRow.style.display = type === 'custom' ? '' : 'none';
 
-  /* 主标题 / 胶囊标签 section：仅自定义模式显示 */
   const mainSection = document.getElementById('mainTextInput')?.closest('section');
   const capSection = document.getElementById('capTextInput')?.closest('section');
   if (mainSection) mainSection.style.display = type === 'custom' ? '' : 'none';
   if (capSection) capSection.style.display = type === 'custom' ? '' : 'none';
 
-  /* 副标题 label 动态提示 */
   const sub1Label = document.getElementById('sub1Label');
   const sub2Label = document.getElementById('sub2Label');
   if (sub1Label) {
@@ -491,7 +487,6 @@ function applyModeUI() {
       '第二行';
   }
 
-  /* sub1 在角色模式下只读（自动编号） */
   const sub1Input = document.getElementById('sub1Input');
   if (sub1Input) {
     sub1Input.readOnly = (type === 'character');
@@ -502,7 +497,6 @@ function applyModeUI() {
 function setGuideType(type) {
   state.guideType = type;
 
-  /* 主标题 / 标签 */
   if (type === 'character' || type === 'boss') {
     state.mainText = MODE_MAIN_TEXTS[type];
     state.capText = MODE_CAP_TEXT[type];
@@ -511,11 +505,9 @@ function setGuideType(type) {
     state.capText = '';
   }
 
-  /* 副标题清空 */
   state.sub1 = '';
   state.sub2 = '';
 
-  /* 字号跟模式 */
   if (type === 'character') {
     state.sub1Size = 200;
     state.sub2Size = 250;
@@ -524,10 +516,8 @@ function setGuideType(type) {
     state.sub2Size = 200;
   }
 
-  /* 背景清空 */
   state.bg = '';
 
-  /* 关联状态清空 */
   if (type !== 'character') {
     state.characterArt = null;
   }
@@ -535,7 +525,6 @@ function setGuideType(type) {
     state.bossAvatar = null;
   }
 
-  /* 同步输入框 */
   const mainInput = document.getElementById('mainTextInput');
   if (mainInput) mainInput.value = state.mainText;
   const capInput = document.getElementById('capTextInput');
@@ -549,7 +538,6 @@ function setGuideType(type) {
   const bgFileInput = document.getElementById('bgFile');
   if (bgFileInput) bgFileInput.value = '';
 
-  /* 同步字号下拉 */
   const s1 = document.getElementById('sub1Select');
   const s2 = document.getElementById('sub2Select');
   if (s1) s1.value = String(state.sub1Size);
@@ -584,7 +572,6 @@ function onSub2Blur(v) {
   matchCharacterName(v);
 }
 
-/* 角色匹配：编号 / 立绘 / 名片图 */
 async function matchCharacterName(name) {
   name = (name || '').trim();
   state.sub2 = name;
@@ -605,13 +592,11 @@ async function matchCharacterName(name) {
 
   const baseName = stripElementSuffix(name);
 
-  /* 编号 */
   const order = CHAR_NAME_TO_ORDER[name] || CHAR_NAME_TO_ORDER[baseName];
   state.sub1 = order ? ('No.' + padOrder(order)) : '';
   const sub1Input = document.getElementById('sub1Input');
   if (sub1Input) sub1Input.value = state.sub1;
 
-  /* 立绘 */
   let artUrl = '';
   if (ART_DICT[name] !== undefined && ART_DICT[name] !== '') artUrl = ART_DICT[name];
   else if (ART_DICT[baseName] !== undefined && ART_DICT[baseName] !== '') artUrl = ART_DICT[baseName];
@@ -628,7 +613,6 @@ async function matchCharacterName(name) {
     state.characterArt = null;
   }
 
-  /* 名片图 */
   let namecardUrl = '';
   if (NAMECARD_DICT[name]) namecardUrl = NAMECARD_DICT[name];
   else if (NAMECARD_DICT[baseName]) namecardUrl = NAMECARD_DICT[baseName];
@@ -647,7 +631,6 @@ async function matchCharacterName(name) {
   persist();
 }
 
-/* BOSS 匹配：头像 */
 async function matchBossName(name) {
   name = (name || '').trim();
   state.sub1 = name;
@@ -786,7 +769,9 @@ async function installFont() {
     const loaded = await ff.load();
     document.fonts.add(loaded);
     loadedFontFace = loaded;
-  } catch (e) {}
+  } catch (e) {
+    console.warn('字体加载失败：', e.message);
+  }
 }
 
 function openFontPicker() {
@@ -901,7 +886,7 @@ function getExportBaseName() {
 async function exportPNG() {
   try {
     if (document.fonts) await document.fonts.ready;
-    const svgStr = buildSVG(false);
+    const svgStr = buildSVG(false, true);
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     try {
@@ -1000,12 +985,10 @@ function syncInputsFromState() {
  * 【JS 模块 16】事件绑定
  * ========================================================================= */
 function bindEvents() {
-  /* 攻略模式切换 */
   document.querySelectorAll('#guideTypeSeg .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => setGuideType(btn.dataset.type));
   });
 
-  /* 背景上传 */
   document.getElementById('bgFile').addEventListener('change', e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -1022,20 +1005,17 @@ function bindEvents() {
     e.target.value = '';
   });
 
-  /* 浮动工具栏：参考线 */
   document.getElementById('btnGuides').addEventListener('click', e => {
     e.stopPropagation();
     state.showGuides = !state.showGuides;
     mountPreview(); persist();
   });
 
-  /* 浮动工具栏：导出配置 */
   document.getElementById('btnExportVideo').addEventListener('click', e => {
     e.stopPropagation();
     exportConfig();
   });
 
-  /* 浮动工具栏：导入配置（点击触发文件选择） */
   document.getElementById('btnImportVideo').addEventListener('click', e => {
     e.stopPropagation();
     document.getElementById('importVideoInput').click();
@@ -1044,13 +1024,11 @@ function bindEvents() {
     importConfig(e.target);
   });
 
-  /* 浮动工具栏：清空 */
   document.getElementById('btnClearVideo').addEventListener('click', e => {
     e.stopPropagation();
     clearAll();
   });
 
-  /* 点击预览切换浮动按钮显隐 */
   const frame = document.getElementById('previewFrame');
   const toolbar = document.getElementById('floatToolbar');
   if (frame && toolbar) {
@@ -1060,7 +1038,6 @@ function bindEvents() {
     });
   }
 
-  /* 主标题 / 胶囊标签（仅自定义模式） */
   document.getElementById('mainTextInput').addEventListener('input', e => {
     state.mainText = e.target.value;
     mountPreview(); persist();
@@ -1069,8 +1046,6 @@ function bindEvents() {
     state.capText = e.target.value;
     mountPreview(); persist();
   });
-
-  /* capTextBrightness 走 App.syncVal（内联 oninput） */
 }
 
 /* =========================================================================
@@ -1172,14 +1147,12 @@ window.App = App;
 
   if (state.fontData) await installFont();
 
-  /* Logo 下拉框 */
   const logoSelect = document.getElementById('logoSelect');
   if (logoSelect) {
     logoSelect.innerHTML = LOGO_LIST.map(l =>
       '<option value="' + esc(l.file) + '">' + esc(l.name) + '</option>'
     ).join('');
 
-    /* 校验 capLogo：如果不是当前 LOGO_BASE_URL 下的，重置为字典第一个 */
     const validCapLogo = state.capLogo && state.capLogo.startsWith(LOGO_BASE_URL);
     if (!validCapLogo) {
       state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
