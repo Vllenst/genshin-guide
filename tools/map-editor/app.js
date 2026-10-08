@@ -11,16 +11,16 @@
  *   【JS 模块 7】 本地存储
  *   【JS 模块 8】 工具函数
  *   【JS 模块 9】 条目列表渲染
- *   【JS 模块 10】 粘贴 URL 解析
- *   【JS 模块 11】 从 Amber 同步（生成完整字典）
- *   【JS 模块 12】 清空当前分类
- *   【JS 模块 13】 从仓库载入 icon-dict.js
- *   【JS 模块 14】 导出 icon-dict.js
- *   【JS 模块 15】 主题（由父页面控制，本页仅被动接收）
- *   【JS 模块 16】 图标注入
- *   【JS 模块 17】 事件绑定
- *   【JS 模块 18】 跨 iframe 通信
- *   【JS 模块 19】 初始化
+ *   【JS 模块 10】粘贴 URL 解析
+ *   【JS 模块 11】从 Amber 同步（生成完整字典）
+ *   【JS 模块 12】清空当前分类
+ *   【JS 模块 13】从仓库载入 icon-dict.js
+ *   【JS 模块 14】导出 icon-dict.js
+ *   【JS 模块 15】主题（由父页面控制，本页仅被动接收）
+ *   【JS 模块 16】图标注入
+ *   【JS 模块 17】事件绑定
+ *   【JS 模块 18】跨 iframe 通信
+ *   【JS 模块 19】初始化
  * ========================================================================= */
 (function () {
   "use strict";
@@ -280,10 +280,10 @@
 
     sorted.forEach(function (row) {
       var card = document.createElement("div");
-      card.className = "entry-card";
+      card.className = "item-card";
 
       var top = document.createElement("div");
-      top.className = "entry-top";
+      top.className = "item-header";
 
       var inpOrder = document.createElement("input");
       inpOrder.type = "number"; inpOrder.className = "entry-order";
@@ -333,9 +333,6 @@
       var inpName = document.createElement("input");
       inpName.type = "text"; inpName.className = "entry-name";
       inpName.value = row.name || ""; inpName.placeholder = "中文名";
-      inpName.style.flex = "1";
-      inpName.style.width = "auto";
-      inpName.style.marginRight = "0";
       inpName.addEventListener("input", function () { row.name = inpName.value; saveLocal(); });
       inpName.addEventListener("blur", function () {
         var name = (inpName.value || "").trim();
@@ -354,7 +351,7 @@
       card.appendChild(top);
 
       var mid = document.createElement("div");
-      mid.className = "entry-mid";
+      mid.className = "item-row";
 
       var spacer = document.createElement("div");
       spacer.style.flex = "1";
@@ -377,7 +374,7 @@
       }
 
       var btnDel = document.createElement("button");
-      btnDel.type = "button"; btnDel.className = "entry-del";
+      btnDel.type = "button"; btnDel.className = "entry-del btn-xs btn-danger";
       btnDel.innerHTML = ICONS.ui.trash;
       btnDel.addEventListener("click", function () {
         var idx = editorData[currentTab].indexOf(row);
@@ -715,10 +712,10 @@
    * 【JS 模块 17】事件绑定
    * ------------------------------------------------------------------- */
   function bindEvents() {
-    document.querySelectorAll(".tab").forEach(function (btn) {
+    document.querySelectorAll(".tab-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         currentTab = btn.dataset.tab;
-        document.querySelectorAll(".tab").forEach(function (b) { b.classList.toggle("active", b === btn); });
+        document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.toggle("active", b === btn); });
         render();
       });
     });
