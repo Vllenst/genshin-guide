@@ -122,6 +122,9 @@ let CHAR_NAME_TO_ORDER = {};
 let NAMECARD_DICT = {};
 let ART_DICT = {};
 
+/* 当前会话用的字体 blob URL（避免 SVG 内 @font-face 因 dataURL 过长而失败） */
+let _fontBlobUrl = '';
+
 /* =========================================================================
  * 【JS 模块 3】State 与持久化
  * ========================================================================= */
@@ -726,11 +729,12 @@ function panelRect(x, y, w, h, rx) {
   const theme = State.data.theme || '#939393';
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="rgba(0,0,0,.5)" stroke="${theme}" stroke-width="2" filter="url(#glowTheme)"/>`;
 }
-function buildSVG(scale = 1, forExport = false) {
+function buildSVG(scale = 1) {
   const d = State.data;
   const W = SVG_W * scale, H = SVG_H * scale;
-  /* 字体：始终生成 SVG 内 @font-face，保证 SVG 里的 text 能命中自定义字体 */
-  const fontFace = d.fontData ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}` : '';
+  /* 字体：优先用 blob URL（短，避免 dataURL 过长导致 SVG 解析失败），fallback 到 dataURL */
+  const fontSrc = _fontBlobUrl || d.fontData;
+  const fontFace = d.fontData ? `@font-face{font-family:CardCustomFont;src:url("${fontSrc}");font-display:block}` : '';
   const fontFamily = d.fontData ? FONT_FAMILY_CUSTOM : FONT_FAMILY_DEFAULT;
   const nameFs = fitSize(d.charName, 280, 50, 18);
   const imgX = Number(d.imgX) || 0;
@@ -1341,6 +1345,46 @@ function closeFontPicker() {
   document.getElementById('fontSheet').classList.remove('show');
 }
 let loadedFontFace = null;
+
+/* 生成 / 刷新当前会话用的字体 blob URL（避免 SVG 内 @font-face 引用超长 dataURL 失败） */
+function refreshFontBlobUrl() {
+  if (_fontBlobUrl) {
+    try { URL.revokeObjectURL(_fontBlobUrl); } catch (e) {}
+    _fontBlobUrl = '';
+  }
+  if (!State.data.fontData) return;
+  try {
+    const dataURL = State.data.fontData;
+    const commaIdx = dataURL.indexOf(',');
+    if (commaIdx < 0) return;
+    const meta = dataURL.slice(0, commaIdx);
+    const b64 = dataURL.slice(commaIdx + 1);
+    const isBase64 = /;base64$/i.test(meta);
+    let mime = 'font/ttf';
+    const mimeMatch = /^data:([^;,]+)/.exec(meta);
+    if (mimeMatch) mime = mimeMatch[1];
+    let binary;
+    if (isBase64) {
+      const raw = atob(b64);
+      const len = raw.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
+      binary = bytes;
+    } else {
+      const txt = decodeURIComponent(b64);
+      const len = txt.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = txt.charCodeAt(i);
+      binary = bytes;
+    }
+    const blob = new Blob([binary], { type: mime });
+    _fontBlobUrl = URL.createObjectURL(blob);
+  } catch (e) {
+    console.warn('生成字体 blob URL 失败：', e.message);
+    _fontBlobUrl = '';
+  }
+}
+
 async function installPreviewFont() {
   if (!State.data.fontData || !window.FontFace) return;
   try {
@@ -1361,6 +1405,7 @@ async function selectFont(index) {
     State.data.fontData = ''; State.data.fontFileName = ''; State.data.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
     if (labelEl) labelEl.textContent = '默认标准字体';
+    refreshFontBlobUrl();
     mountPreview(); debouncedSave();
     return;
   }
@@ -1385,6 +1430,7 @@ async function selectFont(index) {
     State.data.fontData = dataURL;
     State.data.fontFileName = f.file;
     State.data.fontName = f.name;
+    refreshFontBlobUrl();
     await installPreviewFont();
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     mountPreview(); debouncedSave();
@@ -1554,6 +1600,7 @@ async function loadSaveFromRepo() {
     const ok = await showConfirm('发现存档', '是否载入「' + name + '」的存档？当前编辑内容会被覆盖。');
     if (!ok) return;
     State.data = normalizeState(json);
+    refreshFontBlobUrl();
     await installPreviewFont();
     initThumbnails();
     renderEditorsByKey();
@@ -1735,7 +1782,7 @@ async function exportPNG() {
   btns.forEach(b => { b.el.disabled = true; b.el.textContent = '正在导出...'; });
   try {
     if (document.fonts) await document.fonts.ready;
-    const svg = buildSVG(EXPORT_SCALE, true);
+    const svg = buildSVG(EXPORT_SCALE);
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     try {
@@ -1782,6 +1829,7 @@ function importConfig(input) {
     try {
       const data = JSON.parse(e.target.result);
       State.data = normalizeState(data);
+      refreshFontBlobUrl();
       await installPreviewFont();
       initThumbnails();
       renderEditorsByKey();
@@ -2008,6 +2056,7 @@ async function init() {
   await loadNamecards();
   await loadArtDict();
   await loadFontList();
+  refreshFontBlobUrl();
   await installPreviewFont();
   initThumbnails();
   syncInputs();
