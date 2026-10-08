@@ -34,8 +34,7 @@ const ICONS = {
   up: SHARED.ui.arrowUp || '',
   down: '<span class="icon-flip-y">' + (SHARED.ui.arrowUp || '') + '</span>',
   trash: SHARED.ui.trash || '',
-  collapse: SHARED.ui.chevronDown || '',
-  expand: '<span class="icon-flip-y">' + (SHARED.ui.chevronDown || '') + '</span>',
+  chevron: SHARED.ui.chevronDown || '',
   plus: SHARED.ui.plus || '',
   export: SHARED.ui.export || '',
   import: SHARED.ui.import || ''
@@ -984,7 +983,24 @@ function selectTab(tabId) {
  * 【JS 模块 9】UI 编辑器
  * ========================================================================= */
 const collapseState = {};
-function toggleCollapse(key) { collapseState[key] = !collapseState[key]; renderEditorsByKey(); }
+
+/**
+ * 切换展开/收起状态。
+ * 只操作 DOM（不重绘），以保留箭头的 CSS 旋转过渡。
+ * 需要更新列表内容时由各 add / remove / move 方法重新调用 render*。
+ */
+function toggleCollapse(key) {
+  collapseState[key] = !collapseState[key];
+  const collapsed = collapseState[key];
+  document.querySelectorAll('.collapse-toggle[data-collapse-key="' + key + '"]').forEach(btn => {
+    btn.classList.toggle('collapsed', collapsed);
+    const txt = btn.querySelector('.collapse-text');
+    if (txt) txt.textContent = collapsed ? '展开' : '收起';
+  });
+  document.querySelectorAll('[data-collapse-content="' + key + '"]').forEach(el => {
+    el.style.display = collapsed ? 'none' : '';
+  });
+}
 function isCollapsed(key) { return !!collapseState[key]; }
 
 function renderColorPicker() {
@@ -1032,8 +1048,6 @@ function renderWeaponEditor() {
   el.innerHTML = WEAPON_ORDER.map(type => {
     const key = `weapon_${type}`;
     const collapsed = isCollapsed(key);
-    const toggleIcon = collapsed ? ICONS.expand : ICONS.collapse;
-    const toggleText = collapsed ? '展开' : '收起';
     const group = State.data.weaponData[type];
     const list = group.map((w, i) => {
       const upDisabled = !canMoveWeapon(type, i, -1);
@@ -1060,31 +1074,34 @@ function renderWeaponEditor() {
         <span style="font-size:13px;font-weight:600;color:var(--accent);">${WEAPON_LABELS[type]}武器 (${group.length}/${WEAPON_MAX})</span>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;">
           <button class="ios-btn-fill btn-xs" onclick="App.addWeapon('${type}')">${ICONS.plus}添加</button>
-          <button class="btn-xs" onclick="App.toggleCollapse('${key}')">${toggleIcon}${toggleText}</button>
+          <button class="btn-xs collapse-toggle ${collapsed ? 'collapsed' : ''}" data-collapse-key="${key}" onclick="App.toggleCollapse('${key}')">
+            <span class="collapse-icon">${ICONS.chevron}</span><span class="collapse-text">${collapsed ? '展开' : '收起'}</span>
+          </button>
         </div>
       </div>
-      ${collapsed ? '' : `<div style="display:flex;flex-direction:column;gap:6px;">${list || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂无配置</div>'}</div>`}
+      <div data-collapse-content="${key}" style="display:${collapsed ? 'none' : 'flex'};flex-direction:column;gap:6px;">
+        ${list || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂无配置</div>'}
+      </div>
     </div>`;
   }).join('');
 }
 function renderArtifactEditor() {
   const sectionKey = 'artifact_section';
   const isSectionCollapsed = isCollapsed(sectionKey);
-  const toggleIcon = isSectionCollapsed ? ICONS.expand : ICONS.collapse;
-  const toggleText = isSectionCollapsed ? '展开' : '收起';
   const headEl = document.getElementById('artifactSectionHead');
   if (headEl) {
     headEl.innerHTML = `<span>圣遗物推荐 (${State.data.artifactData.length})</span>
       <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end; margin-left:auto;">
         <button class="ios-btn-fill btn-xs" onclick="App.addArtifact('single')">${ICONS.plus}整套</button>
         <button class="ios-btn-fill btn-xs" onclick="App.addArtifact('double')">${ICONS.plus}散搭</button>
-        <button class="btn-xs" onclick="App.toggleCollapse('${sectionKey}')">${toggleIcon}${toggleText}</button>
+        <button class="btn-xs collapse-toggle ${isSectionCollapsed ? 'collapsed' : ''}" data-collapse-key="${sectionKey}" onclick="App.toggleCollapse('${sectionKey}')">
+          <span class="collapse-icon">${ICONS.chevron}</span><span class="collapse-text">${isSectionCollapsed ? '展开' : '收起'}</span>
+        </button>
       </div>`;
   }
   const editorEl = document.getElementById('artifactEditor');
   if (!editorEl) return;
-  if (isSectionCollapsed) { editorEl.style.display = 'none'; return; }
-  editorEl.style.display = 'flex';
+  editorEl.style.display = isSectionCollapsed ? 'none' : 'flex';
   editorEl.innerHTML = State.data.artifactData.map((a, i) => {
     if (a.type === 'double') {
       return `<div class="item-card">
@@ -1134,37 +1151,37 @@ function renderTeamEditor() {
   el.innerHTML = State.data.teamData.map((team, ti) => {
     const teamKey = `team_${ti}`;
     const teamCollapsed = isCollapsed(teamKey);
-    const teamToggleIcon = teamCollapsed ? ICONS.expand : ICONS.collapse;
-    const teamToggleText = teamCollapsed ? '展开' : '收起';
     return `<div class="ios-group" style="padding:10px;">
       <div class="item-header" style="margin-bottom:${teamCollapsed ? '0' : '8px'};">
         <span style="font-size:13px;color:var(--accent);font-weight:600;">队伍 ${ti + 1}</span>
         <div class="item-actions">
           <button class="btn-xs" onclick="App.moveTeam(${ti},-1)" ${ti === 0 ? 'disabled' : ''}>${ICONS.up}上移</button>
           <button class="btn-xs" onclick="App.moveTeam(${ti},1)" ${ti === State.data.teamData.length - 1 ? 'disabled' : ''}>${ICONS.down}下移</button>
-          <button class="btn-xs" onclick="App.toggleCollapse('${teamKey}')">${teamToggleIcon}${teamToggleText}</button>
+          <button class="btn-xs collapse-toggle ${teamCollapsed ? 'collapsed' : ''}" data-collapse-key="${teamKey}" onclick="App.toggleCollapse('${teamKey}')">
+            <span class="collapse-icon">${ICONS.chevron}</span><span class="collapse-text">${teamCollapsed ? '展开' : '收起'}</span>
+          </button>
           <button class="btn-xs btn-danger" onclick="App.removeTeam(${ti})">${ICONS.trash}删除</button>
         </div>
       </div>
-      ${teamCollapsed ? '' : `
+      <div data-collapse-content="${teamKey}" style="display:${teamCollapsed ? 'none' : 'block'};">
         <input type="text" value="${esc(team.name)}" oninput="App.setTeamName(${ti},this.value)" />
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
           ${team.chars.slice(1, 4).map((c, idx) => {
             const ci = idx + 1;
             const charKey = `team_${ti}_char_${ci}`;
             const charCollapsed = isCollapsed(charKey);
-            const charToggleIcon = charCollapsed ? ICONS.expand : ICONS.collapse;
-            const charToggleText = charCollapsed ? '展开' : '收起';
             return `<div class="item-card">
               <div class="item-header">
                 <span style="font-size:12px;color:var(--accent);font-weight:600;">${ci + 1}号位主角色</span>
                 <div class="item-actions">
                   <button class="btn-xs" onclick="App.moveTeamChar(${ti},${ci},-1)" ${ci === 1 ? 'disabled' : ''}>${ICONS.up}上移</button>
                   <button class="btn-xs" onclick="App.moveTeamChar(${ti},${ci},1)" ${ci === 3 ? 'disabled' : ''}>${ICONS.down}下移</button>
-                  <button class="btn-xs" onclick="App.toggleCollapse('${charKey}')">${charToggleIcon}${charToggleText}</button>
+                  <button class="btn-xs collapse-toggle ${charCollapsed ? 'collapsed' : ''}" data-collapse-key="${charKey}" onclick="App.toggleCollapse('${charKey}')">
+                    <span class="collapse-icon">${ICONS.chevron}</span><span class="collapse-text">${charCollapsed ? '展开' : '收起'}</span>
+                  </button>
                 </div>
               </div>
-              ${charCollapsed ? '' : `
+              <div data-collapse-content="${charKey}" style="display:${charCollapsed ? 'none' : 'block'};">
                 <div class="item-row">
                   <img src="${c.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_img')" alt="" />
                   <input type="text" value="${esc(c.name)}" oninput="App.setTeamCharName(${ti},${ci},this.value)" onblur="App.matchTeamCharIcon(${ti},${ci},this.value)" style="flex:1;" />
@@ -1192,10 +1209,12 @@ function renderTeamEditor() {
                       </div>
                     </div>`).join('')}
                   ${!c.alts.length ? `<input type="text" value="${esc(c.emptyAltText || '暂无备选')}" oninput="App.setEmptyAltText(${ti},${ci},this.value)" />` : ''}
-                </div>`}
+                </div>
+              </div>
             </div>`;
           }).join('')}
-        </div>`}
+        </div>
+      </div>
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂未添加配队</div>';
 }
