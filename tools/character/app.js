@@ -14,7 +14,7 @@
  *   【JS 模块 8.5】  横向 Tab 栏
  *   【JS 模块 9】    UI 编辑器渲染
  *   【JS 模块 10】   图片上传
- *   【JS 模块 10.3】 字体库
+ *   【JS 模块 10.3】 字体库 (全链路日志强化版)
  *   【JS 模块 10.4】 characters.txt / namecards.txt / character-art.txt 读取
  *   【JS 模块 10.5】 样式图匹配 + 在线存档
  *   【JS 模块 10.6】 图标库匹配
@@ -1296,10 +1296,11 @@ function updateImgXHint() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.3】字体库
+ * 【JS 模块 10.3】字体库 (强化全链路追踪防崩溃版)
  * ========================================================================= */
 let FONT_LIST = [];
 let fontSheetOpen = false;
+let loadedFontFace = null;
 
 async function loadFontList() {
   try {
@@ -1312,6 +1313,7 @@ async function loadFontList() {
     console.warn('字体清单加载失败：', e.message);
   }
 }
+
 function renderFontSheetList() {
   const el = document.getElementById('fontSheetList');
   if (!el) return;
@@ -1333,6 +1335,7 @@ function renderFontSheetList() {
   }
   el.innerHTML = html;
 }
+
 function openFontPicker() {
   if (fontSheetOpen) return;
   fontSheetOpen = true;
@@ -1346,7 +1349,36 @@ function closeFontPicker() {
   document.getElementById('fontSheetBackdrop').classList.remove('show');
   document.getElementById('fontSheet').classList.remove('show');
 }
-let loadedFontFace = null;
+
+/**
+ * 稳健型 DataURL 转 Blob 函数（双重引擎保证解析）
+ */
+async function robustDataUrlToBlob(dataUrl) {
+  try {
+    // 方案A：优先尝试 fetch 直接拉取（C++底层解码，速度极快，不占JS内存）
+    const res = await fetch(dataUrl);
+    return await res.blob();
+  } catch (err1) {
+    console.warn('环境拦截了 fetch(dataURL)，开始切入安全降级分块解码模式...', err1);
+    try {
+      // 方案B：部分微信内置浏览器/老Safari 会拦截 fetch dataURL，改用手动降级方案
+      // 注意：摒弃 String.fromCharCode.apply 这种会直接爆栈的方法，老老实实按字节填装
+      const arr = dataUrl.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+      const b64 = arr[1];
+      const raw = atob(b64); // 仅分配一个等体积大字符串（内存可接受）
+      const len = raw.length;
+      const u8arr = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        u8arr[i] = raw.charCodeAt(i);
+      }
+      return new Blob([u8arr], { type: mime });
+    } catch (err2) {
+      throw new Error(`DataURL解析内存溢出或数据损坏: ${err2.message}`);
+    }
+  }
+}
 
 /* 生成 / 刷新当前会话用的字体 blob URL（短 URL，避免 dataURL 超长导致字体加载失败） */
 async function refreshFontBlobUrl() {
@@ -1356,13 +1388,11 @@ async function refreshFontBlobUrl() {
   }
   if (!State.data.fontData) return;
   try {
-    // 利用 fetch 交给浏览器底层解码 Base64 为 Blob，避开 atob 引起的大内存分配和超出调用栈错误
-    const res = await fetch(State.data.fontData);
-    const blob = await res.blob();
+    const blob = await robustDataUrlToBlob(State.data.fontData);
     _fontBlobUrl = URL.createObjectURL(blob);
   } catch (e) {
-    console.warn('生成字体 blob URL 失败：', e.message);
-    _fontBlobUrl = '';
+    console.error('Blob URL 生成中断：', e);
+    throw new Error(`BlobURL转化中断 (${e.message})`);
   }
 }
 
@@ -1391,51 +1421,89 @@ async function installPreviewFont() {
     await document.fonts.ready;
     return true;
   } catch (e) {
-    console.warn('字体加载失败：', e.message);
-    return false;
+    console.error('字体引擎拒绝接纳文件：', e);
+    // 给抛出去的具体错误（可能是格式不支持或损坏）
+    throw new Error(`字体引擎拒绝接纳文件 (${e.message || '未知报错'})`);
   }
 }
 
+/* 核心：带全链路进度播报和错误捕获的字体选择逻辑 */
 async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelCustomFont');
+  
   if (index === -1) {
     State.data.fontData = ''; State.data.fontFileName = ''; State.data.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
     const oldStyle = document.getElementById('card-preview-font-style');
     if (oldStyle) oldStyle.remove();
     if (labelEl) labelEl.textContent = '默认标准字体';
-    await refreshFontBlobUrl();
+    try { await refreshFontBlobUrl(); } catch(e) {}
     mountPreview(); debouncedSave();
     return;
   }
+  
   const f = FONT_LIST[index];
   if (!f) return;
   if (State.data.fontFileName === f.file && State.data.fontData) {
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     return;
   }
-  if (labelEl) labelEl.textContent = '正在加载 ' + f.name + '…';
+
   try {
-    const res = await fetch('../../shared/fonts/' + encodeURIComponent(f.file));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const buf = await res.arrayBuffer();
+    // ============ [阶段 1] 网络下载 ============
+    if (labelEl) labelEl.textContent = `[1/4] 正在下载 ${f.name}...`;
+    let res;
+    try {
+      res = await fetch('../../shared/fonts/' + encodeURIComponent(f.file));
+    } catch (netErr) {
+      throw new Error(`网络或跨域受阻 (${netErr.message})`);
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status} 文件未找到`);
+    
+    let buf;
+    try {
+      buf = await res.arrayBuffer();
+    } catch (bufErr) {
+      throw new Error(`文件流接收中断 (${bufErr.message})`);
+    }
     const blob = new Blob([buf]);
+
+    // ============ [阶段 2] 转换本地存储格式 ============
+    if (labelEl) labelEl.textContent = `[2/4] 正在转写数据格式...`;
     const dataURL = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
+      reader.onerror = () => reject(new Error('FileReader读取失败(可能文件尺寸超限)'));
       reader.readAsDataURL(blob);
     });
+
     State.data.fontData = dataURL;
     State.data.fontFileName = f.file;
     State.data.fontName = f.name;
-    await refreshFontBlobUrl();
-    const ok = await installPreviewFont();
-    if (labelEl) labelEl.textContent = (ok ? '当前：' : '加载失败：') + f.name;
+
+    // ============ [阶段 3] 拆解大包为 Blob 对象 ============
+    if (labelEl) labelEl.textContent = `[3/4] 正在构建本地沙盒对象...`;
+    await refreshFontBlobUrl(); // 若报错会直接被外层catch捕获
+
+    // ============ [阶段 4] 注册浏览器渲染引擎 ============
+    if (labelEl) labelEl.textContent = `[4/4] 正在注入浏览器渲染引擎...`;
+    await installPreviewFont(); // 若报错会直接被外层catch捕获
+
+    // ============ 成功收尾 ============
+    if (labelEl) labelEl.textContent = '当前：' + f.name;
     mountPreview(); debouncedSave();
-  } catch (e) {
-    if (labelEl) labelEl.textContent = '字体加载失败：' + e.message;
+    
+  } catch (err) {
+    console.error(`[字体加载链路异常] ${f.name}:`, err);
+    if (labelEl) labelEl.textContent = `异常卡住: ${err.message}`;
+    showToast(`字体 [${f.name}] 加载失败: ${err.message}`, 'error');
+    
+    // 如果彻底失败，清空一下残缺状态，免得影响后续体验
+    State.data.fontData = ''; 
+    State.data.fontFileName = ''; 
+    State.data.fontName = '';
+    debouncedSave();
   }
 }
 
@@ -2056,8 +2124,11 @@ async function init() {
   await loadNamecards();
   await loadArtDict();
   await loadFontList();
-  await refreshFontBlobUrl();
-  await installPreviewFont();
+  
+  // 初始化渲染尝试恢复之前的字体
+  try { await refreshFontBlobUrl(); } catch(e) {}
+  try { await installPreviewFont(); } catch(e) {}
+  
   initThumbnails();
   syncInputs();
   renderEditorsByKey();
