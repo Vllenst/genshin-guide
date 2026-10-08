@@ -173,11 +173,13 @@ select {
   background-repeat: no-repeat; background-position: right 12px center;
   background-size: 11px 7px; padding-right: 34px;
 }
-/* 拖动条 */
+/* 拖动条：保留原生轨道 + 主题色填充 */
 input[type="range"] {
-  -webkit-appearance: none; appearance: none;
-  background: transparent; height: 28px; cursor: pointer; margin: 0; outline: none;
   accent-color: var(--accent);
+  cursor: pointer;
+  background: transparent;
+  outline: none;
+  margin: 0;
 }
 
 /* ============================================================
