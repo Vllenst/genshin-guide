@@ -19,6 +19,11 @@
 - 新增目录：`shared/assets/portrait/`（本地立绘）
 - favicon 换成 `favicon.png`
 
+**字体加载修复**：
+- 角色卡 / 视频封面：字体加载机制重写为「fetch → ArrayBuffer → 直接喂给 FontFace」，绕过 blob URL 与超长 dataURL 的兼容性问题
+- 根因：GitHub 上字体文件曾被重命名，导致文件损坏（表现为只有个别字体能加载）
+- 视频封面：@font-face 同步注入 `document.head`，保证 SVG 内文字命中自定义字体
+
 **删除**：
 - `tools/video-cover.html`（已拆分）
 - `shared/assets/characters/standing/`（迁移到 `portrait/`）
