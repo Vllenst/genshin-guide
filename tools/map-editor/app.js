@@ -282,9 +282,11 @@
       var card = document.createElement("div");
       card.className = "item-card";
 
-      var top = document.createElement("div");
-      top.className = "item-header";
+      /* 一行布局：编号 / 头像 / 名字 / 星级 / 删除 */
+      var line = document.createElement("div");
+      line.className = "entry-row";
 
+      /* 编号 */
       var inpOrder = document.createElement("input");
       inpOrder.type = "number"; inpOrder.className = "entry-order";
       inpOrder.value = row.order || "";
@@ -310,8 +312,9 @@
         }
         saveLocal(); render();
       });
-      top.appendChild(inpOrder);
+      line.appendChild(inpOrder);
 
+      /* 缩略图 */
       var thumb = document.createElement("div");
       thumb.className = "entry-thumb";
       if (row.star != null) {
@@ -322,7 +325,7 @@
       var thumbImg = document.createElement("img");
       thumbImg.alt = "";
       thumb.appendChild(thumbImg);
-      top.appendChild(thumb);
+      line.appendChild(thumb);
       makeThumbFor(row, function (url) {
         if (url) {
           thumbImg.src = url;
@@ -330,6 +333,7 @@
         }
       });
 
+      /* 名字 */
       var inpName = document.createElement("input");
       inpName.type = "text"; inpName.className = "entry-name";
       inpName.value = row.name || ""; inpName.placeholder = "中文名";
@@ -347,16 +351,9 @@
         }
         saveLocal(); render();
       });
-      top.appendChild(inpName);
-      card.appendChild(top);
+      line.appendChild(inpName);
 
-      var mid = document.createElement("div");
-      mid.className = "item-row";
-
-      var spacer = document.createElement("div");
-      spacer.style.flex = "1";
-      mid.appendChild(spacer);
-
+      /* 星级（怪物不显示） */
       if (currentTab !== "monsters") {
         var selStar = document.createElement("select");
         selStar.className = "star-select";
@@ -370,9 +367,10 @@
           row.star = parseInt(selStar.value, 10) || 5;
           saveLocal(); render();
         });
-        mid.appendChild(selStar);
+        line.appendChild(selStar);
       }
 
+      /* 删除 */
       var btnDel = document.createElement("button");
       btnDel.type = "button"; btnDel.className = "entry-del btn-xs btn-danger";
       btnDel.innerHTML = ICONS.ui.trash;
@@ -381,9 +379,9 @@
         if (idx >= 0) editorData[currentTab].splice(idx, 1);
         saveLocal(); render(); setStatus("已删除", "ok");
       });
-      mid.appendChild(btnDel);
+      line.appendChild(btnDel);
 
-      card.appendChild(mid);
+      card.appendChild(line);
       entriesEl.appendChild(card);
     });
   }
@@ -527,11 +525,6 @@
       }
     }
 
-    /* 合并策略：
-     *    优先级 1（最高）：本地图（local:true）→ 保留，占用中文名
-     *    优先级 2：Amber 里有的中文名（没被本地图占用）→ 用 Amber 的
-     *    优先级 3（最低）：Amber 里没有、字典里已有的 → 保留
-     */
     setStatus("正在合并数据…");
     ALL_TYPES.forEach(function (type) {
       var merged = {};
