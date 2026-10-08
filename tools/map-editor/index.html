@@ -4,7 +4,7 @@
      图标字典编辑器 · index.html
      =========================================================================
      HTML 模块导航：
-       【HTML 模块 1】 head / 资源引用 / 样式
+       【HTML 模块 1】 head / 资源引用
        【HTML 模块 2】 分类 Tab + 操作按钮
        【HTML 模块 3】 条目列表容器
        【HTML 模块 4】 粘贴 URL 弹窗
@@ -12,7 +12,7 @@
        【HTML 模块 6】 JS 引用
      ========================================================================= -->
 <head>
-<!-- 【HTML 模块 1】head / 资源引用 / 样式 -->
+<!-- 【HTML 模块 1】head / 资源引用 -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2EFEA">
@@ -25,22 +25,22 @@
 <!-- 【HTML 模块 2】分类 Tab + 操作按钮 -->
 <div class="sticky-head">
   <div class="sticky-inner">
-    <nav class="tabs">
-      <button class="tab active" data-tab="characters">角色</button>
-      <button class="tab" data-tab="artifacts">圣遗物</button>
-      <button class="tab" data-tab="weapons">武器</button>
-      <button class="tab" data-tab="monsters">怪物</button>
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="characters">角色</button>
+      <button class="tab-btn" data-tab="artifacts">圣遗物</button>
+      <button class="tab-btn" data-tab="weapons">武器</button>
+      <button class="tab-btn" data-tab="monsters">怪物</button>
     </nav>
 
     <div class="actions-group">
       <div class="actions-row">
-        <button type="button" class="btn primary" id="btnSync"><span class="btn-icon"></span>从 Amber 同步</button>
-        <button type="button" class="btn" id="btnPaste"><span class="btn-icon"></span>粘贴 URL</button>
+        <button type="button" class="ios-btn-fill" id="btnSync"><span class="btn-icon"></span>从 Amber 同步</button>
+        <button type="button" id="btnPaste"><span class="btn-icon"></span>粘贴 URL</button>
       </div>
       <div class="actions-row">
-        <button type="button" class="btn" id="btnLoad"><span class="btn-icon"></span>载入</button>
-        <button type="button" class="btn" id="btnExport"><span class="btn-icon"></span>导出</button>
-        <button type="button" class="btn danger" id="btnClear"><span class="btn-icon"></span>清空</button>
+        <button type="button" id="btnLoad"><span class="btn-icon"></span>载入</button>
+        <button type="button" id="btnExport"><span class="btn-icon"></span>导出</button>
+        <button type="button" class="btn-danger" id="btnClear"><span class="btn-icon"></span>清空</button>
       </div>
     </div>
   </div>
@@ -63,8 +63,8 @@
     <div class="modal-hint">每行一个完整 URL，程序自动提取图标名并查 Amber 中文名。</div>
     <textarea id="pasteArea" placeholder="https://api.lunaris.moe/data/assets/avataricon/UI_AvatarIcon_SkirkNew.webp"></textarea>
     <div class="modal-actions">
-      <button type="button" class="btn" id="modalCancel">取消</button>
-      <button type="button" class="btn primary" id="modalConfirm">解析并添加</button>
+      <button type="button" id="modalCancel">取消</button>
+      <button type="button" class="ios-btn-fill" id="modalConfirm">解析并添加</button>
     </div>
   </div>
 </div>
