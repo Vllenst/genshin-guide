@@ -24,18 +24,12 @@
   <section>
     <div class="ios-section-header">画布</div>
     <div class="ios-group">
-      <div class="row2">
-        <div>
-          <div class="ios-field">输出分辨率</div>
-          <div class="readonly-text">2560 × 1440（2K）</div>
-        </div>
-        <div>
-          <div class="ios-field">背景图</div>
-          <div class="file-picker">
-            <label class="file-btn">上传<input type="file" id="collectionBgFile" accept="image/*"></label>
-            <span class="file-picker-name" id="collectionBgName">未选择文件</span>
-          </div>
-        </div>
+      <div class="ios-field" style="padding:10px 10px 0 10px;">输出分辨率</div>
+      <div class="readonly-text" style="margin:10px;">2560 × 1440（2K）</div>
+      <div class="ios-field" style="padding:0 10px 0 10px;">背景图</div>
+      <div class="file-picker" style="margin:10px;">
+        <label class="file-btn">上传<input type="file" id="collectionBgFile" accept="image/*"></label>
+        <span class="file-picker-name" id="collectionBgName">未选择文件</span>
       </div>
     </div>
   </section>
@@ -55,10 +49,11 @@
   <section>
     <div class="ios-section-header">文字内容</div>
     <div class="ios-group">
-      <label class="ios-field">主标题
+      <label class="ios-field" style="padding:10px 10px 0 10px;">主标题
         <textarea rows="2" id="collectionTitle" placeholder="输入合集主标题" oninput="App.setCollection('title', this.value)"></textarea>
       </label>
-      <label class="ios-field">副标题
+      <label class="ios-field" style="padding:10px;">
+        副标题
         <textarea rows="2" id="collectionSubtitle" placeholder="输入合集副标题" oninput="App.setCollection('subtitle', this.value)"></textarea>
       </label>
     </div>
