@@ -37,8 +37,8 @@ genshin-guide/
 │   └── tier.html         角色梯队（待拆）
 │
 └── shared/               共享资源
+    ├── theme.css         共享主题变量 + 通用控件
     ├── ui-icons.js       共享 UI 图标库
-    ├── theme.css         共享主题
     ├── gi-icons/         游戏图标系统
     ├── data/             纯文本数据
     ├── fonts/            字体库
@@ -73,6 +73,8 @@ genshin-guide/
 - 导出 4K PNG / JSON 配置
 - 载入在线存档
 
+**编辑界面：** 预览区在上，横向胶囊 Tab 切换编辑区（外观样式 / 立绘区 / 武器区 / 圣遗物区 / 天赋区 / 词条区 / 面板区 / 命座区 / 配队区）。点预览图可隐藏浮动按钮（导出 / 导入 / 清空）。
+
 ---
 
 ## 🎨 图标字典编辑器
@@ -94,9 +96,10 @@ genshin-guide/
 
 | 素材 | 来源 |
 |---|---|
-| 立绘 | shared/assets/characters/standing/ |
-| 元素图 | shared/assets/characters/element/ |
-| 名片图 / 武器 / 圣遗物 / 怪物 / 角色头像 | Lunaris 外链 |
+| 立绘 | `shared/data/character-art.txt` 字典（官方外链为主，个别本地文件放 `shared/assets/portrait/`） |
+| 元素图 | `shared/assets/characters/element/` |
+| 名片图 | `shared/data/namecards.txt` 字典（Lunaris 外链） |
+| 角色头像 / 武器 / 圣遗物 / 怪物图标 | `shared/gi-icons/icon-dict.js`（Lunaris 外链） |
 
 ---
 
@@ -114,7 +117,7 @@ genshin-guide/
 ## 📝 备注
 
 - 中文名查询：Project Amber（gi.yatta.moe）
-- 主题系统：通过 `shared/theme.css` 统一管理
+- 主题系统：通过 `shared/theme.css` 统一管理（CSS 变量 + 通用控件）
 - 所有编辑数据存在浏览器本地（IndexedDB）
 - **UI 图标**：来自 Phosphor Icons
   https://yesicon.app/zh-Hans/ph
