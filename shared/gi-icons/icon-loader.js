@@ -1,9 +1,10 @@
 /* ============================================================
  * 图标加载器 · 全站共享
- * 三种模式：
- *   - 本地：key 是文件名（如 UI_AvatarIcon_Traveler.webp），条目带 local: true，从 icons/ 根目录加载
- *   - URL ：key 以 http 开头，直接用
- *   - ID  ：key 是图标全名（如 UI_AvatarIcon_HuTao），靠 config[type].prefix 拼 URL
+ * 四种模式（按优先级从高到低）：
+ *   1. 本地：条目带 local: true，key 是文件名（如 UI_AvatarIcon_Traveler.webp），从 icons/ 根目录加载
+ *   2. 覆盖：条目带 url 字段，直接使用该 url
+ *   3. URL ：key 以 http 开头，直接用
+ *   4. ID  ：key 是图标全名（如 UI_AvatarIcon_HuTao），靠 config[type].prefix 拼 URL
  * ============================================================ */
 (function () {
   "use strict";
@@ -130,11 +131,13 @@
     if (!dict || !dict[type] || !dict[type][key]) return "";
     var item = dict[type][key];
 
-    /* 1. 本地：从 icons/ 根目录加载 */
+    /* 1. 本地：从 icons/ 根目录加载（优先级最高） */
     if (item.local) return ICON_BASE + key;
-    /* 2. 完整 URL：直接用 */
+    /* 2. 单条目 URL 覆盖 */
+    if (item.url) return item.url;
+    /* 3. 完整 URL：直接用 */
     if (/^https?:\/\//i.test(key)) return key;
-    /* 3. 全名 + 前缀（prefix 已缩短，如 https://.../avataricon/） */
+    /* 4. 全名 + 前缀（prefix 已缩短，如 https://.../avataricon/） */
     var cfg = dict.config && dict.config[type];
     if (cfg && cfg.prefix) return cfg.prefix + key + (cfg.ext || "");
     return "";
