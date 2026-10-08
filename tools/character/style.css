@@ -5,7 +5,7 @@
  *          浮动按钮 / 浮动工具栏 / 横向 Tab / 预览卡片 / 只读文本 /
  *          底部 Dock / Toast / 确认弹窗 / 字体抽屉 / 图标）已全部抽到
  *          shared/theme.css
- * 本文件只保留：布局 / 预览区 / Tab 内容 / 命座网格 / 色彩选择
+ * 本文件只保留：布局 / 预览区 / Tab 内容 / 命座网格 / 色彩选择 / 展开收起动画
  * ========================================================================= */
 
 /* 【CSS 模块 1】主容器布局 */
@@ -149,4 +149,19 @@
 .slider-box input[type="number"] {
   width: 82px; height: 32px; text-align: center;
   padding: 0 6px; font-size: 12px; border-radius: var(--radius-sm);
+}
+
+/* 【CSS 模块 8】展开 / 收起按钮：箭头旋转动画
+ *   展开中（无 .collapsed）→ 箭头朝上（点击收起）
+ *   已收起（.collapsed）  → 箭头朝下（点击展开）
+ * ------------------------------------------------------------ */
+.collapse-toggle .collapse-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform: rotate(0deg);
+}
+.collapse-toggle:not(.collapsed) .collapse-icon {
+  transform: rotate(180deg) !important;
 }
