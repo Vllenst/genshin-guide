@@ -20,7 +20,7 @@
  * 【JS 模块 1】状态
  * ========================================================================= */
 const collectionState = {
-  W: 2560, H: 1440,         /* 固定 2K */
+  W: 2560, H: 1440,
   bg: '', bgLoadedImg: null,
   fontData: '', fontName: '', fontFileName: '',
   title: '', subtitle: ''
@@ -163,6 +163,8 @@ async function renderCollection() {
   if (!box) return;
   let canvas = box.querySelector('canvas');
   if (!canvas) { canvas = document.createElement('canvas'); box.appendChild(canvas); }
+  /* 等字体加载完再画，避免预览用 fallback 字体 */
+  if (document.fonts) { try { await document.fonts.ready; } catch (e) {} }
   await drawCollectionCanvas(canvas);
 }
 
@@ -187,7 +189,9 @@ async function installFont() {
     const loaded = await ff.load();
     document.fonts.add(loaded);
     loadedFontFace = loaded;
-  } catch (e) {}
+  } catch (e) {
+    console.warn('字体加载失败：', e.message);
+  }
 }
 
 function openFontPicker() {
@@ -397,7 +401,7 @@ window.App = App;
   await loadFontList();
   await loadPersist();
 
-  /* 强制 W/H = 2K（防止旧 IDB 数据残留其他分辨率） */
+  /* 强制 W/H = 2K */
   collectionState.W = 2560;
   collectionState.H = 1440;
 
