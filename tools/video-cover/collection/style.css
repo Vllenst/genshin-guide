@@ -1,8 +1,5 @@
 /* =========================================================================
  * 合集封面 · style.css
- * =========================================================================
- * 通用控件已抽到 shared/theme.css
- * 本文件只保留 collection 专属布局
  * ========================================================================= */
 
 /* 【CSS 模块 1】页面基础 */
@@ -11,7 +8,6 @@ body {
   overflow-x: hidden;
 }
 
-/* 图标插槽 */
 .icon-slot {
   display: inline-flex;
   align-items: center;
@@ -21,7 +17,7 @@ body {
   flex-shrink: 0;
 }
 
-/* 【CSS 模块 2】预览区（sticky） */
+/* 【CSS 模块 2】预览区 */
 .preview-sticky {
   position: sticky; top: 0; z-index: 35;
   background: var(--bg-base);
@@ -70,6 +66,18 @@ body {
 .font-label {
   flex: 1; min-width: 0; font-size: 13px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* 只读文本（用于显示固定分辨率） */
+.readonly-text {
+  height: var(--ctl-h);
+  display: flex; align-items: center;
+  padding: 0 12px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 /* 【CSS 模块 5】文件选择器 */
