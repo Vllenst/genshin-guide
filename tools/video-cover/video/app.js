@@ -749,7 +749,7 @@ function renderFloatList() {
 }
 
 /* =========================================================================
- * 【JS 模块 12】字体 (内存直读终极版)
+ * 【JS 模块 12】字体
  * ========================================================================= */
 async function loadFontList() {
   try {
@@ -761,9 +761,6 @@ async function loadFontList() {
   } catch (e) {}
 }
 
-/**
- * 将 DataURL 解析为浏览器的 ArrayBuffer，并绕过 blob，直接加载字体！
- */
 async function installFont() {
   if (!state.fontData || !window.FontFace) return false;
   try {
@@ -772,14 +769,11 @@ async function installFont() {
       loadedFontFace = null;
     }
 
-    // [绝招] 步骤1：直接把 Base64 解成纯纯的内存二进制（ArrayBuffer）
     let buffer;
     try {
-      // 首选使用 fetch 极速提取底层数据（如果支持）
       const res = await fetch(state.fontData);
       buffer = await res.arrayBuffer();
     } catch (e) {
-      // 退路：如果严格模式不让 fetch dataURL，手动切分压进 Uint8Array
       const arr = state.fontData.split(',');
       const raw = atob(arr[1]);
       buffer = new Uint8Array(raw.length);
@@ -788,13 +782,11 @@ async function installFont() {
       }
     }
 
-    // [绝招] 步骤2：不使用任何 URL，把内存数据（Buffer）直接递给浏览器字体引擎
     const ff = new FontFace(state.fontName, buffer);
     const loaded = await ff.load();
     document.fonts.add(loaded);
     loadedFontFace = loaded;
 
-    // 为保证 SVG 内的文字不受环境影响，强行注入一份 @font-face 在 document.head
     let styleEl = document.getElementById('video-preview-font-style');
     if (!styleEl) {
       styleEl = document.createElement('style');
@@ -835,13 +827,10 @@ function closeFontPicker() {
   document.getElementById('fontSheet').classList.remove('show');
 }
 
-/**
- * 字体选择主逻辑（带完整的防断点、防崩溃安全锁）
- */
 async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelVideoFont');
-  
+
   if (index === -1) {
     state.fontData = ''; state.fontFileName = ''; state.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
@@ -851,7 +840,7 @@ async function selectFont(index) {
     mountPreview(); persist();
     return;
   }
-  
+
   const f = FONT_LIST[index];
   if (!f) return;
   if (state.fontFileName === f.file && state.fontData) {
@@ -860,7 +849,6 @@ async function selectFont(index) {
   }
 
   try {
-    // ================== 阶段 1：下载内存流 ==================
     if (labelEl) labelEl.textContent = `[1/3] 正在下载二进制流...`;
     let res;
     try {
@@ -868,17 +856,16 @@ async function selectFont(index) {
     } catch (netErr) {
       throw new Error(`跨域或网络受阻 (${netErr.message})`);
     }
-    
+
     if (!res.ok) throw new Error(`HTTP ${res.status} 文件未找到`);
-    
+
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
       throw new Error('服务器返回网页而非字体(可能是404)');
     }
-    
+
     const buf = await res.arrayBuffer();
 
-    // ================== 阶段 2：内核级硬解析 ==================
     if (labelEl) labelEl.textContent = `[2/3] 正在注入字体渲染引擎...`;
     try {
       const ff = new FontFace(f.name, buf);
@@ -890,9 +877,8 @@ async function selectFont(index) {
       throw new Error(`该格式无法识别或文件损坏 (${fontErr.message || 'Font Engine Refused'})`);
     }
 
-    // ================== 阶段 3：固化存档 ==================
     if (labelEl) labelEl.textContent = `[3/3] 正在固化存档数据...`;
-    
+
     let ext = f.file.split('.').pop().toLowerCase();
     let mime = 'font/ttf';
     if (ext === 'otf') mime = 'font/otf';
@@ -910,7 +896,7 @@ async function selectFont(index) {
     state.fontData = dataURL;
     state.fontFileName = f.file;
     state.fontName = f.name;
-    
+
     let styleEl = document.getElementById('video-preview-font-style');
     if (!styleEl) {
       styleEl = document.createElement('style');
@@ -921,14 +907,14 @@ async function selectFont(index) {
 
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     mountPreview(); persist();
-    
+
   } catch (err) {
     console.error(`[字体加载失败] ${f.name}:`, err);
     if (labelEl) labelEl.textContent = `异常卡住: ${err.message}`;
     alert(`字体 [${f.name}] 加载失败: ${err.message}`);
-    
-    state.fontData = ''; 
-    state.fontFileName = ''; 
+
+    state.fontData = '';
+    state.fontFileName = '';
     state.fontName = '';
     persist();
   }
@@ -953,6 +939,7 @@ let persistTimer = null;
 function persist() {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(async () => {
+    persistTimer = null;
     try {
       const db = await openIDB();
       const tx = db.transaction(IDB_STORE, 'readwrite');
@@ -1037,9 +1024,22 @@ function importConfig(input) {
   input.value = '';
 }
 
-function clearAll() {
+/**
+ * 清空：清掉 pending 的 persist，清 IndexedDB，然后 reload。
+ * 之前只 reload 没清 IDB → 重载后又从 IDB 读回老数据，看起来"没清掉"。
+ */
+async function clearAll() {
   if (!confirm('确定清空视频封面所有配置吗？')) return;
-  location.reload();
+  try {
+    if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; }
+    const db = await openIDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete('video_state');
+    tx.oncomplete = () => location.reload();
+    tx.onerror = () => location.reload();
+  } catch (e) {
+    location.reload();
+  }
 }
 
 /* =========================================================================
@@ -1246,7 +1246,13 @@ window.App = App;
   await loadFontList();
   await loadPersist();
 
-  // 初始化恢复上次选择的字体
+  /* 补固定文案：首次打开时（或上次数据里这两项为空时），
+     character / boss 模式要把固定文案填进 state，否则 SVG 里主标题和胶囊都是空的。 */
+  if (state.guideType === 'character' || state.guideType === 'boss') {
+    if (!state.mainText) state.mainText = MODE_MAIN_TEXTS[state.guideType];
+    if (!state.capText) state.capText = MODE_CAP_TEXT[state.guideType];
+  }
+
   try { await installFont(); } catch(e) {}
 
   const logoSelect = document.getElementById('logoSelect');
