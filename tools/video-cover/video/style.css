@@ -28,7 +28,7 @@ body {
   margin: 0 auto;
 }
 
-/* 预览框：video 里是 16:9 自适应高度，不强制黑色底（theme 默认黑底保留） */
+/* 预览框：video 里是 16:9 自适应高度 */
 .preview-frame {
   width: 100%;
   height: auto;
@@ -40,6 +40,14 @@ body {
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
+}
+
+/* 关键：约束内嵌 SVG 缩放到容器大小
+   否则 SVG 会按自身的 width=3840 height=2160 撑爆容器，只看到左上角 */
+#svgPreviewHost > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* 【CSS 模块 3】表单布局 */
