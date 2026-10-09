@@ -2,180 +2,29 @@
  * 原神一图流生成器 · app.js
  * =========================================================================
  * 模块导航（搜索 "【JS 模块 N】" 快速跳转）：
- *   【JS 模块 1】    图标常量
- *   【JS 模块 2】    全局常量（尺寸 / 布局 LAYOUT / 元素色 / Tab 定义）
- *   【JS 模块 3】    State 全局状态 + IndexedDB 持久化
- *   【JS 模块 4】    Toast 提示 + Confirm 弹窗
- *   【JS 模块 5】    通用工具函数
- *   【JS 模块 5.5】  SVG 图标 viewBox 收紧
- *   【JS 模块 6】    SVG 绘制辅助
- *   【JS 模块 7】    SVG 图层构建
- *   【JS 模块 8】    预览挂载 + 字段增量更新
- *   【JS 模块 8.5】  横向 Tab 栏
- *   【JS 模块 9】    UI 编辑器渲染
- *   【JS 模块 10】   图片上传
- *   【JS 模块 10.3】 字体库
- *   【JS 模块 10.4】 数据字典读取
- *   【JS 模块 10.5】 样式图匹配 + 在线存档
- *   【JS 模块 10.6】 图标库匹配
- *   【JS 模块 11】   数据归一化
- *   【JS 模块 12】   导出 / 导入 / 清空（含图片剥离与自动重匹配）
- *   【JS 模块 13】   UI 交互（字段 / 增删改 / 移动）
- *   【JS 模块 14】   App 接口
- *   【JS 模块 15】   初始化
+ *   【JS 模块 1】  Toast 提示 + Confirm 弹窗
+ *   【JS 模块 2】  预览挂载 + 字段增量更新
+ *   【JS 模块 3】  横向 Tab 栏
+ *   【JS 模块 4】  UI 编辑器渲染
+ *   【JS 模块 5】  图片上传
+ *   【JS 模块 6】  字体库
+ *   【JS 模块 7】  数据字典读取
+ *   【JS 模块 8】  样式图匹配 + 在线存档
+ *   【JS 模块 9】  图标库匹配
+ *   【JS 模块 10】 数据归一化
+ *   【JS 模块 11】 导出 / 导入 / 清空（含图片剥离与自动重匹配）
+ *   【JS 模块 12】 UI 交互（字段 / 增删改 / 移动）
+ *   【JS 模块 13】 App 接口
+ *   【JS 模块 14】 初始化
+ * =========================================================================
+ * 依赖：
+ *   consts.js —— 常量 / LAYOUT / State / 工具函数 / IndexedDB
+ *   svg.js    —— SVG 绘制 / 排版 / buildSVG / tightenAllIconViewBoxes
+ *   shared/ui-icons.js / shared/gi-icons/*.js
  * ========================================================================= */
 
 /* =========================================================================
- * 【JS 模块 1】图标
- * ========================================================================= */
-const SHARED = window.ICONS || { ui: {}, element: {}, artifact: {}, nav: {}, app: {} };
-
-const ICONS = {
-  up: SHARED.ui.arrowUp || '',
-  down: '<span class="icon-flip-y">' + (SHARED.ui.arrowUp || '') + '</span>',
-  trash: SHARED.ui.trash || '',
-  chevron: SHARED.ui.chevronDown || '',
-  plus: SHARED.ui.plus || '',
-  export: SHARED.ui.export || '',
-  import: SHARED.ui.import || ''
-};
-
-const ELEMENT_ICONS = SHARED.element || {};
-const ARTIFACT_ICON_PATHS = SHARED.artifact || {};
-
-const PLUS_ICON_PATH = 'M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5z';
-
-/* =========================================================================
- * 【JS 模块 2】全局常量
- * ========================================================================= */
-const SVG_W = 1280;
-const SVG_H = 720;
-const EXPORT_SCALE = 3;
-const IDB_KEY = 'genshin_card_db_v5';
-const STORE_NAME = 'card_store';
-const WEAPON_ORDER = ['graduate', 'optional', 'newbie'];
-const WEAPON_MAX = 4;
-
-const LAYOUT = {
-  left: { x: 20, y: 20, w: 340, h: 680 },
-  right: { x: 380, y: 20, w: 880, h: 680 },
-  title: { offX: 20, offY: 20, fs: 15, dotR: 4, dotGap: 11 },
-  padX: 20, bottomPad: 15, contentOffsetY: 42.5,
-  layers: {
-    weapon: { y: 20, h: 135 },
-    row2: { y: 165, h: 120 },
-    artifact: { x: 380, w: 580 },
-    talent: { x: 970, w: 290 },
-    mid: {
-      y: 295, h: 175,
-      stat: { x: 380, w: 290 },
-      panel: { x: 680, w: 280 },
-      cons: { x: 970, w: 290 }
-    },
-    team: { y: 480, h: 220 }
-  },
-  iconSize: 55, iconGap: 10, doubleGap: 2,
-  weaponSlotY: 62.5, artifactSlotY: 207.5,
-  weaponLabelOffsetY: 10, weaponLabelFs: 12,
-  stat: { boxW: 76, boxH: 62, gap: 10, subH: 45.5, subGap: 10, iconSize: 12, labelFs: 12, subLabelFs: 12 },
-  talent: { colGap: 10, boxH: 62.5, labelFs: 12, valueFs: 20 },
-  panel: { cols: 2, rows: 3, cellW: 115, cellH: 32.5, gapX: 10, gapY: 10, innerPadX: 10, labelFs: 12, valueFs: 12 },
-  cons: { boxW: 120, boxH: 32.5, gapX: 10, gapY: 10, seqFs: 12, descFs: 10 },
-  team: { w: 270, gap: 15, mainSize: 35, mainGap: 20, altSize: 25, altGap: 10, altRowGap: 5, nameFs: 12, nameOffsetY: 16, mainOffsetY: 27, altOffsetY: 67, altLabelPadL: 20, altRangePadR: 20 },
-  plusSize: 14, plusStrokeW: 1.5,
-  charInfo: { padL: 20, padB: 20, lineGap: 15 },
-  radius: { panel: 12, inner: 6, slotFactor: 0.15 },
-  labelColor: '#FFE898',
-  innerBoxFill: 'rgba(255,255,255,.15)'
-};
-const MID_CONTENT_Y = LAYOUT.layers.mid.y + LAYOUT.contentOffsetY;
-
-const elementColors = [
-  ['火', '#EC4923', 'fire'], ['水', '#498FCC', 'water'], ['风', '#359697', 'wind'],
-  ['雷', '#6957C2', 'thunder'], ['草', '#66AD16', 'grass'], ['冰', '#35AACC', 'ice'],
-  ['岩', '#CC9046', 'rock'], ['无', '#939393', 'none']
-];
-
-const FONT_FAMILY_DEFAULT = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
-const FONT_FAMILY_CUSTOM = 'CardCustomFont, "PingFang SC", "Microsoft YaHei", sans-serif';
-const WEAPON_LABELS = { graduate: '毕业', optional: '可选', newbie: '新手' };
-const PANEL_PRIMARY_LABELS = { hp: '生命值', atk: '攻击力', def: '防御力' };
-const PANEL_PRIMARY_KEYS = ['hp', 'atk', 'def'];
-const PANEL_EMPTY_TEXT = '任意';
-const EMPTY_FILL = 'rgba(255,255,255,.5)';
-
-const TAB_DEFS = [
-  { key: 'style', label: '外观样式' },
-  { key: 'base', label: '立绘区' },
-  { key: 'weapon', label: '武器区' },
-  { key: 'artifact', label: '圣遗物区' },
-  { key: 'talent', label: '天赋区' },
-  { key: 'stats', label: '词条区' },
-  { key: 'panel', label: '面板区' },
-  { key: 'cons', label: '命座区' },
-  { key: 'team', label: '配队区' }
-];
-let currentTab = 'style';
-
-let CHAR_NAME_TO_ORDER = {};
-let NAMECARD_DICT = {};
-let ART_DICT = {};
-
-/* =========================================================================
- * 【JS 模块 3】State 与持久化
- * ========================================================================= */
-const State = {
-  data: {
-    charName: '', version: '', date: '', author: '烤吃虎鱼LW',
-    imgX: 0, theme: '#939393',
-    charImg: '', charImgMeta: null, charImgDeleted: false, charImgManual: false,
-    bgImg: '', bgImgDeleted: false, bgImgManual: false,
-    nameBgImg: '', nameBgImgMeta: null, nameBgImgDeleted: false, nameBgImgManual: false,
-    fontData: '', fontName: '', fontFileName: '',
-    weaponData: { graduate: [], optional: [], newbie: [] },
-    artifactData: [],
-    constellationData: Array.from({ length: 6 }, () => ({ active: false, desc: '' })),
-    sandMain: '', gobMain: '', cirMain: '', subStats: '',
-    talentA: '', talentE: '', talentQ: '',
-    panel: { primaryKey: 'hp', primaryValue: '', cr: '', cd: '', em: '', er: '' },
-    teamCoreImg: '', teamCoreImgManual: false, teamData: []
-  }
-};
-
-let saveTimer = null;
-function openDatabase() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_KEY, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function saveStateToIDB() {
-  try {
-    const db = await openDatabase();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).put(State.data, 'current_state');
-  } catch (e) {}
-}
-function debouncedSave() {
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { saveTimer = null; saveStateToIDB(); }, 500);
-}
-async function loadStateFromIDB() {
-  try {
-    const db = await openDatabase();
-    return new Promise(resolve => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const req = tx.objectStore(STORE_NAME).get('current_state');
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve(null);
-    });
-  } catch (e) { return null; }
-}
-
-/* =========================================================================
- * 【JS 模块 4】Toast 与 Confirm
+ * 【JS 模块 1】Toast 与 Confirm
  * ========================================================================= */
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
@@ -212,625 +61,12 @@ function showConfirm(title, message) {
 }
 
 /* =========================================================================
- * 【JS 模块 5】工具函数
- * ========================================================================= */
-function esc(v) {
-  return String(v ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-function darken(hex, amt) {
-  if (!hex || typeof hex !== 'string') return '#333333';
-  let h = hex.startsWith('#') ? hex.slice(1) : hex;
-  if (h.length === 3) h = h.split('').map(c => c + c).join('');
-  if (h.length !== 6) return '#333333';
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  if ([r, g, b].some(v => isNaN(v))) return '#333333';
-  const rr = Math.max(0, r - amt);
-  const gg = Math.max(0, g - amt);
-  const bb = Math.max(0, b - amt);
-  return `#${rr.toString(16).padStart(2,'0')}${gg.toString(16).padStart(2,'0')}${bb.toString(16).padStart(2,'0')}`;
-}
-function placeholder(label) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="100" y="112" font-size="52" text-anchor="middle" fill="#666" font-family="sans-serif">${esc(label)}</text></svg>`;
-  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-}
-function formatBytes(bytes) {
-  if (!bytes) return '';
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
-}
-function moveItem(arr, from, dir) {
-  const to = from + dir;
-  if (to < 0 || to >= arr.length) return false;
-  [arr[from], arr[to]] = [arr[to], arr[from]];
-  return true;
-}
-function padOrder(n) { return String(n).padStart(3, '0'); }
-function themeToElementName() {
-  var t = (State.data.theme || '').toLowerCase();
-  for (var i = 0; i < elementColors.length; i++) {
-    if (elementColors[i][1].toLowerCase() === t) return elementColors[i][0];
-  }
-  return '';
-}
-async function urlExists(url) {
-  try {
-    var res = await fetch(url, { method: 'HEAD' });
-    if (res.ok) return true;
-    if (res.status === 405) {
-      var res2 = await fetch(url);
-      return res2.ok;
-    }
-    return false;
-  } catch (e) {
-    try { var res3 = await fetch(url); return res3.ok; } catch (e2) { return false; }
-  }
-}
-function loadImageMeta(url) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
-}
-
-/* =========================================================================
- * 【JS 模块 5.5】图标 viewBox 收紧
- * ========================================================================= */
-function tightenSvgToSquareViewBox(svgString) {
-  const ns = 'http://www.w3.org/2000/svg';
-  const host = document.createElementNS(ns, 'svg');
-  host.style.position = 'absolute'; host.style.left = '-9999px'; host.style.top = '-9999px';
-  host.style.width = '1px'; host.style.height = '1px'; host.style.visibility = 'hidden';
-  host.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(host);
-  const wrap = document.createElementNS(ns, 'svg');
-  wrap.innerHTML = svgString;
-  host.appendChild(wrap);
-  const paths = wrap.querySelectorAll('path');
-  if (!paths.length) { host.remove(); return svgString; }
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  paths.forEach(p => {
-    let b;
-    try { b = p.getBBox(); } catch (e) { return; }
-    if (!b || (b.width === 0 && b.height === 0)) return;
-    minX = Math.min(minX, b.x); minY = Math.min(minY, b.y);
-    maxX = Math.max(maxX, b.x + b.width); maxY = Math.max(maxY, b.y + b.height);
-  });
-  host.remove();
-  if (!isFinite(minX) || !isFinite(minY)) return svgString;
-  const w = maxX - minX, h = maxY - minY, side = Math.max(w, h);
-  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-  const nx = cx - side / 2, ny = cy - side / 2;
-  const fmt = n => +n.toFixed(4);
-  const vb = `${fmt(nx)} ${fmt(ny)} ${fmt(side)} ${fmt(side)}`;
-  return svgString.replace(/viewBox="[^"]*"/, `viewBox="${vb}"`);
-}
-function tightenAllIconViewBoxes() {
-  Object.keys(ELEMENT_ICONS).forEach(k => { ELEMENT_ICONS[k] = tightenSvgToSquareViewBox(ELEMENT_ICONS[k]); });
-  document.querySelectorAll('svg.icon').forEach(svg => {
-    const outer = svg.outerHTML;
-    const fixed = tightenSvgToSquareViewBox(outer);
-    if (fixed !== outer) {
-      const tpl = document.createElement('div');
-      tpl.innerHTML = fixed;
-      const next = tpl.firstElementChild;
-      if (next) svg.replaceWith(next);
-    }
-  });
-}
-
-/* =========================================================================
- * 【JS 模块 6】SVG 绘制辅助
- * ========================================================================= */
-function measureTextWidth(content, fontSize) {
-  content = String(content || '');
-  const family = State.data.fontData ? FONT_FAMILY_CUSTOM : FONT_FAMILY_DEFAULT;
-  const canvas = measureTextWidth.canvas || (measureTextWidth.canvas = document.createElement('canvas'));
-  const ctx = canvas.getContext('2d');
-  ctx.font = `${fontSize}px ${family}`;
-  return ctx.measureText(content).width;
-}
-function fitSize(textContent, maxW, base, min = 8) {
-  textContent = String(textContent || '');
-  if (!textContent) return base;
-  let size = base;
-  while (size > min) { if (measureTextWidth(textContent, size) <= maxW) break; size -= 1; }
-  return size;
-}
-function text(x, y, content, size, opts = {}) {
-  const fill = opts.fill || '#fff';
-  const anchor = opts.anchor || 'start';
-  const weight = opts.weight || '400';
-  const opacity = opts.opacity == null ? 1 : opts.opacity;
-  const baseline = opts.baseline || 'middle';
-  const parts = [
-    `x="${x}"`, `y="${y}"`, `fill="${fill}"`, `font-size="${size}"`,
-    `font-weight="${weight}"`, `text-anchor="${anchor}"`,
-    `dominant-baseline="${baseline}"`, `opacity="${opacity}"`
-  ];
-  if (opts.stroke) {
-    parts.push(`stroke="${opts.stroke}"`, `stroke-width="${opts.strokeWidth || 0}"`,
-      `stroke-linejoin="round"`, `stroke-linecap="round"`, `paint-order="stroke fill"`);
-  }
-  if (opts.extra) parts.push(opts.extra);
-  if (opts.field) parts.push(`data-field="${esc(opts.field)}"`);
-  if (opts.fit) {
-    parts.push(`data-fit-max-w="${opts.fit.maxW}"`, `data-fit-base="${opts.fit.base}"`, `data-fit-min="${opts.fit.min || 8}"`);
-  }
-  return `<text ${parts.join(' ')}>${esc(content)}</text>`;
-}
-function rect(x, y, w, h, fill, stroke = '', sw = 0, rx = 8, opacity = 1, clip = '') {
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" opacity="${opacity}" ${stroke ? `stroke="${stroke}" stroke-width="${sw}"` : ''}${clip ? ` clip-path="url(#${clip})"` : ''}/>`;
-}
-function image(href, x, y, w, h, fit = 'xMidYMid slice', extra = '') {
-  return `<image href="${href}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${fit}" ${extra}/>`;
-}
-function wrapTextLines(content, maxW, size, maxLines) {
-  const chars = Array.from(String(content || ''));
-  if (!chars.length) return [];
-  const lines = [];
-  let line = '';
-  chars.forEach(ch => {
-    const next = line + ch;
-    if (!line || measureTextWidth(next, size) <= maxW) { line = next; }
-    else { lines.push(line); line = ch; }
-  });
-  if (line) lines.push(line);
-  if (lines.length > maxLines) return null;
-  if (lines.some(l => measureTextWidth(l, size) > maxW)) return null;
-  return lines;
-}
-function wrappedCenteredText(x, areaTop, areaW, areaH, content, maxW, base, min, fill = '#ddd') {
-  const centerX = x + areaW / 2;
-  for (let size = base; size >= min; size -= 1) {
-    const lineH = Math.round(size * 1.08);
-    const maxLines = Math.max(1, Math.floor(areaH / lineH));
-    const lines = wrapTextLines(content, maxW, size, maxLines);
-    if (!lines) continue;
-    const blockH = lines.length * lineH;
-    const firstY = areaTop + (areaH - blockH) / 2 + lineH / 2;
-    return lines.map((line, i) => text(centerX, firstY + i * lineH, line, size, { fill, anchor: 'middle' })).join('');
-  }
-  return text(centerX, areaTop + areaH / 2, content, min, { fill, anchor: 'middle' });
-}
-function wrappedLeftText(x, areaTop, areaW, areaH, content, maxW, base, min, fill = '#ddd', padY = 0) {
-  const fitH = areaH - padY * 2;
-  for (let size = base; size >= min; size -= 1) {
-    const lineH = Math.round(size * 1.08);
-    const maxLines = Math.max(1, Math.floor(fitH / lineH));
-    const lines = wrapTextLines(content, maxW, size, maxLines);
-    if (!lines) continue;
-    const blockH = lines.length * lineH;
-    const firstY = areaTop + (areaH - blockH) / 2 + lineH / 2;
-    return lines.map((line, i) => text(x, firstY + i * lineH, line, size, { fill })).join('');
-  }
-  const lineH = Math.round(min * 1.08);
-  const forcedLines = wrapTextLines(content, maxW, min, 999);
-  if (forcedLines && forcedLines.length) {
-    const firstY = areaTop + lineH / 2;
-    return forcedLines.map((line, i) => text(x, firstY + i * lineH, line, min, { fill })).join('');
-  }
-  return text(x, areaTop + areaH / 2, content, min, { fill });
-}
-
-function sectionTitle(x, y, title) {
-  const fs = LAYOUT.title.fs, dotR = LAYOUT.title.dotR, dotGap = LAYOUT.title.dotGap;
-  const textX = x + dotR * 2 + dotGap;
-  return `<circle cx="${x + dotR}" cy="${y}" r="${dotR}" fill="${State.data.theme || '#939393'}" filter="url(#glowTheme)"/>${text(textX, y, title, fs, { weight: 500 })}`;
-}
-function slot(x, y, size, img, name, key, field) {
-  const cp = `clip_${key}`;
-  const radius = Math.round(size * LAYOUT.radius.slotFactor);
-  const labelH = Math.round(size / 5);
-  const maxW = size - (radius / 3) * 2;
-  const base = labelH * 0.8;
-  const labelSize = fitSize(name, maxW, base, 3);
-  const labelTextY = y + size - labelH / 2 + labelSize * 0.35;
-  const showLabel = !!(name || field);
-  let labelEl = '';
-  if (showLabel) {
-    const opts = { anchor: 'middle', baseline: 'alphabetic' };
-    if (field) { opts.field = field; opts.fit = { maxW, base, min: 3 }; }
-    labelEl = text(x + size / 2, labelTextY, name || '', labelSize, opts);
-  }
-  const bg = showLabel ? `<rect x="${x}" y="${y + size - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cp})"/>` : '';
-  return `
-    <clipPath id="${cp}"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${radius}"/></clipPath>
-    ${rect(x, y, size, size, 'rgba(0,0,0,.5)', '', 0, radius)}
-    ${image(img || placeholder(''), x, y, size, size, 'xMidYMid slice', `clip-path="url(#${cp})"`)}
-    ${bg}${labelEl}`;
-}
-function doubleArtifact(x, y, size, a, key) {
-  const gap = LAYOUT.doubleGap;
-  const w = size * 2 + gap, h = size;
-  const radius = Math.round(size * LAYOUT.radius.slotFactor);
-  const cpL = `clip_${key}_l`, cpR = `clip_${key}_r`;
-  const labelH = Math.round(h / 5);
-  const maxW = w - (radius / 3) * 2;
-  const base = labelH * 0.8;
-  const displayName = a.displayText || [a.name1, a.name2].filter(Boolean).join(' + ');
-  const fs = fitSize(displayName, maxW, base, 4);
-  const labelTextY = y + h - labelH / 2 + fs * 0.35;
-  const showLabel = !!displayName;
-  let labelEl = '';
-  if (showLabel) { labelEl = text(x + w / 2, labelTextY, displayName, fs, { anchor: 'middle', baseline: 'alphabetic' }); }
-  const bg = showLabel ? `
-    <rect x="${x}" y="${y + h - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cpL})"/>
-    <rect x="${x + size}" y="${y + h - labelH}" width="${gap}" height="${labelH}" fill="url(#slotBottomGrad)"/>
-    <rect x="${x + size + gap}" y="${y + h - labelH}" width="${size}" height="${labelH}" fill="url(#slotBottomGrad)" clip-path="url(#${cpR})"/>` : '';
-  return `
-    <clipPath id="${cpL}"><path d="M${x + radius} ${y}H${x + size}V${y + size}H${x + radius}Q${x} ${y + size} ${x} ${y + size - radius}V${y + radius}Q${x} ${y} ${x + radius} ${y}Z"/></clipPath>
-    <clipPath id="${cpR}"><path d="M${x + size + gap} ${y}H${x + size + gap + size - radius}Q${x + size + gap + size} ${y} ${x + size + gap + size} ${y + radius}V${y + size - radius}Q${x + size + gap + size} ${y + size} ${x + size + gap + size - radius} ${y + size}H${x + size + gap}Z"/></clipPath>
-    <rect x="${x}" y="${y}" width="${size}" height="${size}" fill="rgba(0,0,0,.5)" clip-path="url(#${cpL})"/>
-    <rect x="${x + size + gap}" y="${y}" width="${size}" height="${size}" fill="rgba(0,0,0,.5)" clip-path="url(#${cpR})"/>
-    ${image(a.img1 || placeholder(''), x, y, size, size, 'xMidYMid slice', `clip-path="url(#${cpL})"`)}
-    ${image(a.img2 || placeholder(''), x + size + gap, y, size, size, 'xMidYMid slice', `clip-path="url(#${cpR})"`)}
-    ${bg}${labelEl}`;
-}
-
-/* =========================================================================
- * 【JS 模块 7】SVG 图层
- * ========================================================================= */
-function midSection(layerCfg, title, contentSvg) {
-  const y = LAYOUT.layers.mid.y, h = LAYOUT.layers.mid.h;
-  return `
-    ${panelRect(layerCfg.x, y, layerCfg.w, h, LAYOUT.radius.panel)}
-    ${sectionTitle(layerCfg.x + LAYOUT.title.offX, y + LAYOUT.title.offY, title)}
-    ${contentSvg}`;
-}
-function buildWeapons() {
-  const keys = WEAPON_ORDER.filter(k => State.data.weaponData[k].length);
-  if (!keys.length) return '';
-  let out = '';
-  const step = LAYOUT.iconSize + LAYOUT.iconGap, size = LAYOUT.iconSize;
-  const slotY = LAYOUT.weaponSlotY;
-  const labelFs = LAYOUT.weaponLabelFs, labelOffsetY = LAYOUT.weaponLabelOffsetY;
-  const sepGap = 20;
-  let x = LAYOUT.right.x + LAYOUT.padX;
-  keys.forEach((k, groupIndex) => {
-    if (groupIndex > 0) out += `<rect x="${x - sepGap - 1}" y="${slotY}" width="2" height="${size}" fill="url(#sepGrad)"/>`;
-    const group = State.data.weaponData[k];
-    group.slice(0, WEAPON_MAX).forEach((w, i) => {
-      out += slot(x + i * step, slotY, size, w.img, w.name, `w_${k}_${i}`, `weapon.${k}.${i}.name`);
-    });
-    const labelTop = slotY + size + labelOffsetY;
-    const labelY = labelTop + labelFs / 2;
-    const labelX = x + Math.max(26, (group.length * step - (step - size)) / 2);
-    out += text(labelX, labelY, WEAPON_LABELS[k], labelFs, { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500 });
-    x += group.length * step + (sepGap + 2 + sepGap) - (step - size);
-  });
-  return out;
-}
-function buildArtifacts() {
-  if (!State.data.artifactData.length) return '';
-  let out = '';
-  const step = LAYOUT.iconSize + LAYOUT.iconGap, size = LAYOUT.iconSize;
-  const doubleStep = size * 2 + LAYOUT.doubleGap + LAYOUT.iconGap;
-  const iconY = LAYOUT.artifactSlotY;
-  let x = LAYOUT.layers.artifact.x + LAYOUT.padX;
-  State.data.artifactData.forEach((a, i) => {
-    if (a.type === 'double') { out += doubleArtifact(x, iconY, size, a, `a_${i}`); x += doubleStep; }
-    else { out += slot(x, iconY, size, a.img, a.name, `a_${i}`, `artifact.${i}.name`); x += step; }
-  });
-  return out;
-}
-function renderArtifactIcon(iconKey, cx, cy, size) {
-  const paths = ARTIFACT_ICON_PATHS[iconKey];
-  if (!paths) return '';
-  const scale = size / 1024;
-  const iconX = cx - size / 2, iconY = cy - size / 2;
-  const pathsStr = paths.map(d => `<path d="${d}"/>`).join('');
-  return `<g transform="translate(${iconX}, ${iconY}) scale(${scale})" fill="${State.data.theme}" filter="url(#glowThemeSmall)">${pathsStr}</g>`;
-}
-function statBox(x, y, w, h, iconKey, title, value, field) {
-  const boxRx = LAYOUT.radius.inner, iconSize = LAYOUT.stat.iconSize;
-  const gap = 4, labelFs = LAYOUT.stat.labelFs;
-  const labelW = measureTextWidth(title, labelFs);
-  const totalW = iconSize + gap + labelW;
-  const startX = x + (w - totalW) / 2;
-  const centerY = y + 16;
-  const iconCx = startX + iconSize / 2;
-  const textX = startX + iconSize + gap;
-  const iconElem = renderArtifactIcon(iconKey, iconCx, centerY, iconSize);
-  const valueAreaTop = y + 32, valueAreaH = h - 36;
-  const maxW = w - boxRx * 2;
-  /* 主词条先换行、行数放不下才缩字号（多行无 data-field，靠全量重绘更新） */
-  const valueSvg = value
-    ? wrappedCenteredText(x + boxRx, valueAreaTop, maxW, valueAreaH, value, maxW, 12, 6, '#fff')
-    : '';
-  return `
-    ${rect(x, y, w, h, LAYOUT.innerBoxFill, '', 0, boxRx)}
-    ${iconElem}
-    ${text(textX, centerY, title, labelFs, { fill: LAYOUT.labelColor, weight: 500 })}
-    ${valueSvg}`;
-}
-function buildStats() {
-  const layer = LAYOUT.layers.mid.stat;
-  const contentX = layer.x + LAYOUT.padX;
-  const contentW = layer.w - LAYOUT.padX * 2;
-  const contentY = MID_CONTENT_Y;
-  const boxW = LAYOUT.stat.boxW, boxH = LAYOUT.stat.boxH, gap = LAYOUT.stat.gap;
-  const subH = LAYOUT.stat.subH, subGap = LAYOUT.stat.subGap;
-  const subY = contentY + boxH + subGap;
-  const totalW = boxW * 3 + gap * 2;
-  const offsetX = contentX + (contentW - totalW) / 2;
-  const subLabelX = offsetX + 10;
-  const subLabelFs = LAYOUT.stat.subLabelFs;
-  const subLabelW = measureTextWidth('副词条：', subLabelFs);
-  const subTextX = subLabelX + subLabelW + 5;
-  const subRightLimit = offsetX + totalW - 10;
-  const subTextW = subRightLimit - subTextX;
-  return `
-    ${statBox(offsetX, contentY, boxW, boxH, 'flower', '时之沙', State.data.sandMain, 'stat.sandMain')}
-    ${statBox(offsetX + boxW + gap, contentY, boxW, boxH, 'cup', '空之杯', State.data.gobMain, 'stat.gobMain')}
-    ${statBox(offsetX + (boxW + gap) * 2, contentY, boxW, boxH, 'crown', '理之冠', State.data.cirMain, 'stat.cirMain')}
-    ${rect(offsetX, subY, totalW, subH, LAYOUT.innerBoxFill, '', 0, LAYOUT.radius.inner)}
-    ${text(subLabelX, subY + subH / 2, '副词条：', subLabelFs, { fill: LAYOUT.labelColor, weight: 500 })}
-    ${wrappedLeftText(subTextX, subY, subTextW, subH, State.data.subStats, subTextW, 12, 6, '#fff', 4)}`;
-}
-function buildTalents() {
-  const layer = LAYOUT.layers.talent;
-  const contentX = layer.x + LAYOUT.padX;
-  const contentW = layer.w - LAYOUT.padX * 2;
-  const contentY = LAYOUT.layers.row2.y + LAYOUT.contentOffsetY;
-  const contentH = LAYOUT.talent.boxH;
-  const colGap = LAYOUT.talent.colGap;
-  const colW = (contentW - colGap * 2) / 3;
-  const r = LAYOUT.radius.inner;
-  const items = [
-    ['普通攻击', State.data.talentA, 'talent.A'],
-    ['元素战技', State.data.talentE, 'talent.E'],
-    ['元素爆发', State.data.talentQ, 'talent.Q']
-  ];
-  return items.map((it, i) => {
-    const x = contentX + i * (colW + colGap);
-    const val = it[1] || '—';
-    const labelY = contentY + 17, valueY = contentY + 44;
-    const maxW = colW - 16, base = LAYOUT.talent.valueFs;
-    return `
-      ${rect(x, contentY, colW, contentH, LAYOUT.innerBoxFill, '', 0, r)}
-      ${text(x + colW / 2, labelY, it[0], LAYOUT.talent.labelFs, { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500 })}
-      ${text(x + colW / 2, valueY, val, fitSize(val, maxW, base, 10), { fill: '#fff', anchor: 'middle', weight: 600, field: it[2], fit: { maxW, base, min: 10 } })}`;
-  }).join('');
-}
-function buildPanel() {
-  const d = State.data.panel || {};
-  const P = LAYOUT.panel;
-  const layer = LAYOUT.layers.mid.panel;
-  const contentX = layer.x + LAYOUT.padX;
-  const baseY = MID_CONTENT_Y;
-  const r = LAYOUT.radius.inner;
-  const primaryLabel = PANEL_PRIMARY_LABELS[d.primaryKey] || PANEL_PRIMARY_LABELS.hp;
-  const items = [
-    { key: 'primaryValue', label: primaryLabel, value: d.primaryValue || '' },
-    { key: 'em', label: '元素精通', value: d.em || '' },
-    { key: 'cr', label: '暴击率', value: d.cr || '' },
-    { key: 'cd', label: '暴击伤害', value: d.cd || '' },
-    { key: 'er', label: '充能效率', value: d.er || '' }
-  ];
-  const { cols, cellW, cellH, gapX, gapY, innerPadX, labelFs, valueFs } = P;
-  return items.map((it, i) => {
-    const col = i % cols, row = Math.floor(i / cols);
-    const cx = contentX + col * (cellW + gapX);
-    const cy = baseY + row * (cellH + gapY);
-    const midY = cy + cellH / 2;
-    const empty = !it.value;
-    return `
-      ${rect(cx, cy, cellW, cellH, LAYOUT.innerBoxFill, '', 0, r)}
-      ${text(cx + innerPadX, midY, it.label, labelFs, { fill: LAYOUT.labelColor, weight: 500 })}
-      ${text(cx + cellW - innerPadX, midY, empty ? PANEL_EMPTY_TEXT : it.value, valueFs, { fill: empty ? EMPTY_FILL : '#fff', anchor: 'end', weight: 400, field: `panel.${it.key}` })}`;
-  }).join('');
-}
-function buildConstellations() {
-  const layer = LAYOUT.layers.mid.cons;
-  const colX = layer.x + LAYOUT.padX;
-  const boxW = LAYOUT.cons.boxW, boxH = LAYOUT.cons.boxH;
-  const gapX = LAYOUT.cons.gapX, gapY = LAYOUT.cons.gapY;
-  const contentY = MID_CONTENT_Y;
-  const theme = State.data.theme;
-  const list = State.data.constellationData;
-  return list.map((c, i) => {
-    const col = i % 2, row = Math.floor(i / 2);
-    const x = colX + col * (boxW + gapX);
-    const y = contentY + row * (boxH + gapY);
-    const active = !!c.active;
-    const boxRx = LAYOUT.radius.inner;
-    const badgeCx = x + 15, badgeCy = y + boxH / 2;
-    const descX = x + 30;
-    const descRightLimit = x + boxW - 5;
-    const descAreaW = descRightLimit - descX;
-    const descText = c.desc ? wrappedLeftText(descX, y + 2, descAreaW, boxH - 4, c.desc, descAreaW, LAYOUT.cons.descFs, 6, '#fff') : '';
-    const badgeFill = active ? theme : 'rgba(0,0,0,.35)';
-    if (active) {
-      return `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="${boxRx}" fill="${theme}" fill-opacity="0.15" stroke="${theme}" stroke-width="2" stroke-opacity="0.75"/>
-        <circle cx="${badgeCx}" cy="${badgeCy}" r="10" fill="${badgeFill}" filter="url(#glowTheme)"/>
-        ${text(badgeCx, badgeCy + 0.5, i + 1, LAYOUT.cons.seqFs, { fill: '#fff', anchor: 'middle', weight: 500 })}
-        ${descText}`;
-    }
-    return `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="${boxRx}" fill="${LAYOUT.innerBoxFill}"/>
-      <circle cx="${badgeCx}" cy="${badgeCy}" r="10" fill="${badgeFill}"/>
-      ${text(badgeCx, badgeCy + 0.5, i + 1, LAYOUT.cons.seqFs, { fill: '#fff', anchor: 'middle', weight: 500 })}
-      ${descText}`;
-  }).join('');
-}
-function buildTeams() {
-  if (!State.data.teamData.length) return '';
-  const T = LAYOUT.team;
-  const whiteBoxY = LAYOUT.layers.team.y + LAYOUT.contentOffsetY;
-  const whiteBoxH = LAYOUT.layers.team.h - LAYOUT.contentOffsetY - LAYOUT.bottomPad;
-  return State.data.teamData.slice(0, 3).map((team, ti) => {
-    const teamW = T.w, teamGap = T.gap;
-    const x = LAYOUT.right.x + LAYOUT.padX + ti * (teamW + teamGap);
-    const teamRx = LAYOUT.radius.inner;
-    let out = `<rect x="${x}" y="${whiteBoxY}" width="${teamW}" height="${whiteBoxH}" rx="${teamRx}" fill="${LAYOUT.innerBoxFill}"/>`;
-    const nameY = whiteBoxY + T.nameOffsetY;
-    if (team.name) {
-      out += text(x + teamW / 2, nameY, team.name, fitSize(team.name, 240, T.nameFs, 8),
-        { fill: LAYOUT.labelColor, anchor: 'middle', weight: 500, field: `team.${ti}.name`, fit: { maxW: 240, base: T.nameFs, min: 8 } });
-    }
-    const mainSize = T.mainSize, mainGap = T.mainGap;
-    const mainStartX = x + (teamW - (mainSize * 4 + mainGap * 3)) / 2;
-    const mainY = whiteBoxY + T.mainOffsetY;
-    const coreChar = {
-      name: State.data.charName || team.chars[0].name || '',
-      img: State.data.teamCoreImg || team.chars[0].img || ''
-    };
-    const mainChars = [coreChar, ...team.chars.slice(1, 4)];
-    const plusSize = LAYOUT.plusSize;
-    mainChars.forEach((c, ci) => {
-      const cx = mainStartX + ci * (mainSize + mainGap);
-      const mainField = ci === 0 ? 'charName' : `team.${ti}.char.${ci}.name`;
-      out += slot(cx, mainY, mainSize, c.img, c.name, `t_${ti}_${ci}`, mainField);
-      if (ci < 3) {
-        const plusX = cx + mainSize + mainGap / 2 - plusSize / 2;
-        const plusY = mainY + mainSize / 2 - plusSize / 2;
-        const plusScale = plusSize / 16;
-        out += `<g transform="translate(${plusX}, ${plusY}) scale(${plusScale})"><path d="${PLUS_ICON_PATH}" fill="${LAYOUT.labelColor}" stroke="${LAYOUT.labelColor}" stroke-width="${LAYOUT.plusStrokeW}" stroke-linejoin="round"/></g>`;
-      }
-    });
-    const altStartY = whiteBoxY + T.altOffsetY;
-    team.chars.slice(1, 4).forEach((c, ci) => {
-      const rowY = altStartY + ci * (T.altSize + T.altRowGap);
-      const alts = c.alts.filter(a => a.name || a.img).slice(0, 4);
-      const altSize = T.altSize, altGap = T.altGap;
-      const label = `${ci + 2}号位备选`;
-      const labelFs = 10;
-      const labelW = measureTextWidth(label, labelFs);
-      const rangeL = x + T.altLabelPadL + labelW;
-      const rangeR = x + teamW - T.altRangePadR;
-      const rangeW = rangeR - rangeL;
-      const centerX = rangeL + rangeW / 2;
-      const clusterW = alts.length ? alts.length * altSize + (alts.length - 1) * altGap : 0;
-      const startX = centerX - clusterW / 2;
-      const emptyAltText = c.emptyAltText || '暂无备选';
-      out += text(x + T.altLabelPadL, rowY + altSize / 2, label, labelFs, { fill: LAYOUT.labelColor, weight: 500 });
-      if (!alts.length) out += wrappedCenteredText(rangeL, rowY, rangeW, altSize, emptyAltText, rangeW, 10, 5, EMPTY_FILL);
-      alts.forEach((a, ai) => {
-        const ax = startX + ai * (altSize + altGap);
-        const altField = `team.${ti}.char.${ci + 1}.alt.${ai}.name`;
-        out += slot(ax, rowY, altSize, a.img, a.name, `ta_${ti}_${ci + 1}_${ai}`, altField);
-      });
-    });
-    return out;
-  }).join('');
-}
-function panelRect(x, y, w, h, rx) {
-  const theme = State.data.theme || '#939393';
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="rgba(0,0,0,.5)" stroke="${theme}" stroke-width="2" filter="url(#glowTheme)"/>`;
-}
-function buildSVG(scale = 1, forExport = false) {
-  const d = State.data;
-  const W = SVG_W * scale, H = SVG_H * scale;
-  const fontFace = (forExport && d.fontData)
-    ? `@font-face{font-family:CardCustomFont;src:url("${d.fontData}");font-display:block}`
-    : '';
-  const fontFamily = d.fontData ? FONT_FAMILY_CUSTOM : FONT_FAMILY_DEFAULT;
-  const nameFs = fitSize(d.charName, 280, 50, 18);
-  const imgX = Number(d.imgX) || 0;
-  const leftX = LAYOUT.left.x, leftY = LAYOUT.left.y, leftW = LAYOUT.left.w, leftH = LAYOUT.left.h;
-  const imgMeta = d.charImgMeta || {};
-  const imgIW = Number(imgMeta.w) || 0;
-  const imgIH = Number(imgMeta.h) || 0;
-  const charDrawH = leftH;
-  const charDrawW = (imgIW > 0 && imgIH > 0) ? Math.round(leftH * imgIW / imgIH) : leftW;
-  const charDrawY = leftY;
-  const charDrawX = leftX + (leftW - charDrawW) / 2 + imgX;
-  const nameElemCenterX = leftX + leftW / 2;
-  const nameElemCenterY = leftY + leftH - 100;
-  const nbMeta = d.nameBgImgMeta || {};
-  const nbW = Number(nbMeta.w) || 0, nbH = Number(nbMeta.h) || 0;
-  let elemBgW, elemBgH;
-  if (nbW > 0 && nbH > 0) {
-    if (nbW >= nbH) { elemBgW = leftW / 2; elemBgH = Math.round(elemBgW * nbH / nbW); }
-    else { elemBgH = leftW / 2; elemBgW = Math.round(elemBgH * nbW / nbH); }
-  } else { elemBgW = leftW / 2; elemBgH = elemBgW; }
-  const elemBgX = nameElemCenterX - elemBgW / 2;
-  const elemBgY = nameElemCenterY - elemBgH / 2;
-  const infoRows = [
-    d.version ? ['当前版本:', d.version, 'version'] : null,
-    d.date ? ['制作日期:', d.date, 'date'] : null,
-    d.author ? ['作者:', d.author, 'author'] : null
-  ].filter(Boolean);
-  const infoFs = 12;
-  const CI = LAYOUT.charInfo;
-  const infoBottomCenterY = leftY + leftH - CI.padB - infoFs / 2;
-  let info = '';
-  infoRows.forEach((r, i) => {
-    const ix = leftX + CI.padL;
-    const iy = infoBottomCenterY - (infoRows.length - 1 - i) * CI.lineGap;
-    info += text(ix, iy, `${r[0]} ${r[1]}`, infoFs, { fill: '#ffffff', stroke: '#000000', strokeWidth: 1.2, field: r[2] });
-  });
-  const row2Y = LAYOUT.layers.row2.y, row2H = LAYOUT.layers.row2.h;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${SVG_W} ${SVG_H}">
-    <defs>
-      <style>${fontFace} text { font-family: ${fontFamily}; paint-order: stroke fill; }</style>
-      <linearGradient id="slotBottomGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-        <stop offset="50%" stop-color="#000" stop-opacity="0.75"/>
-        <stop offset="100%" stop-color="#000" stop-opacity="1"/>
-      </linearGradient>
-      <linearGradient id="sepGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#fff" stop-opacity="0"/>
-        <stop offset="50%" stop-color="#fff" stop-opacity="0.8"/>
-        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
-      </linearGradient>
-      <filter id="glowTheme" x="-200%" y="-200%" width="500%" height="500%">
-        <feComponentTransfer in="SourceAlpha" result="alphaFull"><feFuncA type="linear" slope="2" intercept="0"/></feComponentTransfer>
-        <feGaussianBlur in="alphaFull" stdDeviation="1.8" result="blur"/>
-        <feComposite in="blur" in2="alphaFull" operator="out" result="outer"/>
-        <feFlood flood-color="#ffffff" flood-opacity="1" result="white"/>
-        <feComposite in="white" in2="outer" operator="in" result="glow"/>
-        <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-      <filter id="glowThemeSmall" x="-100%" y="-100%" width="300%" height="300%">
-        <feGaussianBlur in="SourceAlpha" stdDeviation="100" result="blur"/>
-        <feComposite in="blur" in2="SourceAlpha" operator="out" result="outer"/>
-        <feFlood flood-color="#ffffff" flood-opacity="1" result="white"/>
-        <feComposite in="white" in2="outer" operator="in" result="glow"/>
-        <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-      <clipPath id="leftClip"><rect x="${leftX}" y="${leftY}" width="${leftW}" height="${leftH}" rx="${LAYOUT.radius.panel}"/></clipPath>
-    </defs>
-    <rect width="${SVG_W}" height="${SVG_H}" fill="#000"/>
-    ${d.bgImg ? image(d.bgImg, 0, 0, SVG_W, SVG_H) : ''}
-    <rect width="${SVG_W}" height="${SVG_H}" fill="rgba(0,0,0,0.25)"/>
-    ${rect(leftX, leftY, leftW, leftH, 'rgba(0,0,0,.5)', '', 0, LAYOUT.radius.panel)}
-    ${d.charImg ? image(d.charImg, charDrawX, charDrawY, charDrawW, charDrawH, 'xMidYMid meet', 'clip-path="url(#leftClip)" id="charImgEl"') : ''}
-    ${info}
-    ${d.nameBgImg ? image(d.nameBgImg, elemBgX, elemBgY, elemBgW, elemBgH, 'xMidYMid meet', 'opacity="0.75"') : ''}
-    ${text(nameElemCenterX, nameElemCenterY, d.charName, nameFs, { anchor: 'middle', weight: 400, field: 'charName', fit: { maxW: 280, base: 50, min: 18 }, extra: 'filter="drop-shadow(0 3px 5px rgba(0,0,0,.9))"' })}
-    ${panelRect(LAYOUT.right.x, LAYOUT.layers.weapon.y, LAYOUT.right.w, LAYOUT.layers.weapon.h, LAYOUT.radius.panel)}
-    ${sectionTitle(LAYOUT.right.x + LAYOUT.title.offX, LAYOUT.layers.weapon.y + LAYOUT.title.offY, '武器推荐')}
-    ${buildWeapons()}
-    ${panelRect(LAYOUT.layers.artifact.x, row2Y, LAYOUT.layers.artifact.w, row2H, LAYOUT.radius.panel)}
-    ${sectionTitle(LAYOUT.layers.artifact.x + LAYOUT.title.offX, row2Y + LAYOUT.title.offY, '圣遗物推荐')}
-    ${buildArtifacts()}
-    ${panelRect(LAYOUT.layers.talent.x, row2Y, LAYOUT.layers.talent.w, row2H, LAYOUT.radius.panel)}
-    ${sectionTitle(LAYOUT.layers.talent.x + LAYOUT.title.offX, row2Y + LAYOUT.title.offY, '天赋加点')}
-    ${buildTalents()}
-    ${midSection(LAYOUT.layers.mid.stat, '词条推荐', buildStats())}
-    ${midSection(LAYOUT.layers.mid.panel, '面板参考', buildPanel())}
-    ${midSection(LAYOUT.layers.mid.cons, '核心命座', buildConstellations())}
-    ${panelRect(LAYOUT.right.x, LAYOUT.layers.team.y, LAYOUT.right.w, LAYOUT.layers.team.h, LAYOUT.radius.panel)}
-    ${sectionTitle(LAYOUT.right.x + LAYOUT.title.offX, LAYOUT.layers.team.y + LAYOUT.title.offY, '配队参考')}
-    ${buildTeams()}
-  </svg>`;
-}
-
-/* =========================================================================
- * 【JS 模块 8】预览挂载与字段增量更新
+ * 【JS 模块 2】预览挂载与字段增量更新
  * ========================================================================= */
 let previewSvgEl = null;
 const previewIndex = new Map();
 let renderTimer = null;
+
 function mountPreview() {
   const host = document.getElementById('svgPreviewHost');
   if (!host) return;
@@ -943,7 +179,7 @@ function syncInputs() {
 }
 
 /* =========================================================================
- * 【JS 模块 8.5】横向 Tab 栏
+ * 【JS 模块 3】横向 Tab 栏
  * ========================================================================= */
 function renderTabBar() {
   const el = document.getElementById('tabBar');
@@ -979,7 +215,7 @@ function selectTab(tabId) {
 }
 
 /* =========================================================================
- * 【JS 模块 9】UI 编辑器
+ * 【JS 模块 4】UI 编辑器渲染
  * ========================================================================= */
 const collapseState = {};
 
@@ -1269,7 +505,7 @@ function onThumbClick(inputId, stateKey) {
 }
 
 /* =========================================================================
- * 【JS 模块 10】图片上传
+ * 【JS 模块 5】图片上传
  * ========================================================================= */
 const IMAGE_WARN_SIZE = 15 * 1024 * 1024;
 function triggerUpload(id) { document.getElementById(id)?.click(); }
@@ -1307,7 +543,7 @@ function updateImgXHint() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.3】字体库
+ * 【JS 模块 6】字体库
  * ========================================================================= */
 let FONT_LIST = [];
 let fontSheetOpen = false;
@@ -1475,7 +711,7 @@ async function selectFont(index) {
 }
 
 /* =========================================================================
- * 【JS 模块 10.4】数据字典读取
+ * 【JS 模块 7】数据字典读取
  * ========================================================================= */
 async function loadCharOrderTxt() {
   try {
@@ -1540,7 +776,7 @@ async function loadArtDict() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.5】样式图匹配 + 在线存档
+ * 【JS 模块 8】样式图匹配 + 在线存档
  * ========================================================================= */
 async function matchStyleImages(onlyEmpty) {
   const name = (State.data.charName || '').trim();
@@ -1659,7 +895,7 @@ async function loadSaveFromRepo() {
 }
 
 /* =========================================================================
- * 【JS 模块 10.6】图标库匹配
+ * 【JS 模块 9】图标库匹配
  * ========================================================================= */
 async function matchWeaponIcon(type, i, name) {
   if (!window.ICON_LIB) return;
@@ -1774,7 +1010,7 @@ async function matchCharAvatar(name) {
 }
 
 /* =========================================================================
- * 【JS 模块 11】数据归一化
+ * 【JS 模块 10】数据归一化
  * ========================================================================= */
 function normalizeWeaponList(list) {
   return Array.isArray(list) ? list.map(w => ({
@@ -1856,7 +1092,7 @@ function normalizeState(data = {}) {
 }
 
 /* =========================================================================
- * 【JS 模块 12】导出 / 导入 / 清空
+ * 【JS 模块 11】导出 / 导入 / 清空
  * ========================================================================= */
 
 /**
@@ -1865,26 +1101,21 @@ function normalizeState(data = {}) {
  */
 function buildExportPayload(data) {
   var out = JSON.parse(JSON.stringify(data));
-  /* 字体：只留名字 */
   out.fontData = '';
-  /* 顶层图片 */
   if (!out.charImgManual) { out.charImg = ''; out.charImgMeta = null; }
   if (!out.bgImgManual) out.bgImg = '';
   if (!out.nameBgImgManual) { out.nameBgImg = ''; out.nameBgImgMeta = null; }
   if (!out.teamCoreImgManual) out.teamCoreImg = '';
-  /* 武器 */
   WEAPON_ORDER.forEach(function (type) {
     (out.weaponData[type] || []).forEach(function (w) {
       if (!w.imgManual) w.img = '';
     });
   });
-  /* 圣遗物 */
   (out.artifactData || []).forEach(function (a) {
     if (!a.imgManual) a.img = '';
     if (!a.img1Manual) a.img1 = '';
     if (!a.img2Manual) a.img2 = '';
   });
-  /* 配队 */
   (out.teamData || []).forEach(function (t) {
     (t.chars || []).forEach(function (c) {
       if (!c.imgManual) c.img = '';
@@ -1971,7 +1202,6 @@ async function silentFromName(type, name) {
 /** 导入后自动重匹配所有空图 */
 async function autoRematchAll() {
   var d = State.data;
-  var pending = 0;
 
   /* 1. 样式图（只补空字段） */
   if (d.charName && (!d.charImg || !d.nameBgImg || !d.bgImg)) {
@@ -1984,7 +1214,6 @@ async function autoRematchAll() {
     for (let i = 0; i < list.length; i++) {
       const w = list[i];
       if (w.name && !w.img) {
-        pending++;
         const url = await silentFromName('weapons', w.name);
         if (url) w.img = url;
       }
@@ -1997,36 +1226,31 @@ async function autoRematchAll() {
     const a = arts[i];
     if (a.type === 'double') {
       if (a.name1 && !a.img1) {
-        pending++;
         const u1 = await silentFromName('artifacts', a.name1);
         if (u1) a.img1 = u1;
       }
       if (a.name2 && !a.img2) {
-        pending++;
         const u2 = await silentFromName('artifacts', a.name2);
         if (u2) a.img2 = u2;
       }
     } else {
       if (a.name && !a.img) {
-        pending++;
         const u = await silentFromName('artifacts', a.name);
         if (u) a.img = u;
       }
     }
   }
 
-  /* 4. 配队（主角色头像 + 备选） */
+  /* 4. 配队（2/3/4 号位主角色头像 + 所有备选） */
   const teams = d.teamData || [];
   for (const team of teams) {
     for (const c of (team.chars || [])) {
       if (c.name && !c.img) {
-        pending++;
         const u = await silentFromName('characters', c.name);
         if (u) c.img = u;
       }
       for (const alt of (c.alts || [])) {
         if (alt.name && !alt.img) {
-          pending++;
           const u = await silentFromName('characters', alt.name);
           if (u) alt.img = u;
         }
@@ -2034,14 +1258,11 @@ async function autoRematchAll() {
     }
   }
 
-  /* 5. 1 号位主角色头像 */
+  /* 5. 1 号位主角色头像（顶层 teamCoreImg） */
   if (d.charName && !d.teamCoreImg) {
-    pending++;
     const u = await silentFromName('characters', d.charName);
     if (u) d.teamCoreImg = u;
   }
-
-  return pending;
 }
 
 /** 导入后处理：字体重载 + 图片重匹配 */
@@ -2054,7 +1275,6 @@ async function applyImportedData(data) {
     if (!FONT_LIST.length) await loadFontList();
     var idx = FONT_LIST.findIndex(x => x.file === State.data.fontFileName);
     if (idx >= 0) {
-      /* selectFont 会下载并设置 fontData */
       await selectFont(idx);
     }
   } else {
@@ -2102,7 +1322,7 @@ async function clearAllData() {
 }
 
 /* =========================================================================
- * 【JS 模块 13】UI 交互
+ * 【JS 模块 12】UI 交互
  * ========================================================================= */
 const FIELD_MAP = {
   charName: 'charName', version: 'version', date: 'date', author: 'author',
@@ -2121,7 +1341,6 @@ function setField(key, value) {
   } else if (key === 'subStats') {
     mountPreview();
   } else if (key === 'sandMain' || key === 'gobMain' || key === 'cirMain') {
-    /* 主词条渲染成多行 SVG，无 data-field，走全量重绘 */
     mountPreview();
   } else if (FIELD_MAP[key]) {
     updatePreviewField(FIELD_MAP[key]);
@@ -2243,7 +1462,7 @@ function setEmptyAltText(ti, ci, v) {
 }
 
 /* =========================================================================
- * 【JS 模块 14】App 接口
+ * 【JS 模块 13】App 接口
  * ========================================================================= */
 const App = {
   selectTab,
@@ -2268,7 +1487,7 @@ const App = {
 window.App = App;
 
 /* =========================================================================
- * 【JS 模块 15】初始化
+ * 【JS 模块 14】初始化
  * ========================================================================= */
 function injectFloatIcons() {
   const S = window.ICONS || { ui: {} };
