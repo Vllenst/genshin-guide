@@ -304,7 +304,6 @@ function buildSVG(showGuides, forExport = false) {
   }
 
   const cropW = SVG_H * 4 / 3;
-  /* 用形参 showGuides（不是 state.showGuides），这样导出时才能独立控制虚线显示 */
   const guideContent = showGuides ? (
     [s.safeBoundX, s.safeBoundX + cropW / 2, s.safeBoundX + cropW * 3 / 4, s.safeBoundX + cropW]
       .map(x => `<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" stroke="#888888" stroke-width="2" stroke-dasharray="12 12" opacity="0.5" vector-effect="non-scaling-stroke"/>`).join('')
@@ -416,7 +415,9 @@ function collectFloats() {
         url: state.characterArt.url,
         w: state.characterArt.w,
         h: state.characterArt.h,
-        x: state.characterX, scale: 1, rounded: 0, underMiddle: false
+        x: state.characterX, scale: 1, rounded: 0,
+        /* 立绘放在中层之下，左侧会被模糊层盖住 */
+        underMiddle: true
       }];
     }
     return [];
@@ -687,7 +688,9 @@ function addFloat() {
           id: 'f_' + Date.now(),
           url: reader.result,
           w: img.width, h: img.height,
-          x: SVG_W * 0.75, scale: 1, rounded: 0, underMiddle: false
+          x: SVG_W * 0.75, scale: 1, rounded: 0,
+          /* 新加的素材默认也在中层之下 */
+          underMiddle: true
         });
         renderFloatList();
         mountPreview();
@@ -1001,7 +1004,6 @@ async function bakeAndExport() {
       state.floatImg = baked;
     }
 
-    /* 导出时永远不显示虚线 */
     const svgStr = buildSVG(false, true);
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1325,7 +1327,7 @@ window.App = App;
  * 主题同步
  * ========================================================================= */
 window.addEventListener('message', function (e) {
-  if (e.data && e.data.type === 'theme') {
+  if (e.data && e.data.theme) {
     const html = document.documentElement;
     html.classList.add('theme-switching');
     html.setAttribute('data-theme', e.data.theme);
