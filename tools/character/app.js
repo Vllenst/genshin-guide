@@ -12,7 +12,7 @@
  *   【JS 模块 8】  样式图匹配 + 在线存档
  *   【JS 模块 9】  图标库匹配
  *   【JS 模块 10】 数据归一化
- *   【JS 模块 11】 导出 / 导入 / 清空
+ *   【JS 模块 11】 导出 / 导入 / 清空（导出前把图片洗成 dataURL）
  *   【JS 模块 12】 UI 交互（字段 / 增删改 / 移动）
  *   【JS 模块 13】 App 接口
  *   【JS 模块 14】 初始化
@@ -799,10 +799,6 @@ async function loadCharOrderTxt() {
   }
 }
 
-/**
- * 判断名字是否为合法角色名（在 characters.txt 中）。
- * 用于阻止"旅行者（冰）"这类带后缀的名字被误识别。
- */
 function isValidCharName(name) {
   var t = String(name || '').trim();
   if (!t) return false;
@@ -851,17 +847,7 @@ async function loadArtDict() {
 
 /* =========================================================================
  * 【JS 模块 8】样式图匹配 + 在线存档
- * =========================================================================
- * 匹配规则：
- *   - 先校验 charName 是否为合法角色名（在 characters.txt 中）
- *   - 合法：
- *       立绘：先查"名字（元素）"，无则回退查"名字"
- *       名片：查"名字"
- *       元素图：只看 theme，与 charName 无关
- *   - 非法（如"旅行者（冰）"）：
- *       立绘、名片、头像 全部跳过
- *       元素图 照常显示（只认 theme）
- * ------------------------------------------------------------------------- */
+ * ========================================================================= */
 async function matchStyleImages(onlyEmpty) {
   const name = (State.data.charName || '').trim();
   if (!name) { if (!onlyEmpty) showToast('请先填写角色名', 'error'); return; }
@@ -876,7 +862,6 @@ async function matchStyleImages(onlyEmpty) {
 
   var tasks = [];
 
-  /* 立绘 */
   if (!onlyEmpty || !State.data.charImg) {
     tasks.push(async function () {
       if (!nameValid) {
@@ -923,7 +908,6 @@ async function matchStyleImages(onlyEmpty) {
     });
   }
 
-  /* 元素图：只认 theme，与 charName 合法性无关 */
   if (!onlyEmpty || !State.data.nameBgImg) {
     tasks.push(async function () {
       let elementUrl = '';
@@ -945,7 +929,6 @@ async function matchStyleImages(onlyEmpty) {
     });
   }
 
-  /* 名片：需要合法角色名 */
   if (!onlyEmpty || !State.data.bgImg) {
     tasks.push(async function () {
       if (!nameValid) {
@@ -1214,6 +1197,10 @@ function normalizeState(data = {}) {
 /* =========================================================================
  * 【JS 模块 11】导出 / 导入 / 清空
  * ========================================================================= */
+
+/**
+ * 导出前剥离：非手动的图（字典匹配来的）+ 字体 base64。
+ */
 function buildExportPayload(data) {
   var out = JSON.parse(JSON.stringify(data));
   out.fontData = '';
@@ -1250,6 +1237,74 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+/**
+ * 把单个图片 URL 转成 dataURL。
+ *   - data: 开头 → 原样
+ *   - 其他 → fetch（CORS 模式）+ blob + FileReader
+ *   - 失败 → 返回原 URL（降级，不阻塞其他图片）
+ */
+async function urlToDataURL(url) {
+  if (!url) return '';
+  if (/^data:/i.test(url)) return url;
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('FileReader 失败'));
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn('[bake] 转 dataURL 失败，保留原 URL：', url, '—', e.message);
+    return url;
+  }
+}
+
+/**
+ * 深拷贝 State.data，把其中所有图片字段洗成 dataURL。
+ * 用于导出 PNG 时绕过 CORS 与相对路径问题。
+ */
+async function bakeImagesToDataURL() {
+  const data = JSON.parse(JSON.stringify(State.data));
+  const tasks = [];
+
+  /* 顶层图片 */
+  ['charImg', 'bgImg', 'nameBgImg', 'teamCoreImg'].forEach(function (key) {
+    if (data[key]) {
+      tasks.push((async function () { data[key] = await urlToDataURL(data[key]); })());
+    }
+  });
+
+  /* 武器 */
+  WEAPON_ORDER.forEach(function (type) {
+    (data.weaponData[type] || []).forEach(function (w) {
+      if (w.img) tasks.push((async function () { w.img = await urlToDataURL(w.img); })());
+    });
+  });
+
+  /* 圣遗物 */
+  (data.artifactData || []).forEach(function (a) {
+    if (a.img) tasks.push((async function () { a.img = await urlToDataURL(a.img); })());
+    if (a.img1) tasks.push((async function () { a.img1 = await urlToDataURL(a.img1); })());
+    if (a.img2) tasks.push((async function () { a.img2 = await urlToDataURL(a.img2); })());
+  });
+
+  /* 配队 */
+  (data.teamData || []).forEach(function (t) {
+    (t.chars || []).forEach(function (c) {
+      if (c.img) tasks.push((async function () { c.img = await urlToDataURL(c.img); })());
+      (c.alts || []).forEach(function (a) {
+        if (a.img) tasks.push((async function () { a.img = await urlToDataURL(a.img); })());
+      });
+    });
+  });
+
+  await Promise.all(tasks);
+  return data;
+}
+
 async function exportPNG() {
   const bd = document.getElementById('exportDesktopBtn');
   const bm = document.getElementById('exportMobileBtn');
@@ -1260,7 +1315,21 @@ async function exportPNG() {
   btns.forEach(b => { b.el.disabled = true; b.el.textContent = '正在导出...'; });
   try {
     if (document.fonts) await document.fonts.ready;
-    const svg = buildSVG(EXPORT_SCALE, true);
+
+    /* 1. 洗图：所有图片字段 → dataURL（绕过 CORS + 相对路径） */
+    const bakedData = await bakeImagesToDataURL();
+
+    /* 2. 临时替换 State.data，buildSVG 用洗过的数据 */
+    const originalData = State.data;
+    let svg;
+    try {
+      State.data = bakedData;
+      svg = buildSVG(EXPORT_SCALE, true);
+    } finally {
+      State.data = originalData;
+    }
+
+    /* 3. 导出 */
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     try {
