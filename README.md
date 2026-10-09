@@ -29,7 +29,7 @@ genshin-guide/
 ├── favicon.png           网站图标
 │
 ├── tools/                所有工具页
-│   ├── character/        角色一图流（已拆）
+│   ├── character/        角色一图流（已拆：consts.js + svg.js + app.js）
 │   ├── map-editor/       图标字典编辑器（已拆）
 │   ├── video-cover/      封面制作（已拆）
 │   │   ├── video/        视频封面
@@ -70,12 +70,32 @@ genshin-guide/
 **入口：** https://vllenst.github.io/genshin-guide/#character
 
 - 编辑角色信息（名称 / 版本 / 日期 / 作者）
-- 一键匹配样式图（立绘 / 元素图 / 名片图）
+- 一键匹配样式图（立绘 / 元素图 / 名片图）——**三路并发下载**
 - 武器、圣遗物、天赋、词条、面板、命座、配队编辑
+- 图标按名字自动匹配（武器 / 圣遗物 / 角色头像 / 备选角色）
 - 导出 4K PNG / JSON 配置
 - 载入在线存档
 
 **编辑界面：** 预览区在上，横向胶囊 Tab 切换编辑区。点预览图可隐藏浮动按钮。
+
+**角色名校验：** 角色名必须在 `characters.txt` 里。否则立绘 / 名片 / 头像跳过，元素图照常显示（只跟主题色走）。
+
+**导出 JSON：** 自动剥离字典匹配来的图片（只保留手动上传的）+ 字体数据，体积从十几 MB 降到几十 KB。导入时按名字自动重匹配，字体按名字重新加载。
+
+**字体缓存：** 字体首次下载后存进 IndexedDB，之后不管刷新还是重启浏览器，0 秒加载。
+
+**导出 PNG：** 导出前把所有图片字段洗成 dataURL，绕过跨域限制和相对路径解析问题。
+
+**文件结构（已拆三份）：**
+
+```
+tools/character/
+├── index.html    页面结构
+├── style.css     本工具特有布局
+├── consts.js     常量 / LAYOUT / State / 工具函数
+├── svg.js        SVG 绘制 / 排版 / buildSVG
+└── app.js        编辑器 / 匹配 / 导出 / 导入
+```
 
 ---
 
@@ -86,11 +106,26 @@ genshin-guide/
 维护 `shared/gi-icons/icon-dict.js` 的可视化工具。
 
 - **从 Amber 同步**：一键拉取角色 / 圣遗物 / 武器 / 怪物 4 类数据
-- 粘贴 Lunaris 图标链接手动添加
+- **粘贴 URL**：给某个 key 指定源
+  - URL 严格等于 `prefix + key + ext` → 不加 url 字段（走拼接）
+  - 否则 → 存完整 url
+  - 找到同名 key 就更新 url，找不到才新建（新建条目 `order: 0`）
 - 手动调整序号 / 星级
 - 一键导出 icon-dict.js
 
+**同步规则：** `local` 或 `url` 的条目，名字冲突时跳过 Amber。
+
 **字典 key 格式**：图标全名（如 `UI_AvatarIcon_HuTao`）
+
+**字典条目字段：**
+
+| 字段 | 说明 |
+|---|---|
+| `name` | 中文名 |
+| `star` | 星级（怪物没有） |
+| `order` | 序号 |
+| `local` | 可选。本地文件，从仓库根目录加载 |
+| `url` | 可选。覆盖默认拼接规则，指向指定链接 |
 
 ---
 
@@ -138,7 +173,14 @@ genshin-guide/
 | 立绘 | `shared/data/character-art.txt` 字典（官方外链为主，个别本地文件放 `shared/assets/portrait/`） |
 | 元素图 | `shared/assets/characters/element/` |
 | 名片图 | `shared/data/namecards.txt` 字典（Lunaris 外链） |
-| 角色头像 / 武器 / 圣遗物 / 怪物图标 | `shared/gi-icons/icon-dict.js`（Lunaris 外链） |
+| 角色头像 / 武器 / 圣遗物 / 怪物图标 | `shared/gi-icons/icon-dict.js`（Lunaris 外链，个别条目用 `url` 字段覆盖） |
+
+**图标源优先级**（`icon-loader.js` 的 `getPath`）：
+
+1. `local: true`（仓库本地文件）
+2. `url: "..."`（单条覆盖）
+3. key 是完整 URL
+4. 拼接 `config.prefix + key + config.ext`
 
 ---
 
@@ -169,7 +211,7 @@ genshin-guide/
 ## 📝 备注
 
 - 中文名查询：Project Amber（gi.yatta.moe）
-- 所有编辑数据存在浏览器本地（IndexedDB）
+- 所有编辑数据存在浏览器本地（IndexedDB），字体也缓存一份
 - **UI 图标**：来自 Phosphor Icons
   https://yesicon.app/zh-Hans/ph
 - **元素 / 圣遗物图标**：来自 iconfont 的「原神图标」库（作者 SwordMasterJS）
