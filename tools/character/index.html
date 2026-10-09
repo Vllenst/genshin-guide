@@ -133,7 +133,7 @@
                 <span class="icon-only" id="btnDelCharImg"></span>
                 删除
               </button>
-              <input type="file" id="inputCharImg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.charImg = v; State.data.charImgMeta = { w, h }; State.data.charImgDeleted = false; App.updateImgXHint(); App.updateThumb('thumbCharImg', 'labelCharImg', v, '已载入立绘（点击更换）'); })" />
+              <input type="file" id="inputCharImg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.charImg = v; State.data.charImgMeta = { w, h }; State.data.charImgDeleted = false; State.data.charImgManual = true; App.updateImgXHint(); App.updateThumb('thumbCharImg', 'labelCharImg', v, '已载入立绘（点击更换）'); })" />
             </div>
 
             <!-- 立绘左右偏移 -->
@@ -155,7 +155,7 @@
                 <span class="icon-only" id="btnDelNameBg"></span>
                 删除
               </button>
-              <input type="file" id="inputNameBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.nameBgImg = v; State.data.nameBgImgMeta = { w, h }; State.data.nameBgImgDeleted = false; App.updateThumb('thumbNameBg', 'labelNameBg', v, '已载入元素图（点击更换）'); })" />
+              <input type="file" id="inputNameBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, (v, w, h) => { State.data.nameBgImg = v; State.data.nameBgImgMeta = { w, h }; State.data.nameBgImgDeleted = false; State.data.nameBgImgManual = true; App.updateThumb('thumbNameBg', 'labelNameBg', v, '已载入元素图（点击更换）'); })" />
             </div>
 
             <!-- 大背景 -->
@@ -168,7 +168,7 @@
                 <span class="icon-only" id="btnDelBg"></span>
                 删除
               </button>
-              <input type="file" id="inputBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.bgImg = v; State.data.bgImgDeleted = false; App.updateThumb('thumbBg', 'labelBg', v, '已载入大背景（点击更换）'); })" />
+              <input type="file" id="inputBg" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.bgImg = v; State.data.bgImgDeleted = false; State.data.bgImgManual = true; App.updateThumb('thumbBg', 'labelBg', v, '已载入大背景（点击更换）'); })" />
             </div>
 
           </div>
@@ -279,7 +279,7 @@
                 <span class="icon-only" id="btnDelTeamCore"></span>
                 删除
               </button>
-              <input type="file" id="inputTeamCore" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamCoreImg = v; App.updateThumb('thumbTeamCore', 'labelTeamCore', v, '已载入1号位头像（点击更换）'); })" />
+              <input type="file" id="inputTeamCore" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamCoreImg = v; State.data.teamCoreImgManual = true; App.updateThumb('thumbTeamCore', 'labelTeamCore', v, '已载入1号位头像（点击更换）'); })" />
             </div>
           </div>
         </div>
@@ -334,6 +334,8 @@
 <script src="../../shared/ui-icons.js"></script>
 <script src="../../shared/gi-icons/icon-loader.js"></script>
 <script src="../../shared/gi-icons/icon-dict.js"></script>
+<script src="consts.js"></script>
+<script src="svg.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
