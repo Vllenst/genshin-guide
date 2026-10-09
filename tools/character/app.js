@@ -12,7 +12,7 @@
  *   【JS 模块 8】  样式图匹配 + 在线存档
  *   【JS 模块 9】  图标库匹配
  *   【JS 模块 10】 数据归一化
- *   【JS 模块 11】 导出 / 导入 / 清空（导出前把图片洗成 dataURL）
+ *   【JS 模块 11】 导出 / 导入 / 清空
  *   【JS 模块 12】 UI 交互（字段 / 增删改 / 移动）
  *   【JS 模块 13】 App 接口
  *   【JS 模块 14】 初始化
@@ -282,6 +282,7 @@ function renderWeaponEditor() {
     const list = group.map((w, i) => {
       const upDisabled = !canMoveWeapon(type, i, -1);
       const downDisabled = !canMoveWeapon(type, i, 1);
+      const targetId = `w_img_${type}_${i}`;
       return `
       <div class="item-card">
         <div class="item-header">
@@ -293,9 +294,9 @@ function renderWeaponEditor() {
           </div>
         </div>
         <div class="item-row">
-          <img src="${w.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('w_img_${type}_${i}')" alt="" />
+          <img src="${w.img || placeholder('')}" class="clickable-thumb" data-img-target="${targetId}" onclick="App.triggerUpload('${targetId}')" alt="" />
           <input type="text" value="${esc(w.name)}" oninput="App.setWeaponName('${type}',${i},this.value)" onblur="App.matchWeaponIcon('${type}',${i},this.value)" style="flex:1;" />
-          <input type="file" id="w_img_${type}_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.weaponData['${type}'][${i}].img = v; State.data.weaponData['${type}'][${i}].imgManual = true; App.renderWeaponEditor(); App.mountPreview(); App.debouncedSave(); })" />
+          <input type="file" id="${targetId}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.weaponData['${type}'][${i}].img = v; State.data.weaponData['${type}'][${i}].imgManual = true; App.renderWeaponEditor(); App.mountPreview(); App.debouncedSave(); })" />
         </div>
       </div>`;
     }).join('');
@@ -334,6 +335,7 @@ function renderArtifactEditor() {
   editorEl.style.display = isSectionCollapsed ? 'none' : 'flex';
   editorEl.innerHTML = State.data.artifactData.map((a, i) => {
     if (a.type === 'double') {
+      const t1 = `a_img1_${i}`, t2 = `a_img2_${i}`;
       return `<div class="item-card">
         <div class="item-header">
           <span style="font-size:12px;color:var(--accent);font-weight:600;">散搭 #${i + 1}</span>
@@ -346,18 +348,19 @@ function renderArtifactEditor() {
         <input type="text" value="${esc(a.displayText)}" placeholder="卡片显示文本（可选，留空显示两个名字）" oninput="App.setArtifactDisplayText(${i},this.value)" />
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
-            <img src="${a.img1 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img1_${i}')" alt="" />
+            <img src="${a.img1 || placeholder('')}" class="clickable-thumb" data-img-target="${t1}" onclick="App.triggerUpload('${t1}')" alt="" />
             <input type="text" value="${esc(a.name1)}" placeholder="圣遗物1" oninput="App.setArtifactName1(${i},this.value)" onblur="App.matchArtifactDoubleIcon(${i},1,this.value)" style="flex:1;min-width:0;" />
-            <input type="file" id="a_img1_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img1 = v; State.data.artifactData[${i}].img1Manual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
+            <input type="file" id="${t1}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img1 = v; State.data.artifactData[${i}].img1Manual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
           <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:140px;">
-            <img src="${a.img2 || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img2_${i}')" alt="" />
+            <img src="${a.img2 || placeholder('')}" class="clickable-thumb" data-img-target="${t2}" onclick="App.triggerUpload('${t2}')" alt="" />
             <input type="text" value="${esc(a.name2)}" placeholder="圣遗物2" oninput="App.setArtifactName2(${i},this.value)" onblur="App.matchArtifactDoubleIcon(${i},2,this.value)" style="flex:1;min-width:0;" />
-            <input type="file" id="a_img2_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img2 = v; State.data.artifactData[${i}].img2Manual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
+            <input type="file" id="${t2}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img2 = v; State.data.artifactData[${i}].img2Manual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
           </div>
         </div>
       </div>`;
     }
+    const targetId = `a_img_${i}`;
     return `<div class="item-card">
       <div class="item-header">
         <span style="font-size:12px;color:var(--text-primary);font-weight:600;">整套 #${i + 1}</span>
@@ -368,9 +371,9 @@ function renderArtifactEditor() {
         </div>
       </div>
       <div class="item-row">
-        <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('a_img_${i}')" alt="" />
+        <img src="${a.img || placeholder('')}" class="clickable-thumb" data-img-target="${targetId}" onclick="App.triggerUpload('${targetId}')" alt="" />
         <input type="text" value="${esc(a.name)}" oninput="App.setArtifactName(${i},this.value)" onblur="App.matchArtifactIcon(${i},this.value)" style="flex:1;" />
-        <input type="file" id="a_img_${i}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img = v; State.data.artifactData[${i}].imgManual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
+        <input type="file" id="${targetId}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.artifactData[${i}].img = v; State.data.artifactData[${i}].imgManual = true; App.renderArtifactEditor(); App.mountPreview(); App.debouncedSave(); })" />
       </div>
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:4px 0;">暂无圣遗物</div>';
@@ -400,6 +403,7 @@ function renderTeamEditor() {
             const ci = idx + 1;
             const charKey = `team_${ti}_char_${ci}`;
             const charCollapsed = isCollapsed(charKey);
+            const targetId = `t_${ti}_${ci}_img`;
             return `<div class="item-card">
               <div class="item-header">
                 <span style="font-size:12px;color:var(--accent);font-weight:600;">${ci + 1}号位主角色</span>
@@ -413,16 +417,18 @@ function renderTeamEditor() {
               </div>
               <div data-collapse-content="${charKey}" style="display:${charCollapsed ? 'none' : 'block'};">
                 <div class="item-row">
-                  <img src="${c.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_img')" alt="" />
+                  <img src="${c.img || placeholder('')}" class="clickable-thumb" data-img-target="${targetId}" onclick="App.triggerUpload('${targetId}')" alt="" />
                   <input type="text" value="${esc(c.name)}" oninput="App.setTeamCharName(${ti},${ci},this.value)" onblur="App.matchTeamCharIcon(${ti},${ci},this.value)" style="flex:1;" />
-                  <input type="file" id="t_${ti}_${ci}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].img = v; State.data.teamData[${ti}].chars[${ci}].imgManual = true; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
+                  <input type="file" id="${targetId}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].img = v; State.data.teamData[${ti}].chars[${ci}].imgManual = true; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                 </div>
                 <div style="margin-left:8px;padding-left:8px;border-left:2px solid var(--border-subtle);display:flex;flex-direction:column;gap:6px;margin-top:4px;">
                   <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                     <span style="font-size:11px;color:var(--text-secondary);font-weight:600;">备选角色 (${c.alts.length}/4)</span>
                     <button class="ios-btn-fill btn-xs" style="margin-left:auto;" onclick="App.addAlt(${ti},${ci})">${ICONS.plus}添加</button>
                   </div>
-                  ${c.alts.map((a, ai) => `
+                  ${c.alts.map((a, ai) => {
+                    const altTargetId = `t_${ti}_${ci}_${ai}_img`;
+                    return `
                     <div class="item-card" style="background:var(--bg-surface);padding:8px;">
                       <div class="item-header">
                         <span style="font-size:11px;color:var(--text-secondary);">备选 #${ai + 1}</span>
@@ -433,11 +439,12 @@ function renderTeamEditor() {
                         </div>
                       </div>
                       <div class="item-row">
-                        <img src="${a.img || placeholder('')}" class="clickable-thumb" onclick="App.triggerUpload('t_${ti}_${ci}_${ai}_img')" alt="" />
+                        <img src="${a.img || placeholder('')}" class="clickable-thumb" data-img-target="${altTargetId}" onclick="App.triggerUpload('${altTargetId}')" alt="" />
                         <input type="text" value="${esc(a.name)}" oninput="App.setAltName(${ti},${ci},${ai},this.value)" onblur="App.matchAltIcon(${ti},${ci},${ai},this.value)" style="flex:1;" />
-                        <input type="file" id="t_${ti}_${ci}_${ai}_img" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].alts[${ai}].img = v; State.data.teamData[${ti}].chars[${ci}].alts[${ai}].imgManual = true; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
+                        <input type="file" id="${altTargetId}" accept="image/*" style="display:none" onchange="App.uploadImageHandler(this, v => { State.data.teamData[${ti}].chars[${ci}].alts[${ai}].img = v; State.data.teamData[${ti}].chars[${ci}].alts[${ai}].imgManual = true; App.renderTeamEditor(); App.mountPreview(); App.debouncedSave(); })" />
                       </div>
-                    </div>`).join('')}
+                    </div>`;
+                  }).join('')}
                   ${!c.alts.length ? `<input type="text" value="${esc(c.emptyAltText || '暂无备选')}" oninput="App.setEmptyAltText(${ti},${ci},this.value)" />` : ''}
                 </div>
               </div>
@@ -805,6 +812,15 @@ function isValidCharName(name) {
   return !!CHAR_NAME_TO_ORDER[t];
 }
 
+/**
+ * 剥掉「·」及其之后的内容。
+ * 例："旅行者·冰" → "旅行者"；"旅行者" → "旅行者"。
+ * 只处理「·」，不再剥括号（括号格式已废弃）。
+ */
+function stripElementSuffix(name) {
+  return String(name || '').split('·')[0].trim();
+}
+
 async function loadNamecards() {
   try {
     const res = await fetch('../../shared/data/namecards.txt?t=' + Date.now());
@@ -847,7 +863,15 @@ async function loadArtDict() {
 
 /* =========================================================================
  * 【JS 模块 8】样式图匹配 + 在线存档
- * ========================================================================= */
+ * =========================================================================
+ * 匹配规则：
+ *   - 先校验 charName 是否为合法角色名（原名，严格匹配，不剥后缀）
+ *   - 合法：
+ *       立绘：先查"名字（元素）"，无则回退查"名字"
+ *       名片：查"名字"
+ *       元素图：只看 theme，与 charName 无关
+ *   - 非法：立绘、名片、头像 全部跳过；元素图照常显示
+ * ------------------------------------------------------------------------- */
 async function matchStyleImages(onlyEmpty) {
   const name = (State.data.charName || '').trim();
   if (!name) { if (!onlyEmpty) showToast('请先填写角色名', 'error'); return; }
@@ -993,96 +1017,172 @@ async function loadSaveFromRepo() {
 
 /* =========================================================================
  * 【JS 模块 9】图标库匹配
+ * =========================================================================
+ * 匹配完成后只更新对应的缩略图 src，不重建编辑器 DOM。
+ * 目的：避免打断用户在其他输入框里的编辑。
  * ========================================================================= */
+
+/** 用 data-img-target 找缩略图并更新 src */
+function updateImgTarget(targetId, src) {
+  const el = document.querySelector('[data-img-target="' + targetId + '"]');
+  if (el) el.src = src || placeholder('');
+}
+
 async function matchWeaponIcon(type, i, name) {
   if (!window.ICON_LIB) return;
-  var trimmed = (name || '').trim();
-  if (!trimmed) { State.data.weaponData[type][i].img = ''; State.data.weaponData[type][i].imgManual = false; renderWeaponEditor(); mountPreview(); debouncedSave(); return; }
+  const trimmed = (name || '').trim();
+  const targetId = `w_img_${type}_${i}`;
+  const cell = State.data.weaponData[type] && State.data.weaponData[type][i];
+  if (!cell) return;
+
+  if (!trimmed) {
+    cell.img = '';
+    cell.imgManual = false;
+    updateImgTarget(targetId, '');
+    mountPreview(); debouncedSave();
+    return;
+  }
   try {
     const r = await ICON_LIB.fromName('weapons', trimmed);
-    State.data.weaponData[type][i].img = (r && r.dataURL) ? r.dataURL : '';
-    State.data.weaponData[type][i].imgManual = false;
-    renderWeaponEditor(); mountPreview(); debouncedSave();
+    cell.img = (r && r.dataURL) ? r.dataURL : '';
+    cell.imgManual = false;
   } catch (e) {
-    State.data.weaponData[type][i].img = '';
-    State.data.weaponData[type][i].imgManual = false;
-    renderWeaponEditor(); mountPreview(); debouncedSave();
+    cell.img = '';
+    cell.imgManual = false;
   }
+  updateImgTarget(targetId, cell.img);
+  mountPreview(); debouncedSave();
 }
+
 async function matchArtifactIcon(i, name) {
   if (!window.ICON_LIB) return;
-  var trimmed = (name || '').trim();
-  if (!trimmed) { State.data.artifactData[i].img = ''; State.data.artifactData[i].imgManual = false; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
+  const trimmed = (name || '').trim();
+  const targetId = `a_img_${i}`;
+  const cell = State.data.artifactData[i];
+  if (!cell) return;
+
+  if (!trimmed) {
+    cell.img = '';
+    cell.imgManual = false;
+    updateImgTarget(targetId, '');
+    mountPreview(); debouncedSave();
+    return;
+  }
   try {
     const r = await ICON_LIB.fromName('artifacts', trimmed);
-    State.data.artifactData[i].img = (r && r.dataURL) ? r.dataURL : '';
-    State.data.artifactData[i].imgManual = false;
-    renderArtifactEditor(); mountPreview(); debouncedSave();
+    cell.img = (r && r.dataURL) ? r.dataURL : '';
+    cell.imgManual = false;
   } catch (e) {
-    State.data.artifactData[i].img = '';
-    State.data.artifactData[i].imgManual = false;
-    renderArtifactEditor(); mountPreview(); debouncedSave();
+    cell.img = '';
+    cell.imgManual = false;
   }
+  updateImgTarget(targetId, cell.img);
+  mountPreview(); debouncedSave();
 }
+
 async function matchArtifactDoubleIcon(i, part, name) {
   if (!window.ICON_LIB) return;
-  var trimmed = (name || '').trim();
-  var imgKey = part === 1 ? 'img1' : 'img2';
-  var manualKey = part === 1 ? 'img1Manual' : 'img2Manual';
-  if (!trimmed) { State.data.artifactData[i][imgKey] = ''; State.data.artifactData[i][manualKey] = false; renderArtifactEditor(); mountPreview(); debouncedSave(); return; }
+  const trimmed = (name || '').trim();
+  const imgKey = part === 1 ? 'img1' : 'img2';
+  const manualKey = part === 1 ? 'img1Manual' : 'img2Manual';
+  const targetId = part === 1 ? `a_img1_${i}` : `a_img2_${i}`;
+  const cell = State.data.artifactData[i];
+  if (!cell) return;
+
+  if (!trimmed) {
+    cell[imgKey] = '';
+    cell[manualKey] = false;
+    updateImgTarget(targetId, '');
+    mountPreview(); debouncedSave();
+    return;
+  }
   try {
     const r = await ICON_LIB.fromName('artifacts', trimmed);
-    State.data.artifactData[i][imgKey] = (r && r.dataURL) ? r.dataURL : '';
-  } catch (e) { State.data.artifactData[i][imgKey] = ''; }
-  State.data.artifactData[i][manualKey] = false;
-  renderArtifactEditor(); mountPreview(); debouncedSave();
+    cell[imgKey] = (r && r.dataURL) ? r.dataURL : '';
+  } catch (e) { cell[imgKey] = ''; }
+  cell[manualKey] = false;
+  updateImgTarget(targetId, cell[imgKey]);
+  mountPreview(); debouncedSave();
 }
+
 function setArtifactName1(i, v) { State.data.artifactData[i].name1 = v; mountPreview(); debouncedSave(); }
 function setArtifactName2(i, v) { State.data.artifactData[i].name2 = v; mountPreview(); debouncedSave(); }
 function setArtifactDisplayText(i, v) { State.data.artifactData[i].displayText = v; mountPreview(); debouncedSave(); }
 
 async function matchTeamCharIcon(ti, ci, name) {
   if (!window.ICON_LIB) return;
-  var trimmed = (name || '').trim();
-  if (!trimmed || !isValidCharName(trimmed)) {
-    State.data.teamData[ti].chars[ci].img = '';
-    State.data.teamData[ti].chars[ci].imgManual = false;
-    renderTeamEditor(); mountPreview(); debouncedSave();
+  const trimmed = (name || '').trim();
+  const targetId = `t_${ti}_${ci}_img`;
+  const cell = State.data.teamData[ti]?.chars?.[ci];
+  if (!cell) return;
+
+  /* 两级回退：原名合法 → 用原名；剥 · 后合法 → 用剥完的；都不合法 → 空 */
+  let matchedName = '';
+  if (trimmed) {
+    if (isValidCharName(trimmed)) {
+      matchedName = trimmed;
+    } else {
+      const stripped = stripElementSuffix(trimmed);
+      if (stripped && isValidCharName(stripped)) matchedName = stripped;
+    }
+  }
+
+  if (!matchedName) {
+    cell.img = '';
+    cell.imgManual = false;
+    updateImgTarget(targetId, '');
+    mountPreview(); debouncedSave();
     return;
   }
   try {
-    const r = await ICON_LIB.fromName('characters', trimmed);
-    State.data.teamData[ti].chars[ci].img = (r && r.dataURL) ? r.dataURL : '';
-    State.data.teamData[ti].chars[ci].imgManual = false;
-    renderTeamEditor(); mountPreview(); debouncedSave();
+    const r = await ICON_LIB.fromName('characters', matchedName);
+    cell.img = (r && r.dataURL) ? r.dataURL : '';
+    cell.imgManual = false;
   } catch (e) {
-    State.data.teamData[ti].chars[ci].img = '';
-    State.data.teamData[ti].chars[ci].imgManual = false;
-    renderTeamEditor(); mountPreview(); debouncedSave();
+    cell.img = '';
+    cell.imgManual = false;
   }
+  updateImgTarget(targetId, cell.img);
+  mountPreview(); debouncedSave();
 }
+
 async function matchAltIcon(ti, ci, ai, name) {
   if (!window.ICON_LIB) return;
   const alt = State.data.teamData[ti]?.chars?.[ci]?.alts?.[ai];
   if (!alt) return;
-  var trimmed = (name || '').trim();
-  if (!trimmed || !isValidCharName(trimmed)) {
+  const trimmed = (name || '').trim();
+  const targetId = `t_${ti}_${ci}_${ai}_img`;
+
+  /* 两级回退同 matchTeamCharIcon */
+  let matchedName = '';
+  if (trimmed) {
+    if (isValidCharName(trimmed)) {
+      matchedName = trimmed;
+    } else {
+      const stripped = stripElementSuffix(trimmed);
+      if (stripped && isValidCharName(stripped)) matchedName = stripped;
+    }
+  }
+
+  if (!matchedName) {
     alt.img = '';
     alt.imgManual = false;
-    renderTeamEditor(); mountPreview(); debouncedSave();
+    updateImgTarget(targetId, '');
+    mountPreview(); debouncedSave();
     return;
   }
   try {
-    const r = await ICON_LIB.fromName('characters', trimmed);
+    const r = await ICON_LIB.fromName('characters', matchedName);
     alt.img = (r && r.dataURL) ? r.dataURL : '';
     alt.imgManual = false;
-    renderTeamEditor(); mountPreview(); debouncedSave();
   } catch (e) {
     alt.img = '';
     alt.imgManual = false;
-    renderTeamEditor(); mountPreview(); debouncedSave();
   }
+  updateImgTarget(targetId, alt.img);
+  mountPreview(); debouncedSave();
 }
+
 async function matchCharAvatar(name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
@@ -1197,10 +1297,6 @@ function normalizeState(data = {}) {
 /* =========================================================================
  * 【JS 模块 11】导出 / 导入 / 清空
  * ========================================================================= */
-
-/**
- * 导出前剥离：非手动的图（字典匹配来的）+ 字体 base64。
- */
 function buildExportPayload(data) {
   var out = JSON.parse(JSON.stringify(data));
   out.fontData = '';
@@ -1237,74 +1333,6 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-/**
- * 把单个图片 URL 转成 dataURL。
- *   - data: 开头 → 原样
- *   - 其他 → fetch（CORS 模式）+ blob + FileReader
- *   - 失败 → 返回原 URL（降级，不阻塞其他图片）
- */
-async function urlToDataURL(url) {
-  if (!url) return '';
-  if (/^data:/i.test(url)) return url;
-  try {
-    const res = await fetch(url, { mode: 'cors' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('FileReader 失败'));
-      reader.readAsDataURL(blob);
-    });
-  } catch (e) {
-    console.warn('[bake] 转 dataURL 失败，保留原 URL：', url, '—', e.message);
-    return url;
-  }
-}
-
-/**
- * 深拷贝 State.data，把其中所有图片字段洗成 dataURL。
- * 用于导出 PNG 时绕过 CORS 与相对路径问题。
- */
-async function bakeImagesToDataURL() {
-  const data = JSON.parse(JSON.stringify(State.data));
-  const tasks = [];
-
-  /* 顶层图片 */
-  ['charImg', 'bgImg', 'nameBgImg', 'teamCoreImg'].forEach(function (key) {
-    if (data[key]) {
-      tasks.push((async function () { data[key] = await urlToDataURL(data[key]); })());
-    }
-  });
-
-  /* 武器 */
-  WEAPON_ORDER.forEach(function (type) {
-    (data.weaponData[type] || []).forEach(function (w) {
-      if (w.img) tasks.push((async function () { w.img = await urlToDataURL(w.img); })());
-    });
-  });
-
-  /* 圣遗物 */
-  (data.artifactData || []).forEach(function (a) {
-    if (a.img) tasks.push((async function () { a.img = await urlToDataURL(a.img); })());
-    if (a.img1) tasks.push((async function () { a.img1 = await urlToDataURL(a.img1); })());
-    if (a.img2) tasks.push((async function () { a.img2 = await urlToDataURL(a.img2); })());
-  });
-
-  /* 配队 */
-  (data.teamData || []).forEach(function (t) {
-    (t.chars || []).forEach(function (c) {
-      if (c.img) tasks.push((async function () { c.img = await urlToDataURL(c.img); })());
-      (c.alts || []).forEach(function (a) {
-        if (a.img) tasks.push((async function () { a.img = await urlToDataURL(a.img); })());
-      });
-    });
-  });
-
-  await Promise.all(tasks);
-  return data;
-}
-
 async function exportPNG() {
   const bd = document.getElementById('exportDesktopBtn');
   const bm = document.getElementById('exportMobileBtn');
@@ -1315,21 +1343,7 @@ async function exportPNG() {
   btns.forEach(b => { b.el.disabled = true; b.el.textContent = '正在导出...'; });
   try {
     if (document.fonts) await document.fonts.ready;
-
-    /* 1. 洗图：所有图片字段 → dataURL（绕过 CORS + 相对路径） */
-    const bakedData = await bakeImagesToDataURL();
-
-    /* 2. 临时替换 State.data，buildSVG 用洗过的数据 */
-    const originalData = State.data;
-    let svg;
-    try {
-      State.data = bakedData;
-      svg = buildSVG(EXPORT_SCALE, true);
-    } finally {
-      State.data = originalData;
-    }
-
-    /* 3. 导出 */
+    const svg = buildSVG(EXPORT_SCALE, true);
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     try {
@@ -1437,25 +1451,44 @@ async function autoRematchAll() {
     }
   });
 
+  /* 配队：2/3/4 号位 + 备选 走两级回退（原文 → 剥 · 后） */
   (d.teamData || []).forEach(function (team) {
-    (team.chars || []).forEach(function (c) {
-      if (c.name && !c.img && isValidCharName(c.name)) {
-        tasks.push(async function () {
-          const u = await silentFromName('characters', c.name);
-          if (u) c.img = u;
-        });
+    (team.chars || []).forEach(function (c, ci) {
+      if (ci === 0) return; /* 1 号位不用 chars[0].img（走 teamCoreImg） */
+      if (c.name && !c.img) {
+        var hit = '';
+        if (isValidCharName(c.name)) hit = c.name;
+        else {
+          var s = stripElementSuffix(c.name);
+          if (s && isValidCharName(s)) hit = s;
+        }
+        if (hit) {
+          tasks.push(async function () {
+            const u = await silentFromName('characters', hit);
+            if (u) c.img = u;
+          });
+        }
       }
       (c.alts || []).forEach(function (alt) {
-        if (alt.name && !alt.img && isValidCharName(alt.name)) {
-          tasks.push(async function () {
-            const u = await silentFromName('characters', alt.name);
-            if (u) alt.img = u;
-          });
+        if (alt.name && !alt.img) {
+          var hit = '';
+          if (isValidCharName(alt.name)) hit = alt.name;
+          else {
+            var s = stripElementSuffix(alt.name);
+            if (s && isValidCharName(s)) hit = s;
+          }
+          if (hit) {
+            tasks.push(async function () {
+              const u = await silentFromName('characters', hit);
+              if (u) alt.img = u;
+            });
+          }
         }
       });
     });
   });
 
+  /* 1 号位：严格（用 charName） */
   if (d.charName && !d.teamCoreImg && isValidCharName(d.charName)) {
     tasks.push(async function () {
       const u = await silentFromName('characters', d.charName);
