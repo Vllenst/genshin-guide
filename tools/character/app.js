@@ -1199,70 +1199,102 @@ async function silentFromName(type, name) {
   } catch (e) { return ''; }
 }
 
-/** 导入后自动重匹配所有空图 */
+/**
+ * 并发执行任务列表（限制最大并发数，避免把服务器当 DDoS）。
+ * tasks: 由「返回 Promise 的函数」组成的数组
+ * limit: 最大并发数
+ */
+async function runConcurrent(tasks, limit) {
+  let idx = 0;
+  async function worker() {
+    while (idx < tasks.length) {
+      const my = idx++;
+      try { await tasks[my](); } catch (e) {}
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, worker);
+  await Promise.all(workers);
+}
+
+/** 导入后自动重匹配所有空图（并发版） */
 async function autoRematchAll() {
   var d = State.data;
 
-  /* 1. 样式图（只补空字段） */
+  /* 0. 样式图（走自己的匹配逻辑，先做完，避免与图标任务抢带宽） */
   if (d.charName && (!d.charImg || !d.nameBgImg || !d.bgImg)) {
     await matchStyleImages(true);
   }
 
-  /* 2. 武器 */
-  for (const type of WEAPON_ORDER) {
-    const list = d.weaponData[type] || [];
-    for (let i = 0; i < list.length; i++) {
-      const w = list[i];
-      if (w.name && !w.img) {
-        const url = await silentFromName('weapons', w.name);
-        if (url) w.img = url;
-      }
-    }
-  }
+  /* 1. 收集所有「需要下载」的任务 */
+  var tasks = [];
 
-  /* 3. 圣遗物 */
-  const arts = d.artifactData || [];
-  for (let i = 0; i < arts.length; i++) {
-    const a = arts[i];
+  /* 武器 */
+  WEAPON_ORDER.forEach(function (type) {
+    (d.weaponData[type] || []).forEach(function (w) {
+      if (w.name && !w.img) {
+        tasks.push(async function () {
+          const u = await silentFromName('weapons', w.name);
+          if (u) w.img = u;
+        });
+      }
+    });
+  });
+
+  /* 圣遗物 */
+  (d.artifactData || []).forEach(function (a) {
     if (a.type === 'double') {
       if (a.name1 && !a.img1) {
-        const u1 = await silentFromName('artifacts', a.name1);
-        if (u1) a.img1 = u1;
+        tasks.push(async function () {
+          const u = await silentFromName('artifacts', a.name1);
+          if (u) a.img1 = u;
+        });
       }
       if (a.name2 && !a.img2) {
-        const u2 = await silentFromName('artifacts', a.name2);
-        if (u2) a.img2 = u2;
+        tasks.push(async function () {
+          const u = await silentFromName('artifacts', a.name2);
+          if (u) a.img2 = u;
+        });
       }
     } else {
       if (a.name && !a.img) {
-        const u = await silentFromName('artifacts', a.name);
-        if (u) a.img = u;
+        tasks.push(async function () {
+          const u = await silentFromName('artifacts', a.name);
+          if (u) a.img = u;
+        });
       }
     }
-  }
+  });
 
-  /* 4. 配队（2/3/4 号位主角色头像 + 所有备选） */
-  const teams = d.teamData || [];
-  for (const team of teams) {
-    for (const c of (team.chars || [])) {
+  /* 配队（2/3/4 号位头像 + 所有备选） */
+  (d.teamData || []).forEach(function (team) {
+    (team.chars || []).forEach(function (c) {
       if (c.name && !c.img) {
-        const u = await silentFromName('characters', c.name);
-        if (u) c.img = u;
+        tasks.push(async function () {
+          const u = await silentFromName('characters', c.name);
+          if (u) c.img = u;
+        });
       }
-      for (const alt of (c.alts || [])) {
+      (c.alts || []).forEach(function (alt) {
         if (alt.name && !alt.img) {
-          const u = await silentFromName('characters', alt.name);
-          if (u) alt.img = u;
+          tasks.push(async function () {
+            const u = await silentFromName('characters', alt.name);
+            if (u) alt.img = u;
+          });
         }
-      }
-    }
+      });
+    });
+  });
+
+  /* 1 号位主角色头像（顶层 teamCoreImg） */
+  if (d.charName && !d.teamCoreImg) {
+    tasks.push(async function () {
+      const u = await silentFromName('characters', d.charName);
+      if (u) d.teamCoreImg = u;
+    });
   }
 
-  /* 5. 1 号位主角色头像（顶层 teamCoreImg） */
-  if (d.charName && !d.teamCoreImg) {
-    const u = await silentFromName('characters', d.charName);
-    if (u) d.teamCoreImg = u;
-  }
+  /* 2. 并发执行（限制 6 路） */
+  await runConcurrent(tasks, 6);
 }
 
 /** 导入后处理：字体重载 + 图片重匹配 */
