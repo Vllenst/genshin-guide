@@ -1200,11 +1200,10 @@ async function silentFromName(type, name) {
 }
 
 /**
- * 并发执行任务列表（限制最大并发数，避免把服务器当 DDoS）。
- * tasks: 由「返回 Promise 的函数」组成的数组
- * limit: 最大并发数
+ * 并发执行任务列表（不设硬上限；浏览器自身会限制同域名并发）
  */
 async function runConcurrent(tasks, limit) {
+  const max = limit && limit > 0 ? Math.min(limit, tasks.length) : tasks.length;
   let idx = 0;
   async function worker() {
     while (idx < tasks.length) {
@@ -1212,23 +1211,20 @@ async function runConcurrent(tasks, limit) {
       try { await tasks[my](); } catch (e) {}
     }
   }
-  const workers = Array.from({ length: Math.min(limit, tasks.length) }, worker);
-  await Promise.all(workers);
+  await Promise.all(Array.from({ length: max }, worker));
 }
 
-/** 导入后自动重匹配所有空图（并发版） */
+/** 导入后自动重匹配所有空图（全速并发 + 样式图并行） */
 async function autoRematchAll() {
   var d = State.data;
-
-  /* 0. 样式图（走自己的匹配逻辑，先做完，避免与图标任务抢带宽） */
-  if (d.charName && (!d.charImg || !d.nameBgImg || !d.bgImg)) {
-    await matchStyleImages(true);
-  }
-
-  /* 1. 收集所有「需要下载」的任务 */
   var tasks = [];
 
-  /* 武器 */
+  /* 0. 样式图（也作为一个任务，与其他图标并行） */
+  if (d.charName && (!d.charImg || !d.nameBgImg || !d.bgImg)) {
+    tasks.push(function () { return matchStyleImages(true); });
+  }
+
+  /* 1. 武器 */
   WEAPON_ORDER.forEach(function (type) {
     (d.weaponData[type] || []).forEach(function (w) {
       if (w.name && !w.img) {
@@ -1240,7 +1236,7 @@ async function autoRematchAll() {
     });
   });
 
-  /* 圣遗物 */
+  /* 2. 圣遗物 */
   (d.artifactData || []).forEach(function (a) {
     if (a.type === 'double') {
       if (a.name1 && !a.img1) {
@@ -1265,7 +1261,7 @@ async function autoRematchAll() {
     }
   });
 
-  /* 配队（2/3/4 号位头像 + 所有备选） */
+  /* 3. 配队（2/3/4 号位头像 + 所有备选） */
   (d.teamData || []).forEach(function (team) {
     (team.chars || []).forEach(function (c) {
       if (c.name && !c.img) {
@@ -1285,7 +1281,7 @@ async function autoRematchAll() {
     });
   });
 
-  /* 1 号位主角色头像（顶层 teamCoreImg） */
+  /* 4. 1 号位主角色头像 */
   if (d.charName && !d.teamCoreImg) {
     tasks.push(async function () {
       const u = await silentFromName('characters', d.charName);
@@ -1293,34 +1289,48 @@ async function autoRematchAll() {
     });
   }
 
-  /* 2. 并发执行（限制 6 路） */
-  await runConcurrent(tasks, 6);
+  /* 5. 全速并发（不设硬上限） */
+  await runConcurrent(tasks);
 }
 
-/** 导入后处理：字体重载 + 图片重匹配 */
-async function applyImportedData(data) {
-  State.data = normalizeState(data);
-  showToast('正在恢复字体与图片…', 'info');
-
-  /* 1. 字体重载（按 fontFileName 找） */
+/** 按 fontFileName 重新下载并应用字体（不阻塞其它任务） */
+async function reloadFontByFileName() {
   if (State.data.fontFileName) {
     if (!FONT_LIST.length) await loadFontList();
     var idx = FONT_LIST.findIndex(x => x.file === State.data.fontFileName);
     if (idx >= 0) {
       await selectFont(idx);
+      return true;
     }
   } else {
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
   }
+  return false;
+}
 
-  /* 2. 图片重匹配 */
-  await autoRematchAll();
+/**
+ * 导入后处理：
+ *   字体 / 样式图 / 图标 三路并行启动；
+ *   图标先回来先渲染；字体回来后再重绘一次（字体会影响排版宽度）。
+ */
+async function applyImportedData(data) {
+  State.data = normalizeState(data);
+  showToast('正在恢复字体与图片…', 'info');
 
-  /* 3. 刷新 UI */
+  const fontPromise = reloadFontByFileName();
+  const iconPromise = autoRematchAll();
+
+  /* 图标 / 样式图回来 → 先渲染一版 */
+  await iconPromise;
   initThumbnails();
   renderEditorsByKey();
   syncInputs();
   mountPreview();
+
+  /* 字体回来 → 再重绘一次（文字宽度依赖 fontData） */
+  await fontPromise;
+  mountPreview();
+
   debouncedSave();
 }
 
