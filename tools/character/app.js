@@ -8,7 +8,7 @@
  *   【JS 模块 4】  UI 编辑器渲染
  *   【JS 模块 5】  图片上传
  *   【JS 模块 6】  字体库（含 IndexedDB 缓存）
- *   【JS 模块 7】  数据字典读取
+ *   【JS 模块 7】  数据字典读取 + 角色名校验
  *   【JS 模块 8】  样式图匹配 + 在线存档
  *   【JS 模块 9】  图标库匹配
  *   【JS 模块 10】 数据归一化
@@ -544,12 +544,6 @@ function updateImgXHint() {
 
 /* =========================================================================
  * 【JS 模块 6】字体库（含 IndexedDB 缓存）
- * =========================================================================
- * 缓存策略：
- *   - 从 GitHub Pages 下载到的字体 dataURL 存进 IndexedDB
- *   - key 形如 font_cache::<文件名>
- *   - 已存过的字体，之后 selectFont / applyImportedData 直接读缓存，0 秒
- *   - 清空数据时一并清掉字体缓存
  * ========================================================================= */
 let FONT_LIST = [];
 let fontSheetOpen = false;
@@ -557,7 +551,6 @@ let loadedFontFace = null;
 
 const FONT_CACHE_PREFIX = 'font_cache::';
 
-/** 从 IndexedDB 读取字体 dataURL（未命中返回空串） */
 async function getFontFromCache(fileName) {
   if (!fileName) return '';
   try {
@@ -571,19 +564,15 @@ async function getFontFromCache(fileName) {
   } catch (e) { return ''; }
 }
 
-/** 把字体 dataURL 写入 IndexedDB 缓存 */
 async function putFontToCache(fileName, dataURL) {
   if (!fileName || !dataURL) return;
   try {
     const db = await openDatabase();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).put(dataURL, FONT_CACHE_PREFIX + fileName);
-  } catch (e) {
-    /* 缓存写失败不影响使用，静默忽略 */
-  }
+  } catch (e) {}
 }
 
-/** 清空所有字体缓存 */
 async function clearFontCache() {
   try {
     const db = await openDatabase();
@@ -680,10 +669,6 @@ async function installPreviewFont() {
   }
 }
 
-/**
- * 应用字体 dataURL 到全局（设置 State、注入 FontFace、刷新预览）
- * 无论是从缓存读还是从网络下载，最终都走这个函数
- */
 async function applyFontData(fileName, fontName, dataURL) {
   State.data.fontData = dataURL;
   State.data.fontFileName = fileName;
@@ -699,7 +684,6 @@ async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelCustomFont');
 
-  /* 默认系统字体 */
   if (index === -1) {
     State.data.fontData = ''; State.data.fontFileName = ''; State.data.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
@@ -711,13 +695,11 @@ async function selectFont(index) {
   const f = FONT_LIST[index];
   if (!f) return;
 
-  /* 已选中且 fontData 已就绪 → 短路 */
   if (State.data.fontFileName === f.file && State.data.fontData) {
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     return;
   }
 
-  /* 1. 先查本地缓存 */
   if (labelEl) labelEl.textContent = `[1/3] 正在检查本地缓存...`;
   const cached = await getFontFromCache(f.file);
   if (cached) {
@@ -726,7 +708,6 @@ async function selectFont(index) {
     return;
   }
 
-  /* 2. 缓存未命中 → 走网络 */
   try {
     if (labelEl) labelEl.textContent = `[1/3] 正在下载二进制流...`;
     let res;
@@ -776,7 +757,6 @@ async function selectFont(index) {
     State.data.fontFileName = f.file;
     State.data.fontName = f.name;
 
-    /* 写入缓存（失败不影响使用） */
     await putFontToCache(f.file, dataURL);
 
     if (labelEl) labelEl.textContent = '当前：' + f.name;
@@ -795,7 +775,7 @@ async function selectFont(index) {
 }
 
 /* =========================================================================
- * 【JS 模块 7】数据字典读取
+ * 【JS 模块 7】数据字典读取 + 角色名校验
  * ========================================================================= */
 async function loadCharOrderTxt() {
   try {
@@ -817,6 +797,16 @@ async function loadCharOrderTxt() {
   } catch (e) {
     console.warn('characters.txt 加载失败：', e.message);
   }
+}
+
+/**
+ * 判断名字是否为合法角色名（在 characters.txt 中）。
+ * 用于阻止"旅行者（冰）"这类带后缀的名字被误识别。
+ */
+function isValidCharName(name) {
+  var t = String(name || '').trim();
+  if (!t) return false;
+  return !!CHAR_NAME_TO_ORDER[t];
 }
 
 async function loadNamecards() {
@@ -861,7 +851,17 @@ async function loadArtDict() {
 
 /* =========================================================================
  * 【JS 模块 8】样式图匹配 + 在线存档
- * ========================================================================= */
+ * =========================================================================
+ * 匹配规则：
+ *   - 先校验 charName 是否为合法角色名（在 characters.txt 中）
+ *   - 合法：
+ *       立绘：先查"名字（元素）"，无则回退查"名字"
+ *       名片：查"名字"
+ *       元素图：只看 theme，与 charName 无关
+ *   - 非法（如"旅行者（冰）"）：
+ *       立绘、名片、头像 全部跳过
+ *       元素图 照常显示（只认 theme）
+ * ------------------------------------------------------------------------- */
 async function matchStyleImages(onlyEmpty) {
   const name = (State.data.charName || '').trim();
   if (!name) { if (!onlyEmpty) showToast('请先填写角色名', 'error'); return; }
@@ -869,6 +869,8 @@ async function matchStyleImages(onlyEmpty) {
   State.data.nameBgImgDeleted = false;
   State.data.bgImgDeleted = false;
   if (!onlyEmpty) showToast('正在匹配样式图…', 'info');
+
+  const nameValid = isValidCharName(name);
   const results = { standing: false, element: false, namecard: false, standingError: '' };
   const elementName = themeToElementName();
 
@@ -877,6 +879,14 @@ async function matchStyleImages(onlyEmpty) {
   /* 立绘 */
   if (!onlyEmpty || !State.data.charImg) {
     tasks.push(async function () {
+      if (!nameValid) {
+        State.data.charImg = '';
+        State.data.charImgMeta = null;
+        State.data.charImgManual = false;
+        resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
+        results.standingError = '角色清单无此名字';
+        return;
+      }
       const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
       let artUrl = '';
       if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
@@ -913,7 +923,7 @@ async function matchStyleImages(onlyEmpty) {
     });
   }
 
-  /* 元素图 */
+  /* 元素图：只认 theme，与 charName 合法性无关 */
   if (!onlyEmpty || !State.data.nameBgImg) {
     tasks.push(async function () {
       let elementUrl = '';
@@ -935,9 +945,15 @@ async function matchStyleImages(onlyEmpty) {
     });
   }
 
-  /* 名片图 */
+  /* 名片：需要合法角色名 */
   if (!onlyEmpty || !State.data.bgImg) {
     tasks.push(async function () {
+      if (!nameValid) {
+        State.data.bgImg = '';
+        State.data.bgImgManual = false;
+        resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
+        return;
+      }
       const namecardUrl = NAMECARD_DICT[name] || '';
       if (namecardUrl) {
         State.data.bgImg = namecardUrl;
@@ -955,13 +971,17 @@ async function matchStyleImages(onlyEmpty) {
   await Promise.all(tasks.map(fn => fn()));
 
   if (!onlyEmpty) {
-    const failed = [];
-    if (!results.standing) failed.push('立绘（' + (results.standingError || '未匹配') + '）');
-    if (elementName && !results.element) failed.push('元素图');
-    if (!results.namecard) failed.push('名片图（字典无此角色）');
-    if (!elementName) failed.push('元素图（未选元素色）');
-    if (failed.length) showToast('未找到：' + failed.join('、'), 'error');
-    else showToast('全部匹配成功', 'success');
+    if (!nameValid) {
+      showToast('角色「' + name + '」不在 characters.txt 中', 'error');
+    } else {
+      const failed = [];
+      if (!results.standing) failed.push('立绘（' + (results.standingError || '未匹配') + '）');
+      if (elementName && !results.element) failed.push('元素图');
+      if (!results.namecard) failed.push('名片图（字典无此角色）');
+      if (!elementName) failed.push('元素图（未选元素色）');
+      if (failed.length) showToast('未找到：' + failed.join('、'), 'error');
+      else showToast('全部匹配成功', 'success');
+    }
     updateImgXHint();
     mountPreview(); debouncedSave();
   }
@@ -1037,10 +1057,16 @@ async function matchArtifactDoubleIcon(i, part, name) {
 function setArtifactName1(i, v) { State.data.artifactData[i].name1 = v; mountPreview(); debouncedSave(); }
 function setArtifactName2(i, v) { State.data.artifactData[i].name2 = v; mountPreview(); debouncedSave(); }
 function setArtifactDisplayText(i, v) { State.data.artifactData[i].displayText = v; mountPreview(); debouncedSave(); }
+
 async function matchTeamCharIcon(ti, ci, name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) { State.data.teamData[ti].chars[ci].img = ''; State.data.teamData[ti].chars[ci].imgManual = false; renderTeamEditor(); mountPreview(); debouncedSave(); return; }
+  if (!trimmed || !isValidCharName(trimmed)) {
+    State.data.teamData[ti].chars[ci].img = '';
+    State.data.teamData[ti].chars[ci].imgManual = false;
+    renderTeamEditor(); mountPreview(); debouncedSave();
+    return;
+  }
   try {
     const r = await ICON_LIB.fromName('characters', trimmed);
     State.data.teamData[ti].chars[ci].img = (r && r.dataURL) ? r.dataURL : '';
@@ -1057,7 +1083,7 @@ async function matchAltIcon(ti, ci, ai, name) {
   const alt = State.data.teamData[ti]?.chars?.[ci]?.alts?.[ai];
   if (!alt) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) {
+  if (!trimmed || !isValidCharName(trimmed)) {
     alt.img = '';
     alt.imgManual = false;
     renderTeamEditor(); mountPreview(); debouncedSave();
@@ -1077,7 +1103,7 @@ async function matchAltIcon(ti, ci, ai, name) {
 async function matchCharAvatar(name) {
   if (!window.ICON_LIB) return;
   var trimmed = (name || '').trim();
-  if (!trimmed) {
+  if (!trimmed || !isValidCharName(trimmed)) {
     State.data.teamCoreImg = '';
     State.data.teamCoreImgManual = false;
     resetThumb('thumbTeamCore', 'labelTeamCore', '主角色一号位头像（点击更换）');
@@ -1188,11 +1214,6 @@ function normalizeState(data = {}) {
 /* =========================================================================
  * 【JS 模块 11】导出 / 导入 / 清空
  * ========================================================================= */
-
-/**
- * 导出前剥离：非手动的图（字典匹配来的）+ 字体 base64。
- * 手动上传的图保留。
- */
 function buildExportPayload(data) {
   var out = JSON.parse(JSON.stringify(data));
   out.fontData = '';
@@ -1282,7 +1303,6 @@ function exportConfig() {
   );
 }
 
-/** 静默匹配单个图标（用于导入后自动重匹配） */
 async function silentFromName(type, name) {
   if (!window.ICON_LIB) return '';
   var trimmed = String(name || '').trim();
@@ -1293,9 +1313,6 @@ async function silentFromName(type, name) {
   } catch (e) { return ''; }
 }
 
-/**
- * 并发执行任务列表（不设硬上限；浏览器自身会限制同域名并发）
- */
 async function runConcurrent(tasks, limit) {
   const max = limit && limit > 0 ? Math.min(limit, tasks.length) : tasks.length;
   let idx = 0;
@@ -1308,17 +1325,14 @@ async function runConcurrent(tasks, limit) {
   await Promise.all(Array.from({ length: max }, worker));
 }
 
-/** 导入后自动重匹配所有空图（全速并发 + 样式图并行） */
 async function autoRematchAll() {
   var d = State.data;
   var tasks = [];
 
-  /* 0. 样式图（也作为一个任务，与其他图标并行） */
   if (d.charName && (!d.charImg || !d.nameBgImg || !d.bgImg)) {
     tasks.push(function () { return matchStyleImages(true); });
   }
 
-  /* 1. 武器 */
   WEAPON_ORDER.forEach(function (type) {
     (d.weaponData[type] || []).forEach(function (w) {
       if (w.name && !w.img) {
@@ -1330,7 +1344,6 @@ async function autoRematchAll() {
     });
   });
 
-  /* 2. 圣遗物 */
   (d.artifactData || []).forEach(function (a) {
     if (a.type === 'double') {
       if (a.name1 && !a.img1) {
@@ -1355,17 +1368,16 @@ async function autoRematchAll() {
     }
   });
 
-  /* 3. 配队（2/3/4 号位头像 + 所有备选） */
   (d.teamData || []).forEach(function (team) {
     (team.chars || []).forEach(function (c) {
-      if (c.name && !c.img) {
+      if (c.name && !c.img && isValidCharName(c.name)) {
         tasks.push(async function () {
           const u = await silentFromName('characters', c.name);
           if (u) c.img = u;
         });
       }
       (c.alts || []).forEach(function (alt) {
-        if (alt.name && !alt.img) {
+        if (alt.name && !alt.img && isValidCharName(alt.name)) {
           tasks.push(async function () {
             const u = await silentFromName('characters', alt.name);
             if (u) alt.img = u;
@@ -1375,8 +1387,7 @@ async function autoRematchAll() {
     });
   });
 
-  /* 4. 1 号位主角色头像 */
-  if (d.charName && !d.teamCoreImg) {
+  if (d.charName && !d.teamCoreImg && isValidCharName(d.charName)) {
     tasks.push(async function () {
       const u = await silentFromName('characters', d.charName);
       if (u) d.teamCoreImg = u;
@@ -1386,10 +1397,6 @@ async function autoRematchAll() {
   await runConcurrent(tasks);
 }
 
-/**
- * 按 fontFileName 恢复字体。
- * 优先读 IndexedDB 缓存；未命中才走网络下载。
- */
 async function reloadFontByFileName() {
   if (State.data.fontFileName) {
     if (!FONT_LIST.length) await loadFontList();
@@ -1398,7 +1405,6 @@ async function reloadFontByFileName() {
       await selectFont(idx);
       return true;
     }
-    /* 字体清单里找不到这个名字，但 fontData 里可能还有 base64（比如从旧版 JSON 导入） */
     if (State.data.fontData) {
       await installPreviewFont();
       return true;
@@ -1409,11 +1415,6 @@ async function reloadFontByFileName() {
   return false;
 }
 
-/**
- * 导入后处理：
- *   字体 / 样式图 / 图标 三路并行启动；
- *   图标先回来先渲染；字体回来后再重绘一次（字体会影响排版宽度）。
- */
 async function applyImportedData(data) {
   State.data = normalizeState(data);
   showToast('正在恢复字体与图片…', 'info');
@@ -1421,14 +1422,12 @@ async function applyImportedData(data) {
   const fontPromise = reloadFontByFileName();
   const iconPromise = autoRematchAll();
 
-  /* 图标 / 样式图回来 → 先渲染一版 */
   await iconPromise;
   initThumbnails();
   renderEditorsByKey();
   syncInputs();
   mountPreview();
 
-  /* 字体回来 → 再重绘一次（文字宽度依赖 fontData） */
   await fontPromise;
   if (document.fonts) { try { await document.fonts.ready; } catch (e) {} }
   mountPreview();
