@@ -185,12 +185,6 @@ function stripElementSuffix(name) {
 }
 function padOrder(n) { return String(n).padStart(3, '0'); }
 
-/**
- * 把图片 URL 转成 dataURL。
- *   - data: 开头 → 原样返回
- *   - 其他 → fetch（CORS）+ blob + FileReader
- *   - 失败 → 返回原 URL（降级，不阻塞导出）
- */
 async function urlToDataURL(url) {
   if (!url) return '';
   if (/^data:/i.test(url)) return url;
@@ -310,7 +304,8 @@ function buildSVG(showGuides, forExport = false) {
   }
 
   const cropW = SVG_H * 4 / 3;
-  const guideContent = s.showGuides ? (
+  /* 用形参 showGuides（不是 state.showGuides），这样导出时才能独立控制虚线显示 */
+  const guideContent = showGuides ? (
     [s.safeBoundX, s.safeBoundX + cropW / 2, s.safeBoundX + cropW * 3 / 4, s.safeBoundX + cropW]
       .map(x => `<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" stroke="#888888" stroke-width="2" stroke-dasharray="12 12" opacity="0.5" vector-effect="non-scaling-stroke"/>`).join('')
   ) : '';
@@ -332,9 +327,6 @@ function buildSVG(showGuides, forExport = false) {
       </feComponentTransfer>
     </filter>`;
 
-  /* 胶囊文字图案：用名片图当"文字填充色"。
-     有 s.bg + s.capText 时定义 pattern；文字用 fill="url(#capTextPattern)"。
-     没名片图时文字用深色，保证可读。 */
   const usePattern = !!(s.bg && s.capText);
   const capTextFill = usePattern ? 'url(#capTextPattern)' : '#1a1a1a';
 
@@ -983,11 +975,6 @@ function getExportBaseName() {
   return name.replace(/[\r\n]+/g, '').replace(/[\\/:*?"<>|]/g, '_');
 }
 
-/**
- * 导出前把 state 里所有图片字段洗成 dataURL。
- * 原因：SVG 装进 blob URL 后，相对路径失效 + 外链受 CORS 限制 → 图片丢失。
- * 洗完后从 State 恢复。
- */
 async function bakeAndExport() {
   const backup = {
     bg: state.bg,
@@ -1014,6 +1001,7 @@ async function bakeAndExport() {
       state.floatImg = baked;
     }
 
+    /* 导出时永远不显示虚线 */
     const svgStr = buildSVG(false, true);
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1291,8 +1279,6 @@ window.App = App;
   await loadFontList();
   await loadPersist();
 
-  /* 强制对齐固定文案：character / boss 模式的主标题和胶囊文字由模式决定，
-     不信任 IDB 里的旧值。 */
   if (state.guideType === 'character' || state.guideType === 'boss') {
     state.mainText = MODE_MAIN_TEXTS[state.guideType];
     state.capText = MODE_CAP_TEXT[state.guideType];
