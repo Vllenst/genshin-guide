@@ -8,6 +8,30 @@
 
 ---
 
+## 2026-10-09
+
+**里程碑**：
+- 拆 `tools/character/app.js` → `{consts.js, svg.js, app.js}` 三文件
+- 角色卡导出 JSON 剥离非手动图片，导入自动重匹配（体积十几 MB → 几十 KB）
+- 字体加 IndexedDB 缓存，首次下载后永久秒开
+- 导出 PNG 前把所有图片洗成 dataURL（修外链 CORS 和本地相对路径丢图）
+- 角色名校验：以 `characters.txt` 为准，非法名跳过立绘 / 名片 / 头像，元素图不受影响
+- 图标 / 样式图并发下载，字体与图标并行不互相阻塞
+- 展开收起按钮加旋转动画
+
+**共享资源**：
+- `shared/theme.css` 修按钮图标误判（删 `:has(> svg:only-child)`）
+- `icon-loader.js` `getPath()` 加 `url` 覆盖，优先级 `local > url > http key > 拼接`
+- `icon-dict.js` 夏洛蒂加 `url` 覆盖（原 Lunaris 源图错）
+- `ui-icons.js` export / import 方向对调
+
+**图标字典编辑器**：
+- 支持 `url` 字段（载入 / 同步 / 导出都带上）
+- 粘贴 URL 改为「给 key 挂源」语义（原来只是新增条目）
+- Amber 同步时 `local` 或 `url` 的条目名字冲突 → 跳过
+
+---
+
 ## 2026-10-08
 
 **里程碑**：
@@ -20,9 +44,9 @@
 - favicon 换成 `favicon.png`
 
 **字体加载修复**：
-- 角色卡 / 视频封面：字体加载机制重写为「fetch → ArrayBuffer → 直接喂给 FontFace」，绕过 blob URL 与超长 dataURL 的兼容性问题
-- 根因：GitHub 上字体文件曾被重命名，导致文件损坏（表现为只有个别字体能加载）
-- 视频封面：@font-face 同步注入 `document.head`，保证 SVG 内文字命中自定义字体
+- 角色卡 / 视频封面：字体加载机制重写为「fetch → ArrayBuffer → 直接喂给 FontFace」
+- 根因：GitHub 上字体文件曾被重命名，导致文件损坏
+- 视频封面：@font-face 同步注入 `document.head`
 
 **删除**：
 - `tools/video-cover.html`（已拆分）
@@ -69,6 +93,7 @@
 | 本地立绘 | `shared/assets/portrait/` |
 | 元素图 | `shared/assets/characters/element/` |
 | 在线存档 | `shared/saves/characters/` |
+| 角色卡拆分文件 | `tools/character/{consts.js, svg.js, app.js}` |
 
 ---
 
@@ -93,6 +118,7 @@
 - 用户不懂代码，需要能直接复制粘贴覆盖
 - **一次给一个文件**（大文件会被截断）
 - 大段代码用 **4 个反引号**包裹（避免嵌套代码块截断）
+- **用户看不到 Console**，别要求他发 Console 报错。诊断方式改成「看现象 / 看 UI 反馈 / 看导出结果」
 
 ### 2. 每次生成代码前先自查
 
@@ -114,6 +140,18 @@
 - 优先让用户**关浏览器重开**（手机缓存顽固）
 - 或**无痕模式**测试
 
+### 5. 角色卡的图片处理逻辑（别重复踩坑）
+
+- **预览时**：SVG 插 DOM，相对路径 / 外链都能显示（CORS 不拦 image 显示）
+- **导出 PNG 时**：SVG 装进 blob URL，相对路径失效 + 外链受 CORS 限制 → 所以导出前要把所有图片洗成 dataURL
+- **`imgManual` 标记**：区分手动上传 vs 字典匹配；导出 JSON 时前者保留、后者剥离
+
+### 6. 字体问题排查顺序
+
+1. 先看是不是**没缓存**（首次下 20MB）→ IndexedDB
+2. 再看是不是 **GitHub Pages 慢**（国内直连 87KB/s）
+3. 最后才考虑压缩 / 子集化 / 换源
+
 ---
 
 ## 待办
@@ -125,3 +163,5 @@
 - 拆 `tools/chart.html` → `tools/chart/{radar,bar}/`
 - `tools/tier.html` 是否拆待定
 - 拆完后主页 `TOOLS` 里对应 subtool 加独立 `src`
+- 角色卡 `app.js` 还能再拆（`render.js` 存 `renderXxxEditor` 家族，能再省 ~350 行），暂不急
+- 立绘如果换源到国内 / 加缓存，可以参考字体的方案
