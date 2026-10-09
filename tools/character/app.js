@@ -7,12 +7,12 @@
  *   【JS 模块 3】  横向 Tab 栏
  *   【JS 模块 4】  UI 编辑器渲染
  *   【JS 模块 5】  图片上传
- *   【JS 模块 6】  字体库
+ *   【JS 模块 6】  字体库（含 IndexedDB 缓存）
  *   【JS 模块 7】  数据字典读取
  *   【JS 模块 8】  样式图匹配 + 在线存档
  *   【JS 模块 9】  图标库匹配
  *   【JS 模块 10】 数据归一化
- *   【JS 模块 11】 导出 / 导入 / 清空（含图片剥离与自动重匹配）
+ *   【JS 模块 11】 导出 / 导入 / 清空
  *   【JS 模块 12】 UI 交互（字段 / 增删改 / 移动）
  *   【JS 模块 13】 App 接口
  *   【JS 模块 14】 初始化
@@ -543,11 +543,64 @@ function updateImgXHint() {
 }
 
 /* =========================================================================
- * 【JS 模块 6】字体库
+ * 【JS 模块 6】字体库（含 IndexedDB 缓存）
+ * =========================================================================
+ * 缓存策略：
+ *   - 从 GitHub Pages 下载到的字体 dataURL 存进 IndexedDB
+ *   - key 形如 font_cache::<文件名>
+ *   - 已存过的字体，之后 selectFont / applyImportedData 直接读缓存，0 秒
+ *   - 清空数据时一并清掉字体缓存
  * ========================================================================= */
 let FONT_LIST = [];
 let fontSheetOpen = false;
 let loadedFontFace = null;
+
+const FONT_CACHE_PREFIX = 'font_cache::';
+
+/** 从 IndexedDB 读取字体 dataURL（未命中返回空串） */
+async function getFontFromCache(fileName) {
+  if (!fileName) return '';
+  try {
+    const db = await openDatabase();
+    return await new Promise(resolve => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get(FONT_CACHE_PREFIX + fileName);
+      req.onsuccess = () => resolve(req.result || '');
+      req.onerror = () => resolve('');
+    });
+  } catch (e) { return ''; }
+}
+
+/** 把字体 dataURL 写入 IndexedDB 缓存 */
+async function putFontToCache(fileName, dataURL) {
+  if (!fileName || !dataURL) return;
+  try {
+    const db = await openDatabase();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(dataURL, FONT_CACHE_PREFIX + fileName);
+  } catch (e) {
+    /* 缓存写失败不影响使用，静默忽略 */
+  }
+}
+
+/** 清空所有字体缓存 */
+async function clearFontCache() {
+  try {
+    const db = await openDatabase();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.openCursor();
+    req.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor) {
+        if (String(cursor.key).indexOf(FONT_CACHE_PREFIX) === 0) {
+          cursor.delete();
+        }
+        cursor.continue();
+      }
+    };
+  } catch (e) {}
+}
 
 async function loadFontList() {
   try {
@@ -627,10 +680,26 @@ async function installPreviewFont() {
   }
 }
 
+/**
+ * 应用字体 dataURL 到全局（设置 State、注入 FontFace、刷新预览）
+ * 无论是从缓存读还是从网络下载，最终都走这个函数
+ */
+async function applyFontData(fileName, fontName, dataURL) {
+  State.data.fontData = dataURL;
+  State.data.fontFileName = fileName;
+  State.data.fontName = fontName;
+  await installPreviewFont();
+  const labelEl = document.getElementById('labelCustomFont');
+  if (labelEl) labelEl.textContent = '当前：' + fontName;
+  mountPreview();
+  debouncedSave();
+}
+
 async function selectFont(index) {
   closeFontPicker();
   const labelEl = document.getElementById('labelCustomFont');
-  
+
+  /* 默认系统字体 */
   if (index === -1) {
     State.data.fontData = ''; State.data.fontFileName = ''; State.data.fontName = '';
     if (loadedFontFace) { try { document.fonts.delete(loadedFontFace); } catch (e) {} loadedFontFace = null; }
@@ -638,14 +707,26 @@ async function selectFont(index) {
     mountPreview(); debouncedSave();
     return;
   }
-  
+
   const f = FONT_LIST[index];
   if (!f) return;
+
+  /* 已选中且 fontData 已就绪 → 短路 */
   if (State.data.fontFileName === f.file && State.data.fontData) {
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     return;
   }
 
+  /* 1. 先查本地缓存 */
+  if (labelEl) labelEl.textContent = `[1/3] 正在检查本地缓存...`;
+  const cached = await getFontFromCache(f.file);
+  if (cached) {
+    if (labelEl) labelEl.textContent = `[2/3] 命中缓存，正在注入字体...`;
+    await applyFontData(f.file, f.name, cached);
+    return;
+  }
+
+  /* 2. 缓存未命中 → 走网络 */
   try {
     if (labelEl) labelEl.textContent = `[1/3] 正在下载二进制流...`;
     let res;
@@ -654,14 +735,14 @@ async function selectFont(index) {
     } catch (netErr) {
       throw new Error(`跨域或网络受阻 (${netErr.message})`);
     }
-    
+
     if (!res.ok) throw new Error(`HTTP ${res.status} 文件未找到`);
-    
+
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
       throw new Error('服务器返回网页而非字体(可能是404)');
     }
-    
+
     const buf = await res.arrayBuffer();
 
     if (labelEl) labelEl.textContent = `[2/3] 正在注入字体渲染引擎...`;
@@ -676,7 +757,7 @@ async function selectFont(index) {
     }
 
     if (labelEl) labelEl.textContent = `[3/3] 正在固化存档数据...`;
-    
+
     let ext = f.file.split('.').pop().toLowerCase();
     let mime = 'font/ttf';
     if (ext === 'otf') mime = 'font/otf';
@@ -695,16 +776,19 @@ async function selectFont(index) {
     State.data.fontFileName = f.file;
     State.data.fontName = f.name;
 
+    /* 写入缓存（失败不影响使用） */
+    await putFontToCache(f.file, dataURL);
+
     if (labelEl) labelEl.textContent = '当前：' + f.name;
     mountPreview(); debouncedSave();
-    
+
   } catch (err) {
     console.error(`[字体加载失败] ${f.name}:`, err);
     if (labelEl) labelEl.textContent = `异常卡住: ${err.message}`;
     showToast(`字体 [${f.name}] 加载失败: ${err.message}`, 'error');
-    
-    State.data.fontData = ''; 
-    State.data.fontFileName = ''; 
+
+    State.data.fontData = '';
+    State.data.fontFileName = '';
     State.data.fontName = '';
     debouncedSave();
   }
@@ -778,11 +862,6 @@ async function loadArtDict() {
 /* =========================================================================
  * 【JS 模块 8】样式图匹配 + 在线存档
  * ========================================================================= */
-
-/**
- * 样式图匹配（并发版）：
- *   立绘 / 元素图 / 名片图 三路同时下，互不阻塞。
- */
 async function matchStyleImages(onlyEmpty) {
   const name = (State.data.charName || '').trim();
   if (!name) { if (!onlyEmpty) showToast('请先填写角色名', 'error'); return; }
@@ -856,7 +935,7 @@ async function matchStyleImages(onlyEmpty) {
     });
   }
 
-  /* 名片图（同步逻辑，也包一层方便统一 await） */
+  /* 名片图 */
   if (!onlyEmpty || !State.data.bgImg) {
     tasks.push(async function () {
       const namecardUrl = NAMECARD_DICT[name] || '';
@@ -873,7 +952,6 @@ async function matchStyleImages(onlyEmpty) {
     });
   }
 
-  /* 三路并发 */
   await Promise.all(tasks.map(fn => fn()));
 
   if (!onlyEmpty) {
@@ -1305,17 +1383,24 @@ async function autoRematchAll() {
     });
   }
 
-  /* 5. 全速并发（不设硬上限） */
   await runConcurrent(tasks);
 }
 
-/** 按 fontFileName 重新下载并应用字体（不阻塞其它任务） */
+/**
+ * 按 fontFileName 恢复字体。
+ * 优先读 IndexedDB 缓存；未命中才走网络下载。
+ */
 async function reloadFontByFileName() {
   if (State.data.fontFileName) {
     if (!FONT_LIST.length) await loadFontList();
     var idx = FONT_LIST.findIndex(x => x.file === State.data.fontFileName);
     if (idx >= 0) {
       await selectFont(idx);
+      return true;
+    }
+    /* 字体清单里找不到这个名字，但 fontData 里可能还有 base64（比如从旧版 JSON 导入） */
+    if (State.data.fontData) {
+      await installPreviewFont();
       return true;
     }
   } else {
@@ -1345,6 +1430,7 @@ async function applyImportedData(data) {
 
   /* 字体回来 → 再重绘一次（文字宽度依赖 fontData） */
   await fontPromise;
+  if (document.fonts) { try { await document.fonts.ready; } catch (e) {} }
   mountPreview();
 
   debouncedSave();
@@ -1370,10 +1456,11 @@ async function clearAllData() {
   const ok = await showConfirm('清空全部数据', '确定清空所有角色配置与图片数据吗？此操作不可撤销。');
   if (!ok) return;
   try {
+    await clearFontCache();
     const db = await openDatabase();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    store.clear();
+    store.delete('current_state');
     store.put({ author: State.data.author }, 'current_state');
   } catch (e) {}
   location.reload();
@@ -1584,9 +1671,9 @@ async function init() {
   await loadNamecards();
   await loadArtDict();
   await loadFontList();
-  
+
   try { await installPreviewFont(); } catch(e) {}
-  
+
   initThumbnails();
   syncInputs();
   renderEditorsByKey();
