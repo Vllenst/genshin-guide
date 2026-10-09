@@ -1024,10 +1024,6 @@ function importConfig(input) {
   input.value = '';
 }
 
-/**
- * 清空：清掉 pending 的 persist，清 IndexedDB，然后 reload。
- * 之前只 reload 没清 IDB → 重载后又从 IDB 读回老数据，看起来"没清掉"。
- */
 async function clearAll() {
   if (!confirm('确定清空视频封面所有配置吗？')) return;
   try {
@@ -1246,11 +1242,11 @@ window.App = App;
   await loadFontList();
   await loadPersist();
 
-  /* 补固定文案：首次打开时（或上次数据里这两项为空时），
-     character / boss 模式要把固定文案填进 state，否则 SVG 里主标题和胶囊都是空的。 */
+  /* 强制对齐固定文案：character / boss 模式的主标题和胶囊文字由模式决定，
+     不信任 IDB 里的旧值。用户手改过这些字段？那只在 custom 模式里改。 */
   if (state.guideType === 'character' || state.guideType === 'boss') {
-    if (!state.mainText) state.mainText = MODE_MAIN_TEXTS[state.guideType];
-    if (!state.capText) state.capText = MODE_CAP_TEXT[state.guideType];
+    state.mainText = MODE_MAIN_TEXTS[state.guideType];
+    state.capText = MODE_CAP_TEXT[state.guideType];
   }
 
   try { await installFont(); } catch(e) {}
@@ -1261,10 +1257,16 @@ window.App = App;
       '<option value="' + esc(l.file) + '">' + esc(l.name) + '</option>'
     ).join('');
 
-    const validCapLogo = state.capLogo && state.capLogo.startsWith(LOGO_BASE_URL);
-    if (!validCapLogo) {
+    /* Logo 校验加强：文件名必须真的在 LOGO_LIST 里，否则重置。
+       原逻辑只检查前缀，如果 IDB 里存了"前缀对但文件不存在"的值就不会重置 → logo 空白。 */
+    const logoFiles = LOGO_LIST.map(l => l.file);
+    const currentLogoFile = (state.capLogo && state.capLogo.startsWith(LOGO_BASE_URL))
+      ? state.capLogo.replace(LOGO_BASE_URL, '')
+      : '';
+    if (!logoFiles.includes(currentLogoFile)) {
       state.capLogo = LOGO_BASE_URL + LOGO_LIST[0].file;
     }
+
     const curFile = state.capLogo.replace(LOGO_BASE_URL, '');
     logoSelect.value = curFile;
 
