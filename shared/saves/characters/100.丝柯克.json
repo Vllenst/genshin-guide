@@ -1,0 +1,227 @@
+{
+  "charName": "丝柯克",
+  "version": "7.1",
+  "date": "2026.10",
+  "author": "烤吃虎鱼LW",
+  "imgX": -90,
+  "theme": "#35AACC",
+  "charImg": "",
+  "charImgMeta": null,
+  "charImgDeleted": false,
+  "charImgManual": false,
+  "bgImg": "",
+  "bgImgDeleted": false,
+  "bgImgManual": false,
+  "nameBgImg": "",
+  "nameBgImgMeta": null,
+  "nameBgImgDeleted": false,
+  "nameBgImgManual": false,
+  "fontData": "",
+  "fontName": "原神补全",
+  "fontFileName": "原神补全.ttf",
+  "weaponData": {
+    "graduate": [
+      {
+        "name": "苍耀",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "蝶变",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "雾切之回光",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "波乱月白经津",
+        "img": "",
+        "imgManual": false
+      }
+    ],
+    "optional": [
+      {
+        "name": "厄水之祸",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "熔猎异端之刃",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "海渊终曲",
+        "img": "",
+        "imgManual": false
+      }
+    ],
+    "newbie": [
+      {
+        "name": "黎明神剑",
+        "img": "",
+        "imgManual": false
+      }
+    ]
+  },
+  "artifactData": [
+    {
+      "type": "single",
+      "name": "深廊终曲",
+      "img": "",
+      "imgManual": false,
+      "img1": "",
+      "img2": ""
+    },
+    {
+      "type": "single",
+      "name": "逐影猎人",
+      "img": "",
+      "imgManual": false,
+      "img1": "",
+      "img2": ""
+    },
+    {
+      "type": "single",
+      "name": "角斗士的终幕礼",
+      "img": "",
+      "imgManual": false,
+      "img1": "",
+      "img2": ""
+    },
+    {
+      "type": "double",
+      "name1": "深廊终曲",
+      "name2": "角斗士的终幕礼",
+      "displayText": "2深廊+2攻击",
+      "img1": "",
+      "img1Manual": false,
+      "img2": "",
+      "img2Manual": false,
+      "img": ""
+    }
+  ],
+  "constellationData": [
+    {
+      "active": true,
+      "desc": "汲取虚境裂隙召唤晶刃，视为重击伤害"
+    },
+    {
+      "active": true,
+      "desc": "元素战技额外得蛇之狡谋，元素爆发伤害与攻击提升"
+    },
+    {
+      "active": false,
+      "desc": "元素爆发等级+3"
+    },
+    {
+      "active": false,
+      "desc": "万流归寂强化，死河渡断每层提升攻击力"
+    },
+    {
+      "active": false,
+      "desc": "元素战技等级+3"
+    },
+    {
+      "active": true,
+      "desc": "汲取虚境裂隙获得极恶技·斩，可协同攻击并减伤"
+    }
+  ],
+  "sandMain": "攻击力%",
+  "gobMain": "冰元素伤害加成",
+  "cirMain": "暴击率/暴击伤害",
+  "subStats": "暴击率/暴击伤害>攻击力百分比",
+  "talentA": "1",
+  "talentE": "9+",
+  "talentQ": "6+",
+  "panel": {
+    "primaryKey": "atk",
+    "primaryValue": "2200",
+    "cr": "70%",
+    "cd": "170%",
+    "em": "",
+    "er": ""
+  },
+  "teamCoreImg": "",
+  "teamCoreImgManual": false,
+  "teamData": [
+    {
+      "name": "冻结队",
+      "chars": [
+        {
+          "name": "",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": []
+        },
+        {
+          "name": "爱可菲",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": []
+        },
+        {
+          "name": "芙宁娜",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "",
+          "alts": [
+            {
+              "name": "莫娜",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "夜兰",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "行秋",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "塔利雅",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        },
+        {
+          "name": "沃雅妮莎",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "申鹤",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "茜特菈莉",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "夏洛蒂",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "米卡",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
