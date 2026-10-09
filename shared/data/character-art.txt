@@ -1,6 +1,6 @@
 122 米提亚 
 121 瓦列里 
-120 沃雅妮莎 ../../shared/assets/portrait/120.沃雅妮莎.png
+120 沃雅妮莎 ../../shared/assets/portrait/120.沃雅妮莎.webp
 119 薇斯纳 https://fastcdn.hoyoverse.com/content-v2/hk4e/166101/2fcf06b3387743b28d83c81877fbd3f9_4035024996550386837.png
 118 奥黛塔 https://fastcdn.hoyoverse.com/content-v2/hk4e/165495/8099301bba7d1f37bb688c848618f7d8_6115297978588435734.png
 117 阿罗夏 https://fastcdn.hoyoverse.com/content-v2/hk4e/165500/06362b46d6f5c71ebdfd9e149513e36d_840920505687671432.png
