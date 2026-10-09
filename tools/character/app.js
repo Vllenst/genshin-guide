@@ -815,7 +815,6 @@ function isValidCharName(name) {
 /**
  * 剥掉「·」及其之后的内容。
  * 例："旅行者·冰" → "旅行者"；"旅行者" → "旅行者"。
- * 只处理「·」，不再剥括号（括号格式已废弃）。
  */
 function stripElementSuffix(name) {
   return String(name || '').split('·')[0].trim();
@@ -867,7 +866,7 @@ async function loadArtDict() {
  * 匹配规则：
  *   - 先校验 charName 是否为合法角色名（原名，严格匹配，不剥后缀）
  *   - 合法：
- *       立绘：先查"名字（元素）"，无则回退查"名字"
+ *       立绘：先查"名字·元素"，无则回退查"名字"
  *       名片：查"名字"
  *       元素图：只看 theme，与 charName 无关
  *   - 非法：立绘、名片、头像 全部跳过；元素图照常显示
@@ -896,7 +895,8 @@ async function matchStyleImages(onlyEmpty) {
         results.standingError = '角色清单无此名字';
         return;
       }
-      const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
+      /* 立绘 key 拼接：名字·元素（新格式） */
+      const artKeyWithEle = elementName ? name + '·' + elementName : '';
       let artUrl = '';
       if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
         artUrl = ART_DICT[artKeyWithEle];
@@ -1454,7 +1454,7 @@ async function autoRematchAll() {
   /* 配队：2/3/4 号位 + 备选 走两级回退（原文 → 剥 · 后） */
   (d.teamData || []).forEach(function (team) {
     (team.chars || []).forEach(function (c, ci) {
-      if (ci === 0) return; /* 1 号位不用 chars[0].img（走 teamCoreImg） */
+      if (ci === 0) return;
       if (c.name && !c.img) {
         var hit = '';
         if (isValidCharName(c.name)) hit = c.name;
@@ -1488,7 +1488,6 @@ async function autoRematchAll() {
     });
   });
 
-  /* 1 号位：严格（用 charName） */
   if (d.charName && !d.teamCoreImg && isValidCharName(d.charName)) {
     tasks.push(async function () {
       const u = await silentFromName('characters', d.charName);
