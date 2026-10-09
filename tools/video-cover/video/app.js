@@ -37,7 +37,6 @@ const DEFAULT_LOGO_FILE = 'gi-logo.png';
 const LOGO_SIZE_FIXED = 200;
 const LOGO_ROUNDED_FIXED = 50;
 
-/* 模式固定文案 */
 const MODE_MAIN_TEXTS = {
   character: '角色培养\n攻略图鉴',
   boss: '世界Boss\n&地方传奇'
@@ -47,8 +46,6 @@ const MODE_CAP_TEXT = {
   boss: '攻略'
 };
 
-/* character-art.txt 里的相对路径是从 tools/character/ 出发的
- * 但 video 页面在 tools/video-cover/video/，要换成 ../../../ */
 const ART_PATH_PREFIX_OLD = '../../shared/';
 const ART_PATH_PREFIX_NEW = '../../../shared/';
 
@@ -89,7 +86,6 @@ let FONT_LIST = [];
 let loadedFontFace = null;
 
 async function loadDataFiles() {
-  // 角色编号
   try {
     const res = await fetch('../../../shared/data/characters.txt?t=' + Date.now());
     if (res.ok) {
@@ -107,7 +103,6 @@ async function loadDataFiles() {
     }
   } catch (e) { console.warn('characters.txt 加载失败', e); }
 
-  // 立绘字典（URL 可空；本地路径要修正前缀）
   try {
     const res = await fetch('../../../shared/data/character-art.txt?t=' + Date.now());
     if (res.ok) {
@@ -126,7 +121,6 @@ async function loadDataFiles() {
     }
   } catch (e) { console.warn('character-art.txt 加载失败', e); }
 
-  // 名片图字典
   try {
     const res = await fetch('../../../shared/data/namecards.txt?t=' + Date.now());
     if (res.ok) {
@@ -141,7 +135,6 @@ async function loadDataFiles() {
     }
   } catch (e) { console.warn('namecards.txt 加载失败', e); }
 
-  // Logo 清单
   try {
     const res = await fetch('../../../shared/data/logos.txt?t=' + Date.now());
     if (res.ok) {
@@ -191,6 +184,30 @@ function stripElementSuffix(name) {
   return String(name || '').replace(/[（(][^）)]*[）)]\s*$/, '').trim();
 }
 function padOrder(n) { return String(n).padStart(3, '0'); }
+
+/**
+ * 把图片 URL 转成 dataURL。
+ *   - data: 开头 → 原样返回
+ *   - 其他 → fetch（CORS）+ blob + FileReader
+ *   - 失败 → 返回原 URL（降级，不阻塞导出）
+ */
+async function urlToDataURL(url) {
+  if (!url) return '';
+  if (/^data:/i.test(url)) return url;
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('FileReader 失败'));
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    return url;
+  }
+}
 
 /* =========================================================================
  * 【JS 模块 5】图标注入
@@ -298,11 +315,6 @@ function buildSVG(showGuides, forExport = false) {
       .map(x => `<line x1="${x}" y1="0" x2="${x}" y2="${SVG_H}" stroke="#888888" stroke-width="2" stroke-dasharray="12 12" opacity="0.5" vector-effect="non-scaling-stroke"/>`).join('')
   ) : '';
 
-  const adaptLayer = (s.bg && s.capText) ? `
-    <g filter="url(#capTextBrightnessFilter)" mask="url(#capTextMask)">
-      <image href="${s.bg}" x="0" y="0" width="${SVG_W}" height="${SVG_H}" preserveAspectRatio="xMidYMid slice"/>
-    </g>` : '';
-
   const capShadowFilter = `
     <filter id="capShadow" x="-40%" y="-40%" width="180%" height="180%">
       <feDropShadow dx="${cap.R * 0.18}" dy="${cap.R * 0.18}" stdDeviation="0" flood-color="#000000" flood-opacity="0.5"/>
@@ -320,6 +332,12 @@ function buildSVG(showGuides, forExport = false) {
       </feComponentTransfer>
     </filter>`;
 
+  /* 胶囊文字图案：用名片图当"文字填充色"。
+     有 s.bg + s.capText 时定义 pattern；文字用 fill="url(#capTextPattern)"。
+     没名片图时文字用深色，保证可读。 */
+  const usePattern = !!(s.bg && s.capText);
+  const capTextFill = usePattern ? 'url(#capTextPattern)' : '#1a1a1a';
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}" viewBox="0 0 ${SVG_W} ${SVG_H}">
 <defs>
   <style>${fontFace} text { font-family: ${font}; paint-order: fill; text-rendering: geometricPrecision; font-synthesis: none; }</style>
@@ -330,14 +348,9 @@ function buildSVG(showGuides, forExport = false) {
   <mask id="midMaskUse"><rect x="0" y="0" width="${SVG_W}" height="${SVG_H}" fill="url(#midMask)"/></mask>
   ${s.capLogo ? `<clipPath id="logoClip"><rect x="${logoX}" y="${logoY}" width="${LOGO_SIZE_FIXED}" height="${LOGO_SIZE_FIXED}" rx="${LOGO_ROUNDED_FIXED}" ry="${LOGO_ROUNDED_FIXED}"/></clipPath>` : ''}
   ${capShadowFilter}${midFilter}
-  <filter id="capTextBrightnessFilter" x="-20%" y="-20%" width="140%" height="140%">
-    <feComponentTransfer id="capTextBrightnessFe">
-      <feFuncR type="linear" slope="${Math.max(0, s.capTextBrightness) / 100}"/>
-      <feFuncG type="linear" slope="${Math.max(0, s.capTextBrightness) / 100}"/>
-      <feFuncB type="linear" slope="${Math.max(0, s.capTextBrightness) / 100}"/>
-    </feComponentTransfer>
-  </filter>
-  ${s.bg && s.capText ? `<mask id="capTextMask"><text data-field="capText" x="${textRightX}" y="${textBaseline}" font-size="${s.capFontSize}" fill="#fff" text-anchor="end">${esc(s.capText)}</text></mask>` : ''}
+  ${usePattern ? `<pattern id="capTextPattern" patternUnits="userSpaceOnUse" x="0" y="0" width="${SVG_W}" height="${SVG_H}">
+    <image href="${s.bg}" x="0" y="0" width="${SVG_W}" height="${SVG_H}" preserveAspectRatio="xMidYMid slice"/>
+  </pattern>` : ''}
   ${floatClipDefs}
 </defs>
 
@@ -348,9 +361,8 @@ ${floatImages(upperFloats)}
 <g filter="url(#capShadow)">
   <path id="capCapsulePath" d="${capPath}" fill="#ffffff"/>
   ${s.capLogo ? `<image href="${s.capLogo}" x="${logoX}" y="${logoY}" width="${LOGO_SIZE_FIXED}" height="${LOGO_SIZE_FIXED}" preserveAspectRatio="xMidYMid slice" clip-path="url(#logoClip)"/>` : ''}
-  <text data-field="capText" filter="url(#capTextBrightnessFilter)" x="${textRightX}" y="${textBaseline}" font-size="${s.capFontSize}" fill="#ffffff" text-anchor="end">${esc(s.capText)}</text>
+  <text data-field="capText" x="${textRightX}" y="${textBaseline}" font-size="${s.capFontSize}" fill="${capTextFill}" text-anchor="end">${esc(s.capText)}</text>
 </g>
-${adaptLayer}
 
 <g>
   ${mainLines.map((line, i) => {
@@ -971,9 +983,37 @@ function getExportBaseName() {
   return name.replace(/[\r\n]+/g, '').replace(/[\\/:*?"<>|]/g, '_');
 }
 
-async function exportPNG() {
+/**
+ * 导出前把 state 里所有图片字段洗成 dataURL。
+ * 原因：SVG 装进 blob URL 后，相对路径失效 + 外链受 CORS 限制 → 图片丢失。
+ * 洗完后从 State 恢复。
+ */
+async function bakeAndExport() {
+  const backup = {
+    bg: state.bg,
+    capLogo: state.capLogo,
+    characterArt: state.characterArt,
+    bossAvatar: state.bossAvatar,
+    floatImg: state.floatImg
+  };
+
   try {
-    if (document.fonts) await document.fonts.ready;
+    if (state.bg) state.bg = await urlToDataURL(state.bg);
+    if (state.capLogo) state.capLogo = await urlToDataURL(state.capLogo);
+    if (state.characterArt && state.characterArt.url) {
+      state.characterArt = { ...state.characterArt, url: await urlToDataURL(state.characterArt.url) };
+    }
+    if (state.bossAvatar && state.bossAvatar.url) {
+      state.bossAvatar = { ...state.bossAvatar, url: await urlToDataURL(state.bossAvatar.url) };
+    }
+    if (state.floatImg && state.floatImg.length) {
+      const baked = [];
+      for (const o of state.floatImg) {
+        baked.push({ ...o, url: await urlToDataURL(o.url) });
+      }
+      state.floatImg = baked;
+    }
+
     const svgStr = buildSVG(false, true);
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -993,6 +1033,15 @@ async function exportPNG() {
       const baseName = getExportBaseName();
       downloadBlob(pngBlob, baseName + '_' + getFormattedDateStr() + '.png');
     } finally { URL.revokeObjectURL(url); }
+  } finally {
+    Object.assign(state, backup);
+  }
+}
+
+async function exportPNG() {
+  try {
+    if (document.fonts) await document.fonts.ready;
+    await bakeAndExport();
   } catch (e) {
     alert('导出失败：' + e.message);
   }
@@ -1243,7 +1292,7 @@ window.App = App;
   await loadPersist();
 
   /* 强制对齐固定文案：character / boss 模式的主标题和胶囊文字由模式决定，
-     不信任 IDB 里的旧值。用户手改过这些字段？那只在 custom 模式里改。 */
+     不信任 IDB 里的旧值。 */
   if (state.guideType === 'character' || state.guideType === 'boss') {
     state.mainText = MODE_MAIN_TEXTS[state.guideType];
     state.capText = MODE_CAP_TEXT[state.guideType];
@@ -1257,8 +1306,6 @@ window.App = App;
       '<option value="' + esc(l.file) + '">' + esc(l.name) + '</option>'
     ).join('');
 
-    /* Logo 校验加强：文件名必须真的在 LOGO_LIST 里，否则重置。
-       原逻辑只检查前缀，如果 IDB 里存了"前缀对但文件不存在"的值就不会重置 → logo 空白。 */
     const logoFiles = LOGO_LIST.map(l => l.file);
     const currentLogoFile = (state.capLogo && state.capLogo.startsWith(LOGO_BASE_URL))
       ? state.capLogo.replace(LOGO_BASE_URL, '')
