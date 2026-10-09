@@ -778,6 +778,11 @@ async function loadArtDict() {
 /* =========================================================================
  * 【JS 模块 8】样式图匹配 + 在线存档
  * ========================================================================= */
+
+/**
+ * 样式图匹配（并发版）：
+ *   立绘 / 元素图 / 名片图 三路同时下，互不阻塞。
+ */
 async function matchStyleImages(onlyEmpty) {
   const name = (State.data.charName || '').trim();
   if (!name) { if (!onlyEmpty) showToast('请先填写角色名', 'error'); return; }
@@ -788,77 +793,88 @@ async function matchStyleImages(onlyEmpty) {
   const results = { standing: false, element: false, namecard: false, standingError: '' };
   const elementName = themeToElementName();
 
+  var tasks = [];
+
   /* 立绘 */
   if (!onlyEmpty || !State.data.charImg) {
-    const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
-    let artUrl = '';
-    if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
-      artUrl = ART_DICT[artKeyWithEle];
-    } else if (ART_DICT[name] !== undefined && ART_DICT[name] !== '') {
-      artUrl = ART_DICT[name];
-    }
-    if (artUrl) {
-      const meta = await loadImageMeta(artUrl);
-      if (meta) {
-        State.data.charImg = artUrl;
-        State.data.charImgMeta = meta;
-        State.data.charImgManual = false;
-        updateThumb('thumbCharImg', 'labelCharImg', artUrl, '已匹配立绘');
-        results.standing = true;
+    tasks.push(async function () {
+      const artKeyWithEle = elementName ? name + '（' + elementName + '）' : '';
+      let artUrl = '';
+      if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
+        artUrl = ART_DICT[artKeyWithEle];
+      } else if (ART_DICT[name] !== undefined && ART_DICT[name] !== '') {
+        artUrl = ART_DICT[name];
+      }
+      if (artUrl) {
+        const meta = await loadImageMeta(artUrl);
+        if (meta) {
+          State.data.charImg = artUrl;
+          State.data.charImgMeta = meta;
+          State.data.charImgManual = false;
+          updateThumb('thumbCharImg', 'labelCharImg', artUrl, '已匹配立绘');
+          results.standing = true;
+        } else {
+          State.data.charImg = '';
+          State.data.charImgMeta = null;
+          State.data.charImgManual = false;
+          resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
+          results.standingError = '链接加载失败';
+        }
       } else {
         State.data.charImg = '';
         State.data.charImgMeta = null;
         State.data.charImgManual = false;
         resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
-        results.standingError = '链接加载失败';
+        if (ART_DICT[name] === undefined && ART_DICT[artKeyWithEle] === undefined) {
+          results.standingError = '字典无此角色';
+        } else {
+          results.standingError = '暂无立绘链接';
+        }
       }
-    } else {
-      State.data.charImg = '';
-      State.data.charImgMeta = null;
-      State.data.charImgManual = false;
-      resetThumb('thumbCharImg', 'labelCharImg', '点击上传立绘');
-      if (ART_DICT[name] === undefined && ART_DICT[artKeyWithEle] === undefined) {
-        results.standingError = '字典无此角色';
-      } else {
-        results.standingError = '暂无立绘链接';
-      }
-    }
+    });
   }
 
   /* 元素图 */
   if (!onlyEmpty || !State.data.nameBgImg) {
-    let elementUrl = '';
-    if (elementName) {
-      const ghUrl = '../../shared/assets/characters/element/' + elementName + '.png';
-      if (await urlExists(ghUrl)) elementUrl = ghUrl;
-    }
-    if (elementUrl) {
-      State.data.nameBgImg = elementUrl;
-      State.data.nameBgImgMeta = null;
-      State.data.nameBgImgManual = false;
-      updateThumb('thumbNameBg', 'labelNameBg', elementUrl, '已匹配元素图：' + elementName);
-      results.element = true;
-    } else {
-      State.data.nameBgImg = '';
-      State.data.nameBgImgManual = false;
-      resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
-    }
+    tasks.push(async function () {
+      let elementUrl = '';
+      if (elementName) {
+        const ghUrl = '../../shared/assets/characters/element/' + elementName + '.png';
+        if (await urlExists(ghUrl)) elementUrl = ghUrl;
+      }
+      if (elementUrl) {
+        State.data.nameBgImg = elementUrl;
+        State.data.nameBgImgMeta = null;
+        State.data.nameBgImgManual = false;
+        updateThumb('thumbNameBg', 'labelNameBg', elementUrl, '已匹配元素图：' + elementName);
+        results.element = true;
+      } else {
+        State.data.nameBgImg = '';
+        State.data.nameBgImgManual = false;
+        resetThumb('thumbNameBg', 'labelNameBg', '点击上传元素图');
+      }
+    });
   }
 
-  /* 名片图 */
+  /* 名片图（同步逻辑，也包一层方便统一 await） */
   if (!onlyEmpty || !State.data.bgImg) {
-    const namecardUrl = NAMECARD_DICT[name] || '';
-    if (namecardUrl) {
-      State.data.bgImg = namecardUrl;
-      State.data.bgImgManual = false;
-      updateThumb('thumbBg', 'labelBg', namecardUrl, '已匹配名片图');
-      results.namecard = true;
-    } else {
-      State.data.bgImg = '';
-      State.data.bgImgManual = false;
-      resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
-    }
+    tasks.push(async function () {
+      const namecardUrl = NAMECARD_DICT[name] || '';
+      if (namecardUrl) {
+        State.data.bgImg = namecardUrl;
+        State.data.bgImgManual = false;
+        updateThumb('thumbBg', 'labelBg', namecardUrl, '已匹配名片图');
+        results.namecard = true;
+      } else {
+        State.data.bgImg = '';
+        State.data.bgImgManual = false;
+        resetThumb('thumbBg', 'labelBg', '默认暗黑原力色');
+      }
+    });
   }
+
+  /* 三路并发 */
+  await Promise.all(tasks.map(fn => fn()));
 
   if (!onlyEmpty) {
     const failed = [];
