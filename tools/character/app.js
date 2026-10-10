@@ -820,6 +820,21 @@ function stripElementSuffix(name) {
   return String(name || '').split('·')[0].trim();
 }
 
+/**
+ * 配队区用的角色名解析（两级回退）：
+ *   1. 原名合法 → 用原名
+ *   2. 剥 · 后合法 → 用剥完的
+ *   3. 都不合法 → 空字符串
+ */
+function resolveCharName(input) {
+  const t = String(input || '').trim();
+  if (!t) return '';
+  if (isValidCharName(t)) return t;
+  const stripped = stripElementSuffix(t);
+  if (stripped && isValidCharName(stripped)) return stripped;
+  return '';
+}
+
 async function loadNamecards() {
   try {
     const res = await fetch('../../shared/data/namecards.txt?t=' + Date.now());
@@ -895,7 +910,6 @@ async function matchStyleImages(onlyEmpty) {
         results.standingError = '角色清单无此名字';
         return;
       }
-      /* 立绘 key 拼接：名字·元素（新格式） */
       const artKeyWithEle = elementName ? name + '·' + elementName : '';
       let artUrl = '';
       if (artKeyWithEle && ART_DICT[artKeyWithEle] !== undefined && ART_DICT[artKeyWithEle] !== '') {
@@ -1111,22 +1125,11 @@ function setArtifactDisplayText(i, v) { State.data.artifactData[i].displayText =
 
 async function matchTeamCharIcon(ti, ci, name) {
   if (!window.ICON_LIB) return;
-  const trimmed = (name || '').trim();
   const targetId = `t_${ti}_${ci}_img`;
   const cell = State.data.teamData[ti]?.chars?.[ci];
   if (!cell) return;
 
-  /* 两级回退：原名合法 → 用原名；剥 · 后合法 → 用剥完的；都不合法 → 空 */
-  let matchedName = '';
-  if (trimmed) {
-    if (isValidCharName(trimmed)) {
-      matchedName = trimmed;
-    } else {
-      const stripped = stripElementSuffix(trimmed);
-      if (stripped && isValidCharName(stripped)) matchedName = stripped;
-    }
-  }
-
+  const matchedName = resolveCharName(name);
   if (!matchedName) {
     cell.img = '';
     cell.imgManual = false;
@@ -1150,20 +1153,9 @@ async function matchAltIcon(ti, ci, ai, name) {
   if (!window.ICON_LIB) return;
   const alt = State.data.teamData[ti]?.chars?.[ci]?.alts?.[ai];
   if (!alt) return;
-  const trimmed = (name || '').trim();
   const targetId = `t_${ti}_${ci}_${ai}_img`;
 
-  /* 两级回退同 matchTeamCharIcon */
-  let matchedName = '';
-  if (trimmed) {
-    if (isValidCharName(trimmed)) {
-      matchedName = trimmed;
-    } else {
-      const stripped = stripElementSuffix(trimmed);
-      if (stripped && isValidCharName(stripped)) matchedName = stripped;
-    }
-  }
-
+  const matchedName = resolveCharName(name);
   if (!matchedName) {
     alt.img = '';
     alt.imgManual = false;
@@ -1297,6 +1289,76 @@ function normalizeState(data = {}) {
 /* =========================================================================
  * 【JS 模块 11】导出 / 导入 / 清空
  * ========================================================================= */
+
+/* ---- 图片洗 dataURL（导出 PNG 前用）------------------------------------ */
+
+/**
+ * 单张图片转 dataURL。
+ *   - 已是 data: 开头 → 原样返回
+ *   - 否则 fetch（CORS）+ blob + FileReader
+ *   - 失败 → 降级保留原 URL（不阻塞其他图）
+ */
+async function urlToDataURL(url) {
+  if (!url) return '';
+  if (/^data:/i.test(url)) return url;
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('FileReader 失败'));
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn('[bake] 转 dataURL 失败，保留原 URL：', url, '—', e.message);
+    return url;
+  }
+}
+
+/**
+ * 深拷贝 State.data，把所有图片字段洗成 dataURL。
+ * 用于导出 PNG 时绕过 CORS 与相对路径问题。
+ * 手动上传的图（imgManual=true）已经是 dataURL，会被原样返回。
+ */
+async function bakeImagesToDataURL() {
+  const data = JSON.parse(JSON.stringify(State.data));
+  const tasks = [];
+
+  ['charImg', 'bgImg', 'nameBgImg', 'teamCoreImg'].forEach(function (key) {
+    if (data[key]) {
+      tasks.push((async function () { data[key] = await urlToDataURL(data[key]); })());
+    }
+  });
+
+  WEAPON_ORDER.forEach(function (type) {
+    (data.weaponData[type] || []).forEach(function (w) {
+      if (w.img) tasks.push((async function () { w.img = await urlToDataURL(w.img); })());
+    });
+  });
+
+  (data.artifactData || []).forEach(function (a) {
+    if (a.img) tasks.push((async function () { a.img = await urlToDataURL(a.img); })());
+    if (a.img1) tasks.push((async function () { a.img1 = await urlToDataURL(a.img1); })());
+    if (a.img2) tasks.push((async function () { a.img2 = await urlToDataURL(a.img2); })());
+  });
+
+  (data.teamData || []).forEach(function (t) {
+    (t.chars || []).forEach(function (c) {
+      if (c.img) tasks.push((async function () { c.img = await urlToDataURL(c.img); })());
+      (c.alts || []).forEach(function (a) {
+        if (a.img) tasks.push((async function () { a.img = await urlToDataURL(a.img); })());
+      });
+    });
+  });
+
+  await Promise.all(tasks);
+  return data;
+}
+
+/* ---- 导出 -------------------------------------------------------------- */
+
 function buildExportPayload(data) {
   var out = JSON.parse(JSON.stringify(data));
   out.fontData = '';
@@ -1341,9 +1403,22 @@ async function exportPNG() {
     bm ? { el: bm, text: bm.textContent } : null
   ].filter(Boolean);
   btns.forEach(b => { b.el.disabled = true; b.el.textContent = '正在导出...'; });
+
   try {
     if (document.fonts) await document.fonts.ready;
-    const svg = buildSVG(EXPORT_SCALE, true);
+
+    /* 1. 洗图：临时把 State.data 换成所有图片都是 dataURL 的副本 */
+    const baked = await bakeImagesToDataURL();
+    const original = State.data;
+    let svg;
+    try {
+      State.data = baked;
+      svg = buildSVG(EXPORT_SCALE, true);
+    } finally {
+      State.data = original;
+    }
+
+    /* 2. SVG → PNG */
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     try {
@@ -1365,7 +1440,7 @@ async function exportPNG() {
       const y = now.getFullYear();
       const m = String(now.getMonth() + 1).padStart(2, '0');
       const d = String(now.getDate()).padStart(2, '0');
-      downloadBlob(pngBlob, `${State.data.charName || '角色'}_${y}-${m}-${d}.png`);
+      downloadBlob(pngBlob, `${original.charName || '角色'}_${y}-${m}-${d}.png`);
       showToast('导出成功', 'success');
     } finally { URL.revokeObjectURL(url); }
   } catch (e) {
@@ -1386,6 +1461,8 @@ function exportConfig() {
   );
 }
 
+/* ---- 导入 -------------------------------------------------------------- */
+
 async function silentFromName(type, name) {
   if (!window.ICON_LIB) return '';
   var trimmed = String(name || '').trim();
@@ -1397,7 +1474,7 @@ async function silentFromName(type, name) {
 }
 
 async function runConcurrent(tasks, limit) {
-  const max = limit && limit > 0 ? Math.min(limit, tasks.length) : tasks.length;
+  const max = limit ? Math.min(limit, tasks.length) : tasks.length;
   let idx = 0;
   async function worker() {
     while (idx < tasks.length) {
@@ -1451,17 +1528,12 @@ async function autoRematchAll() {
     }
   });
 
-  /* 配队：2/3/4 号位 + 备选 走两级回退（原文 → 剥 · 后） */
+  /* 配队：2/3/4 号位 + 备选 走两级回退 */
   (d.teamData || []).forEach(function (team) {
     (team.chars || []).forEach(function (c, ci) {
       if (ci === 0) return;
       if (c.name && !c.img) {
-        var hit = '';
-        if (isValidCharName(c.name)) hit = c.name;
-        else {
-          var s = stripElementSuffix(c.name);
-          if (s && isValidCharName(s)) hit = s;
-        }
+        const hit = resolveCharName(c.name);
         if (hit) {
           tasks.push(async function () {
             const u = await silentFromName('characters', hit);
@@ -1471,12 +1543,7 @@ async function autoRematchAll() {
       }
       (c.alts || []).forEach(function (alt) {
         if (alt.name && !alt.img) {
-          var hit = '';
-          if (isValidCharName(alt.name)) hit = alt.name;
-          else {
-            var s = stripElementSuffix(alt.name);
-            if (s && isValidCharName(s)) hit = s;
-          }
+          const hit = resolveCharName(alt.name);
           if (hit) {
             tasks.push(async function () {
               const u = await silentFromName('characters', hit);
