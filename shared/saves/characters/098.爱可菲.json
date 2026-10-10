@@ -1,0 +1,377 @@
+{
+  "charName": "爱可菲",
+  "version": "7.1",
+  "date": "2026.10",
+  "author": "烤吃虎鱼LW",
+  "imgX": -20,
+  "theme": "#35AACC",
+  "charImg": "",
+  "charImgMeta": null,
+  "charImgDeleted": false,
+  "charImgManual": false,
+  "bgImg": "",
+  "bgImgDeleted": false,
+  "bgImgManual": false,
+  "nameBgImg": "",
+  "nameBgImgMeta": null,
+  "nameBgImgDeleted": false,
+  "nameBgImgManual": false,
+  "fontData": "",
+  "fontName": "原神补全",
+  "fontFileName": "原神补全.ttf",
+  "weaponData": {
+    "graduate": [
+      {
+        "name": "香韵奏者",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "薙草之稻光",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "息灾",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "支离轮光",
+        "img": "",
+        "imgManual": false
+      }
+    ],
+    "optional": [
+      {
+        "name": "圣祭者的辉杖",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "西风长枪",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "寒息",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "决斗之枪",
+        "img": "",
+        "imgManual": false
+      }
+    ],
+    "newbie": [
+      {
+        "name": "白缨枪",
+        "img": "",
+        "imgManual": false
+      },
+      {
+        "name": "钺矛",
+        "img": "",
+        "imgManual": false
+      }
+    ]
+  },
+  "artifactData": [
+    {
+      "type": "single",
+      "name": "黄金剧团",
+      "img": "",
+      "imgManual": false,
+      "img1": "",
+      "img2": ""
+    },
+    {
+      "type": "single",
+      "name": "烬城勇者绘卷",
+      "img": "",
+      "imgManual": false,
+      "img1": "",
+      "img2": ""
+    },
+    {
+      "type": "single",
+      "name": "千岩牢固",
+      "img": "",
+      "imgManual": false,
+      "img1": "",
+      "img2": ""
+    },
+    {
+      "type": "single",
+      "name": "昔日宗室之仪",
+      "img": "",
+      "imgManual": false,
+      "img1": "",
+      "img2": ""
+    },
+    {
+      "type": "double",
+      "name1": "黄金剧团",
+      "name2": "角斗士的终幕礼",
+      "displayText": "2剧团+2攻击",
+      "img1": "",
+      "img1Manual": false,
+      "img2": "",
+      "img2Manual": false,
+      "img": ""
+    }
+  ],
+  "constellationData": [
+    {
+      "active": true,
+      "desc": "水冰四角色，战技或爆发后冰伤暴伤提升"
+    },
+    {
+      "active": true,
+      "desc": "点按战技后，队友冰伤消耗冷煮提升伤害"
+    },
+    {
+      "active": false,
+      "desc": "元素战技等级+3"
+    },
+    {
+      "active": false,
+      "desc": "康复食疗延长，治疗概率提升并回能"
+    },
+    {
+      "active": false,
+      "desc": "元素爆发等级+3"
+    },
+    {
+      "active": true,
+      "desc": "点按战技后，队友普攻重击下落触发额外冰伤"
+    }
+  ],
+  "sandMain": "攻击力%/元素充能效率",
+  "gobMain": "冰元素伤害加成/攻击力%",
+  "cirMain": "暴击率/暴击伤害/攻击力%",
+  "subStats": "元素充能效率＞暴击率/暴击伤害＞攻击力％",
+  "talentA": "1",
+  "talentE": "9+",
+  "talentQ": "6+",
+  "panel": {
+    "primaryKey": "atk",
+    "primaryValue": "1700",
+    "cr": "75%",
+    "cd": "165%",
+    "em": "",
+    "er": "180%"
+  },
+  "teamCoreImg": "",
+  "teamCoreImgManual": false,
+  "teamData": [
+    {
+      "name": "冻结队",
+      "chars": [
+        {
+          "name": "",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": []
+        },
+        {
+          "name": "丝柯克",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "神里绫华",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "那维莱特",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "莱欧斯利",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "甘雨",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        },
+        {
+          "name": "芙宁娜",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "莫娜",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "夜兰",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "行秋",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "塔利雅",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        },
+        {
+          "name": "沃雅妮莎",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "申鹤",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "茜特菈莉",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "夏洛蒂",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "米卡",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "星超导",
+      "chars": [
+        {
+          "name": "",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": []
+        },
+        {
+          "name": "桑多涅",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "旅行者·冰",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        },
+        {
+          "name": "奥黛塔",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "七七",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "迪奥娜",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        },
+        {
+          "name": "八重神子",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "阿罗夏",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "融化队",
+      "chars": [
+        {
+          "name": "",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": []
+        },
+        {
+          "name": "玛薇卡",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "阿蕾奇诺",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "宵宫",
+              "img": "",
+              "imgManual": false
+            },
+            {
+              "name": "嘉明",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        },
+        {
+          "name": "茜特菈莉",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": []
+        },
+        {
+          "name": "尼可",
+          "img": "",
+          "imgManual": false,
+          "emptyAltText": "暂无备选",
+          "alts": [
+            {
+              "name": "班尼特",
+              "img": "",
+              "imgManual": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
