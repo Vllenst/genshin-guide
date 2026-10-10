@@ -2,7 +2,7 @@
 
 个人自用的原神攻略图制作工具集，纯前端，本地处理，不收集任何数据。
 
-**在线访问：** https://vllenst.github.io/genshin-guide/
+**在线访问：** https://grilled-tiger-fish-lw.github.io/genshin-guide/
 
 ---
 
@@ -67,7 +67,7 @@ genshin-guide/
 
 ## 🎨 角色一图流
 
-**入口：** https://vllenst.github.io/genshin-guide/#character
+**入口：** https://grilled-tiger-fish-lw.github.io/genshin-guide/#character
 
 - 编辑角色信息（名称 / 版本 / 日期 / 作者）
 - 一键匹配样式图（立绘 / 元素图 / 名片图）——**三路并发下载**
@@ -101,7 +101,7 @@ tools/character/
 
 ## 🎨 图标字典编辑器
 
-**入口：** https://vllenst.github.io/genshin-guide/#map-editor
+**入口：** https://grilled-tiger-fish-lw.github.io/genshin-guide/#map-editor
 
 维护 `shared/gi-icons/icon-dict.js` 的可视化工具。
 
@@ -131,7 +131,7 @@ tools/character/
 
 ## 🎨 封面制作
 
-**入口：** https://vllenst.github.io/genshin-guide/#video-cover
+**入口：** https://grilled-tiger-fish-lw.github.io/genshin-guide/#video-cover
 
 ### 视频封面
 
